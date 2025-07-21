@@ -226,7 +226,14 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
                     {/* Active Step Glow Effect */}
                     {isActive && (
-                      <div className="absolute inset-0 rounded-2xl bg-purple-500 opacity-5 pointer-events-none"></div>
+                      <div className={`absolute inset-0 rounded-2xl opacity-5 pointer-events-none ${
+                        index === 0 ? 'bg-cyan-500' :
+                        index === 1 ? 'bg-purple-500' :
+                        index === 2 ? 'bg-purple-500' :
+                        index === 3 ? 'bg-gray-500' :
+                        index === 4 ? 'bg-cyan-500' :
+                        'bg-pink-500'
+                      }`}></div>
                     )}
                   </div>
                 </div>
