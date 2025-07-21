@@ -109,21 +109,6 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
             </div>
           ))}
         </div>
-
-        {/* Contact Support */}
-        <div className="text-center mt-12">
-          <p className={`text-base mb-4 ${
-            darkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
-            Still have questions?
-          </p>
-          <a
-            href="#contact"
-            className={`inline-flex items-center text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200`}
-          >
-            Contact our support team →
-          </a>
-        </div>
       </div>
     </section>
   );
