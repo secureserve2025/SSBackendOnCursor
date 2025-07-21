@@ -81,47 +81,78 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
         {/* Vertical Timeline */}
         <div className="relative">
           {/* Steps */}
-          <div className="space-y-12">
+          <div className="space-y-16">
             {steps.map((step, index) => {
               const IconComponent = step.icon;
+              const isEven = index % 2 === 0;
               
               return (
                 <div
                   key={step.id}
-                  className="relative flex items-start"
+                  className={`relative flex items-center ${
+                    isEven ? 'justify-start' : 'justify-end'
+                  }`}
                 >
-
                   {/* Step Content Card */}
-                  <div className={`flex-1 p-6 rounded-2xl ${
+                  <div className={`w-full max-w-md p-6 rounded-2xl ${
                     darkMode 
                       ? 'bg-gray-700 border border-gray-600' 
                       : 'bg-white border border-gray-200'
-                  } shadow-lg`}>
+                  } shadow-lg ${isEven ? 'mr-auto' : 'ml-auto'}`}>
                     
-                    {/* Icon and Title */}
-                    <div className="flex items-center space-x-4 mb-3">
-                      <div className={`p-3 rounded-full ${
-                        darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                    {/* Step Number and Icon */}
+                    <div className={`flex items-center mb-4 ${
+                      isEven ? 'justify-start' : 'justify-end'
+                    }`}>
+                      <div className={`flex items-center space-x-3 ${
+                        isEven ? 'flex-row' : 'flex-row-reverse space-x-reverse'
                       }`}>
-                        <IconComponent className={`h-6 w-6 ${
-                          darkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`} />
+                        {/* Step Number Circle */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                          index === 0 ? 'bg-blue-600' :
+                          index === 1 ? 'bg-purple-600' :
+                          index === 2 ? 'bg-green-600' :
+                          index === 3 ? 'bg-cyan-600' :
+                          index === 4 ? 'bg-yellow-600' :
+                          'bg-pink-600'
+                        }`}>
+                          #{step.id}
+                        </div>
+                        
+                        {/* Icon */}
+                        <div className={`p-3 rounded-full ${
+                          darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                        }`}>
+                          <IconComponent className={`h-6 w-6 ${
+                            darkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`} />
+                        </div>
                       </div>
-                      
-                      <h3 className={`text-xl font-semibold ${
-                        darkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        {step.title}
-                      </h3>
                     </div>
+
+                    {/* Title */}
+                    <h3 className={`text-xl font-semibold mb-3 ${
+                      isEven ? 'text-left' : 'text-right'
+                    } ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {step.title}
+                    </h3>
 
                     {/* Description */}
                     <p className={`text-base leading-relaxed ${
+                      isEven ? 'text-left' : 'text-right'
+                    } ${
                       darkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
                       {step.description}
                     </p>
                   </div>
+                  
+                  {/* Connecting Line (except for last step) */}
+                  {index < steps.length - 1 && (
+                    <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0.5 h-16 ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`} style={{ zIndex: -1 }}></div>
+                  )}
                 </div>
               );
             })}
