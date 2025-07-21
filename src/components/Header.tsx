@@ -44,13 +44,13 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-900/95' : 'bg-white/95'
-    } backdrop-blur-sm border-b ${darkMode ? 'border-slate-700' : 'border-gray-200'}`}>
+      darkMode ? 'bg-gray-900/95' : 'bg-white/95'
+    } backdrop-blur-sm border-b ${darkMode ? 'border-purple-500/30' : 'border-gray-200'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <Shield className={`h-8 w-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            <Shield className={`h-8 w-8 ${darkMode ? 'text-cyan-400' : 'text-purple-600'}`} />
             <span className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               SecureServe
             </span>
@@ -64,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                 onClick={() => setIsExploreOpen(!isExploreOpen)}
                 className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   darkMode 
-                    ? 'text-gray-300 hover:text-white hover:bg-slate-800' 
+                    ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
@@ -75,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               {/* Dropdown Menu */}
               {isExploreOpen && (
                 <div className={`absolute top-full left-0 mt-1 w-48 rounded-md shadow-lg ${
-                  darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200'
+                  darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
                 } py-1`}>
                   {exploreLinks.map((link) => (
                     <a
@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                      }}
                       className={`block px-4 py-2 text-sm transition-colors ${
                         darkMode 
-                          ? 'text-gray-300 hover:text-white hover:bg-slate-700' 
+                          ? 'text-gray-300 hover:text-white hover:bg-purple-700/50' 
                           : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
@@ -106,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className={`p-2 rounded-md transition-colors ${
                   darkMode 
-                    ? 'text-gray-300 hover:text-white hover:bg-slate-800' 
+                    ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                 }`}
                 aria-label="Select language"
@@ -117,14 +117,14 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               {/* Language Dropdown Menu */}
               {isLanguageOpen && (
                 <div className={`absolute top-full right-0 mt-1 w-56 rounded-md shadow-lg ${
-                  darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200'
+                  darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
                 } py-1 max-h-64 overflow-y-auto`}>
                   {indianLanguages.map((language) => (
                     <button
                       key={language.code}
                       className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
                         darkMode 
-                          ? 'text-gray-300 hover:text-white hover:bg-slate-700' 
+                          ? 'text-gray-300 hover:text-white hover:bg-purple-700/50' 
                           : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                       onClick={() => setIsLanguageOpen(false)}
@@ -137,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
             </div>
 
             {/* CTA Button */}
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
               Login
             </button>
           </nav>
@@ -147,7 +147,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className={`md:hidden p-2 rounded-md ${
               darkMode 
-                ? 'text-gray-300 hover:text-white hover:bg-slate-800' 
+                ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
                 : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
             }`}
             aria-label="Toggle menu"
@@ -158,7 +158,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className={`md:hidden border-t ${darkMode ? 'border-slate-700' : 'border-gray-200'} py-4`}>
+          <div className={`md:hidden border-t ${darkMode ? 'border-purple-500/30' : 'border-gray-200'} py-4`}>
             <div className="space-y-2">
               {/* Mobile Explore Links */}
               <div className="space-y-1">
@@ -177,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                    }}
                     className={`block px-6 py-2 text-sm transition-colors ${
                       darkMode 
-                        ? 'text-gray-400 hover:text-white hover:bg-slate-800' 
+                        ? 'text-gray-400 hover:text-white hover:bg-purple-800/50' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
@@ -193,7 +193,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                     onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                     className={`p-2 rounded-md transition-colors ${
                       darkMode 
-                        ? 'text-gray-300 hover:text-white hover:bg-slate-800' 
+                        ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
                         : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                     aria-label="Select language"
@@ -204,14 +204,14 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                   {/* Mobile Language Dropdown */}
                   {isLanguageOpen && (
                     <div className={`absolute bottom-full right-0 mb-1 w-56 rounded-md shadow-lg ${
-                      darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200'
+                      darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
                     } py-1 max-h-64 overflow-y-auto`}>
                       {indianLanguages.map((language) => (
                         <button
                           key={language.code}
                           className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
                             darkMode 
-                              ? 'text-gray-300 hover:text-white hover:bg-slate-700' 
+                              ? 'text-gray-300 hover:text-white hover:bg-purple-700/50' 
                               : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                           }`}
                           onClick={() => setIsLanguageOpen(false)}
@@ -226,7 +226,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               
               {/* Mobile CTA */}
               <div className="px-3 pt-2">
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                   Login
                 </button>
               </div>

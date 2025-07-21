@@ -32,7 +32,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
 
   return (
     <section className={`pt-24 pb-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-900' : 'bg-white'
+      darkMode ? 'bg-gray-900' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -45,6 +45,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               }`}>
                 India's First{' '}
                 <span className={darkMode ? 'text-blue-400' : 'text-blue-600'}>
+                <span className={darkMode ? 'text-cyan-400' : 'text-purple-600'}>
                   AI-Powered Escrow Platform
                 </span>{' '}
                 for Freelancers & Clients
@@ -60,7 +61,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               <div className="grid grid-cols-2 gap-8 pt-8 max-w-md mx-auto">
                 <div className="text-center">
                   <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-blue-400' : 'text-blue-600'
+                    darkMode ? 'text-cyan-400' : 'text-purple-600'
                   }`}>
                     15,247+
                   </div>
@@ -73,7 +74,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                 
                 <div className="text-center">
                   <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-green-400' : 'text-green-600'
+                    darkMode ? 'text-pink-400' : 'text-pink-600'
                   }`}>
                     8,932+
                   </div>
@@ -91,7 +92,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
           <div className="relative">
             {/* Main Dashboard Card */}
             <div className={`rounded-2xl p-6 shadow-2xl animate-swing ${
-              darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-gray-200'
+              darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
             }`}>
               {/* Project Header */}
               <div className="mb-6">
@@ -99,8 +100,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                   Video Editing Project Uploaded
                 </h3>
                 <div className="w-full bg-blue-200 rounded-full h-2">
+                <div className="w-full bg-purple-200 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out" 
+                    className="bg-gradient-to-r from-purple-500 to-cyan-400 h-2 rounded-full transition-all duration-1000 ease-out" 
                     style={{ width: `${Math.min(85, (animationStep / 6) * 85)}%` }}
                   ></div>
                 </div>
@@ -277,16 +279,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               <div className="flex space-x-3">
                 <button className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-500 flex items-center justify-center space-x-2 border ${
                   animationStep >= 6
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-pink-500'
                     : darkMode 
-                      ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
+                      ? 'border-purple-500/30 text-gray-300 hover:bg-purple-800/50' 
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}>
                   <span>Release Funds</span>
                 </button>
                 <button className={`px-4 py-3 rounded-lg font-medium transition-colors border ${
                   darkMode 
-                    ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
+                    ? 'border-purple-500/30 text-gray-300 hover:bg-purple-800/50' 
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}>
                   Request Revision
@@ -295,7 +297,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
 
               {/* Amount Display */}
               <div className="mt-4 text-center">
-                <div className="text-2xl font-bold text-green-600">₹25,000</div>
+                <div className="text-2xl font-bold text-cyan-400">₹25,000</div>
                 <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   In Escrow
                 </div>

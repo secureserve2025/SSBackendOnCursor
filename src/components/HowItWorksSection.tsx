@@ -10,12 +10,12 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
   // Color schemes for each step
   const stepColors = [
-    { bg: 'bg-blue-600', border: 'border-blue-500', text: 'text-white' }, // Step 1
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white' }, // Step 1
     { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white' }, // Step 2
-    { bg: 'bg-green-600', border: 'border-green-500', text: 'text-white' }, // Step 3
-    { bg: 'bg-orange-600', border: 'border-orange-500', text: 'text-white' }, // Step 4
-    { bg: 'bg-red-600', border: 'border-red-500', text: 'text-white' }, // Step 5
-    { bg: 'bg-indigo-600', border: 'border-indigo-500', text: 'text-white' }, // Step 6
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white' }, // Step 3
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white' }, // Step 4
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white' }, // Step 5
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white' }, // Step 6
   ];
 
   const steps = [
@@ -68,7 +68,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
   return (
     <section id="how-it-works" className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-800' : 'bg-gray-50'
+      darkMode ? 'bg-gray-800' : 'bg-gray-50'
     }`}>
       <div className="max-w-7xl mx-auto">
         {/* Section Heading */}
@@ -109,7 +109,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   <div className="flex-shrink-0">
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
                       isActive 
-                        ? `${stepColors[index].bg} scale-110 shadow-lg shadow-blue-500/25` 
+                        ? `${stepColors[index].bg} scale-110 shadow-lg shadow-purple-500/25` 
                         : `${stepColors[index].bg} opacity-70 hover:opacity-90`
                     }`}>
                       <span className={`text-xl font-bold transition-colors duration-300 ${
@@ -124,10 +124,10 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   <div className={`flex-1 p-6 rounded-2xl transition-all duration-500 ${
                     isActive 
                       ? darkMode 
-                        ? 'bg-slate-700 border-2 border-blue-500 shadow-xl shadow-blue-500/20' 
-                        : 'bg-white border-2 border-blue-500 shadow-xl shadow-blue-500/20'
+                        ? 'bg-gray-700 border-2 border-purple-500 shadow-xl shadow-purple-500/20' 
+                        : 'bg-white border-2 border-purple-500 shadow-xl shadow-purple-500/20'
                       : darkMode 
-                        ? 'bg-slate-700 border border-slate-600 hover:border-slate-500' 
+                        ? 'bg-gray-700 border border-purple-500/30 hover:border-purple-500/50' 
                         : 'bg-white border border-gray-200 hover:border-gray-300'
                   } shadow-lg hover:shadow-xl`}>
                     
@@ -135,12 +135,12 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     <div className="flex items-center space-x-4 mb-3">
                       <div className={`p-3 rounded-full transition-all duration-300 ${
                         isActive 
-                          ? darkMode ? 'bg-blue-900/30' : 'bg-blue-100'
-                          : darkMode ? 'bg-slate-600' : 'bg-gray-100'
+                          ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+                          : darkMode ? 'bg-gray-600' : 'bg-gray-100'
                       }`}>
                         <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
                           isActive 
-                            ? darkMode ? 'text-blue-400' : 'text-blue-600'
+                            ? darkMode ? 'text-purple-400' : 'text-purple-600'
                             : darkMode ? 'text-gray-400' : 'text-gray-500'
                         }`} />
                       </div>
@@ -165,7 +165,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
                     {/* Active Step Glow Effect */}
                     {isActive && (
-                      <div className="absolute inset-0 rounded-2xl bg-blue-500 opacity-5 pointer-events-none"></div>
+                      <div className="absolute inset-0 rounded-2xl bg-purple-500 opacity-5 pointer-events-none"></div>
                     )}
                   </div>
                 </div>
@@ -182,8 +182,8 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
               onClick={() => setActiveStep(index)}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === activeStep 
-                  ? 'bg-blue-600 scale-125' 
-                  : darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-gray-300 hover:bg-gray-400'
+                  ? 'bg-purple-600 scale-125' 
+                  : darkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
               }`}
               aria-label={`Go to step ${index + 1}`}
             />

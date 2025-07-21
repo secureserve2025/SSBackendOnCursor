@@ -49,7 +49,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
 
   return (
     <section id="faqs" className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-900' : 'bg-white'
+      darkMode ? 'bg-gray-900' : 'bg-white'
     }`}>
       <div className="max-w-4xl mx-auto">
         {/* Section Heading */}
@@ -73,7 +73,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
               key={index}
               className={`rounded-lg border transition-all duration-300 ${
                 darkMode 
-                  ? 'bg-slate-800 border-slate-700 hover:border-slate-600' 
+                  ? 'bg-gray-800 border-purple-500/30 hover:border-purple-500/50' 
                   : 'bg-white border-gray-200 hover:border-gray-300'
               } shadow-sm hover:shadow-md`}
             >
@@ -82,8 +82,8 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
                 onClick={() => toggleFAQ(index)}
                 className={`w-full px-6 py-4 text-left flex items-center justify-between transition-colors duration-200 ${
                   darkMode 
-                    ? 'text-white hover:text-blue-400' 
-                    : 'text-gray-900 hover:text-blue-600'
+                    ? 'text-white hover:text-cyan-400' 
+                    : 'text-gray-900 hover:text-purple-600'
                 }`}
               >
                 <span className="font-medium text-base sm:text-lg pr-4">
@@ -123,7 +123,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
           </p>
           <a
             href="#contact"
-            className={`inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200`}
+            className={`inline-flex items-center text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200`}
           >
             Contact our support team →
           </a>

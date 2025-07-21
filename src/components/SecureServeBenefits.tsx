@@ -40,28 +40,28 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
   const getColorClasses = (color: string) => {
     const colorMap = {
       blue: {
-        iconBg: darkMode ? 'bg-blue-900/20' : 'bg-blue-50',
-        iconColor: darkMode ? 'text-blue-400 group-hover:text-blue-300' : 'text-blue-500 group-hover:text-blue-600',
-        hoverBorder: darkMode ? 'hover:border-blue-500/50' : 'hover:border-blue-300',
-        hoverBg: darkMode ? 'bg-blue-400' : 'bg-blue-500'
+        iconBg: darkMode ? 'bg-cyan-900/20' : 'bg-cyan-50',
+        iconColor: darkMode ? 'text-cyan-400 group-hover:text-cyan-300' : 'text-cyan-500 group-hover:text-cyan-600',
+        hoverBorder: darkMode ? 'hover:border-cyan-500/50' : 'hover:border-cyan-300',
+        hoverBg: darkMode ? 'bg-cyan-400' : 'bg-cyan-500'
       },
       green: {
-        iconBg: darkMode ? 'bg-green-900/20' : 'bg-green-50',
-        iconColor: darkMode ? 'text-green-400 group-hover:text-green-300' : 'text-green-500 group-hover:text-green-600',
-        hoverBorder: darkMode ? 'hover:border-green-500/50' : 'hover:border-green-300',
-        hoverBg: darkMode ? 'bg-green-400' : 'bg-green-500'
-      },
-      purple: {
         iconBg: darkMode ? 'bg-purple-900/20' : 'bg-purple-50',
         iconColor: darkMode ? 'text-purple-400 group-hover:text-purple-300' : 'text-purple-500 group-hover:text-purple-600',
         hoverBorder: darkMode ? 'hover:border-purple-500/50' : 'hover:border-purple-300',
         hoverBg: darkMode ? 'bg-purple-400' : 'bg-purple-500'
       },
+      purple: {
+        iconBg: darkMode ? 'bg-pink-900/20' : 'bg-pink-50',
+        iconColor: darkMode ? 'text-pink-400 group-hover:text-pink-300' : 'text-pink-500 group-hover:text-pink-600',
+        hoverBorder: darkMode ? 'hover:border-pink-500/50' : 'hover:border-pink-300',
+        hoverBg: darkMode ? 'bg-pink-400' : 'bg-pink-500'
+      },
       yellow: {
-        iconBg: darkMode ? 'bg-yellow-900/20' : 'bg-yellow-50',
-        iconColor: darkMode ? 'text-yellow-400 group-hover:text-yellow-300' : 'text-yellow-500 group-hover:text-yellow-600',
-        hoverBorder: darkMode ? 'hover:border-yellow-500/50' : 'hover:border-yellow-300',
-        hoverBg: darkMode ? 'bg-yellow-400' : 'bg-yellow-500'
+        iconBg: darkMode ? 'bg-cyan-900/20' : 'bg-cyan-50',
+        iconColor: darkMode ? 'text-cyan-400 group-hover:text-cyan-300' : 'text-cyan-500 group-hover:text-cyan-600',
+        hoverBorder: darkMode ? 'hover:border-cyan-500/50' : 'hover:border-cyan-300',
+        hoverBg: darkMode ? 'bg-cyan-400' : 'bg-cyan-500'
       }
     };
     return colorMap[color as keyof typeof colorMap];
@@ -69,7 +69,7 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
 
   return (
     <section className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-900' : 'bg-white'
+      darkMode ? 'bg-gray-900' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto">
         {/* Section Heading */}
@@ -97,7 +97,7 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
                 key={index}
                 className={`group relative p-6 rounded-2xl transition-all duration-500 hover:scale-105 hover:shadow-xl ${
                   darkMode 
-                    ? `bg-slate-800 border border-slate-700 ${colorClasses.hoverBorder}` 
+                    ? `bg-gray-800 border border-purple-500/30 ${colorClasses.hoverBorder}` 
                     : `bg-white border border-gray-200 ${colorClasses.hoverBorder}`
                 } shadow-lg`}
                 style={{

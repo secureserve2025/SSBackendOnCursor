@@ -8,7 +8,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
   return (
     <>
       {/* Call to Action Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 to-blue-700">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-600 via-pink-500 to-cyan-400">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main CTA Heading */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
@@ -17,11 +17,12 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
           
           {/* CTA Subtitle */}
           <p className="text-lg sm:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-white/90 mb-10 leading-relaxed max-w-2xl mx-auto">
             Join thousands of Indian freelancers who never worry about payment delays anymore
           </p>
           
           {/* CTA Button */}
-          <button className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+          <button className="bg-white text-purple-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
             Get Started
           </button>
         </div>
@@ -29,7 +30,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
 
       {/* Footer */}
       <footer className={`py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-        darkMode ? 'bg-slate-800' : 'bg-gray-800'
+        darkMode ? 'bg-gray-800' : 'bg-gray-800'
       }`}>
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-gray-400 text-sm">

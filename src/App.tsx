@@ -17,7 +17,7 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen transition-colors duration-300 bg-slate-900">
+    <div className="min-h-screen transition-colors duration-300 bg-gray-900">
       {/* Header Component */}
       <Header darkMode={darkMode} />
       

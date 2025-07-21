@@ -26,7 +26,7 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
 
   return (
     <section className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-slate-800' : 'bg-gray-50'
+      darkMode ? 'bg-gray-800' : 'bg-gray-50'
     }`}>
       <div className="max-w-7xl mx-auto">
         {/* Section Heading */}
@@ -47,8 +47,8 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                 key={index}
                 className={`group relative p-6 rounded-2xl transition-all duration-500 hover:scale-102 hover:shadow-xl ${
                   darkMode 
-                    ? 'bg-slate-900 border border-slate-700 hover:border-red-500/50' 
-                    : 'bg-white border border-gray-200 hover:border-red-300'
+                    ? `bg-gray-900 border border-purple-500/30 hover:border-pink-500 hover:shadow-2xl hover:shadow-pink-500/25` 
+                    : 'bg-white border border-gray-200 hover:border-purple-300 hover:shadow-2xl hover:shadow-purple-400/25'
                 }`}
                 style={{
                   animationDelay: point.delay,
@@ -58,12 +58,12 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                 <div className="flex items-center space-x-4">
                   {/* Animated Icon */}
                   <div className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${
-                    darkMode ? 'bg-red-900/20' : 'bg-red-50'
+                    darkMode ? 'bg-pink-900/20' : 'bg-purple-50'
                   }`}>
                     <IconComponent className={`h-5 w-5 transition-colors duration-300 ${
                       darkMode 
-                        ? 'text-red-400 group-hover:text-red-300' 
-                        : 'text-red-500 group-hover:text-red-600'
+                        ? 'text-pink-400 group-hover:text-pink-300' 
+                        : 'text-purple-500 group-hover:text-purple-600'
                     }`} />
                   </div>
 
@@ -79,7 +79,7 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
 
                 {/* Subtle Background Animation */}
                 <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-5 transition-opacity duration-300 ${
-                  darkMode ? 'bg-red-400' : 'bg-red-500'
+                  darkMode ? 'bg-pink-400' : 'bg-purple-500'
                 }`}></div>
               </div>
             );
