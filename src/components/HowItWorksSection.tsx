@@ -16,87 +16,39 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
       id: 1,
       icon: Users,
       title: "Escrow Setup",
-      description: "Both client and freelancer register with SecureServe. We verify your identity using Aadhar card, PAN or TAN number, and bank/UPI account details as per RBI regulations. Sign our service agreement to get started with secure escrow protection.",
-      color: "cyan"
+      description: "Both client and freelancer register with SecureServe. We verify your identity using Aadhar card, PAN or TAN number, and bank/UPI account details as per RBI regulations. Sign our service agreement to get started with secure escrow protection."
     },
     {
       id: 2,
       icon: FileText,
       title: "AI-Assisted Agreement",
-      description: "Upload your work requirements to SecureServe. Our AI breaks down the scope into a detailed, step-by-step deliverable checklist. The freelancer reviews and agrees to provide the stated service, and an agreement is signed with clear release conditions.",
-      color: "purple"
+      description: "Upload your work requirements to SecureServe. Our AI breaks down the scope into a detailed, step-by-step deliverable checklist. The freelancer reviews and agrees to provide the stated service, and an agreement is signed with clear release conditions."
     },
     {
       id: 3,
       icon: Shield,
       title: "Escrow Deposit",
-      description: "The client securely deposits the agreed-upon funds into SecureServe's RBI-compliant escrow account. Your money is held safely until the work is completed and verified according to the agreed terms.",
-      color: "purple"
+      description: "The client securely deposits the agreed-upon funds into SecureServe's RBI-compliant escrow account. Your money is held safely until the work is completed and verified according to the agreed terms."
     },
     {
       id: 4,
       icon: CheckCircle,
       title: "AI-Verified Deliverables",
-      description: "The freelancer completes the work and uploads it to SecureServe. Our AI system automatically verifies the deliverables against the previously agreed checklist. Both parties are instantly informed whether the work meets requirements.",
-      color: "gray"
+      description: "The freelancer completes the work and uploads it to SecureServe. Our AI system automatically verifies the deliverables against the previously agreed checklist. Both parties are instantly informed whether the work meets requirements."
     },
     {
       id: 5,
       icon: Zap,
       title: "Release of Assets",
-      description: "If the work meets all requirements, both parties sign off digitally. Money is instantly transferred to the freelancer's account while the client downloads the verified final work. If requirements aren't met, we initiate revisions or process a refund.",
-      color: "cyan"
+      description: "If the work meets all requirements, both parties sign off digitally. Money is instantly transferred to the freelancer's account while the client downloads the verified final work. If requirements aren't met, we initiate revisions or process a refund."
     },
     {
       id: 6,
       icon: Upload,
       title: "Transaction Completion",
-      description: "SecureServe ensures all required legal documentation is completed and recorded with appropriate authorities. Your transaction is fully compliant, documented, and secure for future reference.",
-      color: "pink"
+      description: "SecureServe ensures all required legal documentation is completed and recorded with appropriate authorities. Your transaction is fully compliant, documented, and secure for future reference."
     }
   ];
-
-  const getColorClasses = (color: string, isActive: boolean, isCompleted: boolean) => {
-    const colorMap = {
-      cyan: {
-        chevron: isActive ? 'text-cyan-400' : isCompleted ? 'text-cyan-400/80' : 'text-gray-400',
-        border: isActive ? 'border-cyan-500' : 'border-cyan-500/30',
-        iconBg: darkMode ? 'bg-cyan-900/20' : 'bg-cyan-50',
-        iconColor: darkMode ? 'text-cyan-400' : 'text-cyan-600',
-        glow: 'bg-cyan-400',
-        shadow: 'shadow-cyan-500/20',
-        ring: 'bg-cyan-400/30'
-      },
-      purple: {
-        chevron: isActive ? 'text-purple-500' : isCompleted ? 'text-purple-500/80' : 'text-gray-400',
-        border: isActive ? 'border-purple-500' : 'border-purple-500/30',
-        iconBg: darkMode ? 'bg-purple-900/20' : 'bg-purple-50',
-        iconColor: darkMode ? 'text-purple-400' : 'text-purple-600',
-        glow: 'bg-purple-500',
-        shadow: 'shadow-purple-500/20',
-        ring: 'bg-purple-500/30'
-      },
-      gray: {
-        chevron: isActive ? 'text-gray-400' : isCompleted ? 'text-gray-400/80' : 'text-gray-500',
-        border: isActive ? 'border-gray-500' : 'border-gray-500/30',
-        iconBg: darkMode ? 'bg-gray-700/20' : 'bg-gray-50',
-        iconColor: darkMode ? 'text-gray-400' : 'text-gray-600',
-        glow: 'bg-gray-500',
-        shadow: 'shadow-gray-500/20',
-        ring: 'bg-gray-500/30'
-      },
-      pink: {
-        chevron: isActive ? 'text-pink-500' : isCompleted ? 'text-pink-500/80' : 'text-gray-400',
-        border: isActive ? 'border-pink-500' : 'border-pink-500/30',
-        iconBg: darkMode ? 'bg-pink-900/20' : 'bg-pink-50',
-        iconColor: darkMode ? 'text-pink-400' : 'text-pink-600',
-        glow: 'bg-pink-500',
-        shadow: 'shadow-pink-500/20',
-        ring: 'bg-pink-500/30'
-      }
-    };
-    return colorMap[color as keyof typeof colorMap];
-  };
 
   // Enhanced scroll-based highlighting with visibility detection
   useEffect(() => {
@@ -150,7 +102,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [activeStep, visibleSteps]);
+  }, [activeStep, visibleSteps, steps.length]);
 
   return (
     <section 
@@ -195,7 +147,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
               const isActive = index === activeStep;
               const isCompleted = index < activeStep;
               const isVisible = visibleSteps[index];
-              const colorClasses = getColorClasses(step.color, isActive, isCompleted);
               
               return (
                 <div
@@ -216,26 +167,65 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   <div className="relative z-20 flex-shrink-0 mb-4">
                     <ChevronDown className={`h-12 w-12 transition-all duration-500 ${
                       isActive 
-                        ? `scale-110 ${colorClasses.chevron}` 
+                        ? `scale-110 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }` 
                         : isCompleted
-                          ? `opacity-80 ${colorClasses.chevron}`
-                          : `opacity-50 ${colorClasses.chevron}`
+                          ? `opacity-80 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }`
+                          : `opacity-50 text-gray-400`
                     }`} />
                     
                     {/* Pulsing Ring Animation for Active Step */}
                     {isActive && (
-                      <div className={`absolute inset-0 rounded-full animate-ping ${colorClasses.ring}`} />
+                      <div className={`absolute inset-0 rounded-full animate-ping ${
+                        index === 0 || index === 4 ? 'bg-cyan-400/30' :
+                        index === 1 || index === 2 ? 'bg-purple-500/30' :
+                        'bg-pink-500/30'
+                      }`} />
                     )}
                   </div>
 
                   {/* Step Content Card */}
-                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 hover:scale-105 hover:shadow-xl ${
+                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
                     isActive 
                       ? darkMode
-                        ? `bg-gray-700 border-2 ${colorClasses.border} shadow-xl ${colorClasses.shadow}` 
-                        : `bg-white border-2 ${colorClasses.border} shadow-xl ${colorClasses.shadow}`
+                        ? `bg-gray-700 border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }` 
+                        : `bg-white border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }`
                       : darkMode 
-                        ? `bg-gray-700 border ${colorClasses.border}` 
+                        ? `bg-gray-700 border ${
+                            index === 0 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            index === 1 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 2 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 3 ? 'border-gray-500/30 hover:border-gray-500/50' :
+                            index === 4 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            'border-pink-500/30 hover:border-pink-500/50'
+                          }` 
                         : 'bg-white border border-gray-200 hover:border-gray-300'
                   } shadow-lg hover:shadow-xl overflow-hidden`}>
                     
@@ -245,12 +235,12 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     }`}>
                       <div className={`p-3 rounded-full transition-all duration-300 ${
                         isActive 
-                          ? colorClasses.iconBg
+                          ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
                           : darkMode ? 'bg-gray-600' : 'bg-gray-100'
                       }`}>
                         <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
                           isActive 
-                            ? colorClasses.iconColor
+                            ? darkMode ? 'text-purple-400' : 'text-purple-600'
                             : darkMode ? 'text-gray-400' : 'text-gray-500'
                         }`} />
                       </div>
@@ -277,10 +267,24 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     {isActive && (
                       <>
                         {/* Glow Effect */}
-                        <div className={`absolute inset-0 rounded-2xl opacity-5 pointer-events-none ${colorClasses.glow}`}></div>
+                        <div className={`absolute inset-0 rounded-2xl opacity-5 pointer-events-none ${
+                          index === 0 ? 'bg-cyan-500' :
+                          index === 1 ? 'bg-purple-500' :
+                          index === 2 ? 'bg-purple-500' :
+                          index === 3 ? 'bg-gray-500' :
+                          index === 4 ? 'bg-cyan-500' :
+                          'bg-pink-500'
+                        }`}></div>
                         
                         {/* Animated Border */}
-                        <div className={`absolute inset-0 rounded-2xl pointer-events-none bg-gradient-to-r from-${step.color}-500/20 via-transparent to-${step.color}-500/20 animate-pulse`}></div>
+                        <div className={`absolute inset-0 rounded-2xl pointer-events-none ${
+                          index === 0 ? 'bg-gradient-to-r from-cyan-500/20 via-transparent to-cyan-500/20' :
+                          index === 1 ? 'bg-gradient-to-r from-purple-500/20 via-transparent to-purple-500/20' :
+                          index === 2 ? 'bg-gradient-to-r from-purple-500/20 via-transparent to-purple-500/20' :
+                          index === 3 ? 'bg-gradient-to-r from-gray-500/20 via-transparent to-gray-500/20' :
+                          index === 4 ? 'bg-gradient-to-r from-cyan-500/20 via-transparent to-cyan-500/20' :
+                          'bg-gradient-to-r from-pink-500/20 via-transparent to-pink-500/20'
+                        } animate-pulse`}></div>
                       </>
                     )}
                   </div>
