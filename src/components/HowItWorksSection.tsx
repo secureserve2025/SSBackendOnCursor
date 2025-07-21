@@ -7,6 +7,7 @@ interface HowItWorksSectionProps {
 
 const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
   const [activeStep, setActiveStep] = useState(0);
+  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
   const sectionRef = useRef<HTMLElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -59,6 +60,20 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
     }
   ];
 
+  // Progressive reveal animation
+  useEffect(() => {
+    const revealTimer = setInterval(() => {
+      setVisibleSteps(prev => {
+        if (prev.length < steps.length) {
+          return [...prev, prev.length];
+        }
+        clearInterval(revealTimer);
+        return prev;
+      });
+    }, 800); // Reveal each step every 800ms
+
+    return () => clearInterval(revealTimer);
+  }, [steps.length]);
   // Scroll-based highlighting
   useEffect(() => {
     const handleScroll = () => {
@@ -122,6 +137,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
               const IconComponent = step.icon;
               const isActive = index === activeStep;
               const isCompleted = index < activeStep;
+              const isVisible = visibleSteps.includes(index);
               
               return (
                 <div
@@ -129,17 +145,27 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   ref={(el) => (stepRefs.current[index] = el)}
                   className={`relative flex items-start transition-all duration-700 ${
                     isActive ? 'transform scale-105' : ''
+                  } ${
+                    isVisible 
+                      ? 'opacity-100 transform translate-y-0' 
+                      : 'opacity-0 transform translate-y-8'
                   }`}
                   style={{
-                    animationDelay: `${index * 0.2}s`,
-                    animation: 'fadeInUp 0.8s ease-out forwards'
+                    transitionDelay: `${index * 0.1}s`
                   }}
                 >
                   {/* Step Chevron Arrow */}
-                  <div className="relative z-10 flex-shrink-0 mb-4">
-                    <ChevronDown className={`h-12 w-12 transition-all duration-500 ${
+                  <div className={`relative z-10 flex-shrink-0 mb-4 transition-all duration-700 ${
+                    isVisible 
+                      ? 'opacity-100 transform translate-y-0 rotate-0' 
+                      : 'opacity-0 transform -translate-y-4 rotate-180'
+                  }`}
+                  style={{
+                    transitionDelay: `${index * 0.1 + 0.2}s`
+                  }}>
+                    <ChevronDown className={`h-12 w-12 transition-all duration-700 ${
                       isActive 
-                        ? `scale-110 ${
+                        ? `scale-125 animate-bounce ${
                             index === 0 ? 'text-cyan-400' :
                             index === 1 ? 'text-purple-500' :
                             index === 2 ? 'text-purple-500' :
@@ -148,7 +174,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                             'text-pink-500'
                           }` 
                         : isCompleted
-                          ? `opacity-80 ${
+                          ? `opacity-90 scale-110 ${
                             index === 0 ? 'text-cyan-400' :
                             index === 1 ? 'text-purple-500' :
                             index === 2 ? 'text-purple-500' :
@@ -156,15 +182,19 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                             index === 4 ? 'text-cyan-400' :
                             'text-pink-500'
                           }`
-                          : `opacity-50 text-gray-400`
+                          : `opacity-30 text-gray-500 scale-90`
                     }`} />
                   </div>
 
                   {/* Step Content Card */}
-                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
+                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-700 ${
+                    isVisible 
+                      ? 'opacity-100 transform translate-x-0' 
+                      : 'opacity-0 transform translate-x-8'
+                  } ${
                     isActive 
                       ? darkMode
-                        ? `bg-gray-700 border-2 ${
+                        ? `bg-gray-700 border-2 shadow-2xl ${
                             index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
                             index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
                             index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
@@ -172,7 +202,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                             index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
                             'border-pink-500 shadow-xl shadow-pink-500/20'
                           }` 
-                        : `bg-white border-2 ${
+                        : `bg-white border-2 shadow-2xl ${
                             index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
                             index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
                             index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
@@ -190,23 +220,26 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                             'border-pink-500/30 hover:border-pink-500/50'
                           }` 
                         : 'bg-white border border-gray-200 hover:border-gray-300'
-                  } shadow-lg hover:shadow-xl`}>
+                  } shadow-lg hover:shadow-xl`}
+                  style={{
+                    transitionDelay: `${index * 0.1 + 0.4}s`
+                  }}>
                     
                     {/* Icon and Title */}
                     <div className="flex items-center space-x-4 mb-3">
-                      <div className={`p-3 rounded-full transition-all duration-300 ${
+                      <div className={`p-3 rounded-full transition-all duration-500 ${
                         isActive 
                           ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
                           : darkMode ? 'bg-gray-600' : 'bg-gray-100'
                       }`}>
-                        <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
+                        <IconComponent className={`h-6 w-6 transition-all duration-500 ${
                           isActive 
-                            ? darkMode ? 'text-purple-400' : 'text-purple-600'
+                            ? darkMode ? 'text-purple-400 scale-110' : 'text-purple-600 scale-110'
                             : darkMode ? 'text-gray-400' : 'text-gray-500'
                         }`} />
                       </div>
                       
-                      <h3 className={`text-xl font-semibold transition-colors duration-300 ${
+                      <h3 className={`text-xl font-semibold transition-colors duration-500 ${
                         isActive 
                           ? darkMode ? 'text-white' : 'text-gray-900'
                           : darkMode ? 'text-gray-300' : 'text-gray-700'
@@ -216,7 +249,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     </div>
 
                     {/* Description */}
-                    <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                    <p className={`text-base leading-relaxed transition-colors duration-500 ${
                       isActive 
                         ? darkMode ? 'text-gray-200' : 'text-gray-600'
                         : darkMode ? 'text-gray-400' : 'text-gray-500'
@@ -226,7 +259,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
                     {/* Active Step Glow Effect */}
                     {isActive && (
-                      <div className={`absolute inset-0 rounded-2xl opacity-5 pointer-events-none ${
+                      <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${
                         index === 0 ? 'bg-cyan-500' :
                         index === 1 ? 'bg-purple-500' :
                         index === 2 ? 'bg-purple-500' :
