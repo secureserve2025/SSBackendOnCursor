@@ -13,12 +13,12 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
   // Color schemes for each step
   const stepColors = [
-    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 1
-    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 2
-    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 3
-    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 4
-    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 5
-    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 6
+    { bg: 'bg-blue-600', border: 'border-blue-500', text: 'text-white', shadow: 'shadow-blue-500/25', chevron: 'text-blue-400', glow: 'shadow-blue-500/20' }, // Step 1 - Setup
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25', chevron: 'text-purple-400', glow: 'shadow-purple-500/20' }, // Step 2 - Agreement
+    { bg: 'bg-green-600', border: 'border-green-500', text: 'text-white', shadow: 'shadow-green-500/25', chevron: 'text-green-400', glow: 'shadow-green-500/20' }, // Step 3 - Deposit
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25', chevron: 'text-cyan-400', glow: 'shadow-cyan-500/20' }, // Step 4 - Verification
+    { bg: 'bg-yellow-600', border: 'border-yellow-500', text: 'text-white', shadow: 'shadow-yellow-500/25', chevron: 'text-yellow-400', glow: 'shadow-yellow-500/20' }, // Step 5 - Release
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25', chevron: 'text-pink-400', glow: 'shadow-pink-500/20' }, // Step 6 - Completion
   ];
 
   const steps = [
@@ -165,23 +165,9 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   }}>
                     <ChevronDown className={`h-12 w-12 transition-all duration-700 ${
                       isActive 
-                        ? `scale-125 animate-bounce ${
-                            index === 0 ? 'text-cyan-400' :
-                            index === 1 ? 'text-purple-500' :
-                            index === 2 ? 'text-purple-500' :
-                            index === 3 ? 'text-gray-400' :
-                            index === 4 ? 'text-cyan-400' :
-                            'text-pink-500'
-                          }` 
+                        ? `scale-125 animate-bounce ${stepColors[index].chevron}` 
                         : isCompleted
-                          ? `opacity-90 scale-110 ${
-                            index === 0 ? 'text-cyan-400' :
-                            index === 1 ? 'text-purple-500' :
-                            index === 2 ? 'text-purple-500' :
-                            index === 3 ? 'text-gray-400' :
-                            index === 4 ? 'text-cyan-400' :
-                            'text-pink-500'
-                          }`
+                          ? `opacity-90 scale-110 ${stepColors[index].chevron}`
                           : `opacity-30 text-gray-500 scale-90`
                     }`} />
                   </div>
@@ -194,31 +180,10 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   } ${
                     isActive 
                       ? darkMode
-                        ? `bg-gray-700 border-2 shadow-2xl ${
-                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
-                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
-                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
-                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
-                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
-                            'border-pink-500 shadow-xl shadow-pink-500/20'
-                          }` 
-                        : `bg-white border-2 shadow-2xl ${
-                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
-                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
-                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
-                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
-                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
-                            'border-pink-500 shadow-xl shadow-pink-500/20'
-                          }`
+                        ? `bg-gray-700 border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}` 
+                        : `bg-white border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}`
                       : darkMode 
-                        ? `bg-gray-700 border ${
-                            index === 0 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
-                            index === 1 ? 'border-purple-500/30 hover:border-purple-500/50' :
-                            index === 2 ? 'border-purple-500/30 hover:border-purple-500/50' :
-                            index === 3 ? 'border-gray-500/30 hover:border-gray-500/50' :
-                            index === 4 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
-                            'border-pink-500/30 hover:border-pink-500/50'
-                          }` 
+                        ? `bg-gray-700 border ${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/30')} hover:${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/50')}` 
                         : 'bg-white border border-gray-200 hover:border-gray-300'
                   } shadow-lg hover:shadow-xl`}
                   style={{
@@ -259,14 +224,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
                     {/* Active Step Glow Effect */}
                     {isActive && (
-                      <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${
-                        index === 0 ? 'bg-cyan-500' :
-                        index === 1 ? 'bg-purple-500' :
-                        index === 2 ? 'bg-purple-500' :
-                        index === 3 ? 'bg-gray-500' :
-                        index === 4 ? 'bg-cyan-500' :
-                        'bg-pink-500'
-                      }`}></div>
+                      <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
                     )}
                   </div>
                 </div>
