@@ -137,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
             </div>
 
             {/* CTA Button */}
-            <button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+            <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
               Login
             </button>
           </nav>
@@ -226,7 +226,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               
               {/* Mobile CTA */}
               <div className="px-3 pt-2">
-                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                   Login
                 </button>
               </div>

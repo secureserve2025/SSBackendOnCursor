@@ -8,7 +8,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
   return (
     <>
       {/* Call to Action Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-purple-600 via-pink-500 to-cyan-400">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-purple-600">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main CTA Heading */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
@@ -18,7 +18,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
           {/* CTA Subtitle */}
           <p className="text-lg sm:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
           </p>
-          <p className="text-lg sm:text-xl text-white/90 mb-10 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-white mb-10 leading-relaxed max-w-2xl mx-auto">
             Join thousands of Indian freelancers who never worry about payment delays anymore
           </p>
           

@@ -102,7 +102,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                 </h3>
                 <div className="w-full bg-purple-200 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-purple-500 to-cyan-400 h-2 rounded-full transition-all duration-1000 ease-out" 
+                    className="bg-purple-500 h-2 rounded-full transition-all duration-1000 ease-out" 
                     style={{ width: `${Math.min(85, (animationStep / 6) * 85)}%` }}
                   ></div>
                 </div>
@@ -279,7 +279,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               <div className="flex space-x-3">
                 <button className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-500 flex items-center justify-center space-x-2 border ${
                   animationStep >= 6
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-pink-500'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-500'
                     : darkMode 
                       ? 'border-purple-500/30 text-gray-300 hover:bg-purple-800/50' 
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
