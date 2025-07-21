@@ -137,22 +137,13 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                 >
                   {/* Step Chevron Arrow */}
                   <div className="relative z-10 flex-shrink-0 mb-4">
-                    <div className={`w-16 h-16 flex items-center justify-center transition-all duration-500 ${
+                    <ChevronDown className={`h-12 w-12 transition-all duration-500 ${
                       isActive 
-                        ? `scale-110 shadow-lg ${stepColors[index].shadow}` 
+                        ? `scale-110 ${stepColors[index].bg.replace('bg-', 'text-')}` 
                         : isCompleted
-                          ? `opacity-80`
-                          : `opacity-50`
-                    }`}>
-                      <ChevronDown className={`h-12 w-12 transition-colors duration-300 ${
-                        isActive 
-                          ? stepColors[index].bg.replace('bg-', 'text-')
-                          : isCompleted
-                            ? stepColors[index].bg.replace('bg-', 'text-')
-                            : 'text-gray-400'
-                      }`}>
-                      </ChevronDown>
-                    </div>
+                          ? `opacity-80 ${stepColors[index].bg.replace('bg-', 'text-')}`
+                          : `opacity-50 text-gray-400`
+                    }`} />
                   </div>
 
                   {/* Step Content Card */}
