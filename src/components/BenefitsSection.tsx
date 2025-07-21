@@ -57,10 +57,10 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
               >
                 <div className="flex items-center space-x-4">
                   {/* Animated Icon */}
-                  <div className={`flex-shrink-0 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${
                     darkMode ? 'bg-red-900/20' : 'bg-red-50'
                   }`}>
-                    <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
+                    <IconComponent className={`h-5 w-5 transition-colors duration-300 ${
                       darkMode 
                         ? 'text-red-400 group-hover:text-red-300' 
                         : 'text-red-500 group-hover:text-red-600'
