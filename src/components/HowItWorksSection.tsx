@@ -157,7 +157,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   {/* Downward Arrow Block */}
                   {index < steps.length - 1 && (
                     <div className="flex flex-col items-center mr-6">
-                      <div className={`w-full h-12 relative transition-all duration-700 ${
+                      <div className={`w-12 h-16 relative transition-all duration-700 ${
                         isVisible 
                           ? 'opacity-100 transform translate-y-0' 
                           : 'opacity-0 transform translate-y-4'
@@ -165,7 +165,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                       style={{
                         transitionDelay: `${index * 0.1 + 0.2}s`
                       }}>
-                        {/* Chevron Arrow Block */}
+                        {/* Arrow Block Shape */}
                         <div className={`w-full h-full relative ${
                           isActive 
                             ? 'transform scale-110' 
@@ -173,29 +173,54 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                               ? 'transform scale-105' 
                               : 'transform scale-100'
                         } transition-transform duration-500`}>
-                          {/* Chevron Arrow Shape */}
-                          <div className={`w-full h-full flex items-center justify-center transition-all duration-500`}>
-                            <div className={`w-0 h-0 transition-all duration-500`}
-                              style={{
-                                borderLeft: '20px solid transparent',
-                                borderRight: '20px solid transparent',
-                                borderTop: `24px solid ${
-                                  isActive || isCompleted
-                                    ? stepColors[index].bg.includes('blue') ? '#2563eb' :
-                                      stepColors[index].bg.includes('purple') ? '#9333ea' :
-                                      stepColors[index].bg.includes('green') ? '#16a34a' :
-                                      stepColors[index].bg.includes('cyan') ? '#0891b2' :
-                                      stepColors[index].bg.includes('yellow') ? '#ca8a04' :
-                                      '#db2777'
-                                    : darkMode ? '#4b5563' : '#d1d5db'
-                                }`
-                              }}
-                            ></div>
-                          </div>
+                          {/* Arrow Rectangle */}
+                          <div className={`w-8 h-10 mx-auto rounded-t-md transition-all duration-500 ${
+                            isActive || isCompleted
+                              ? stepColors[index].bg
+                              : darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                          } ${
+                            isActive ? `shadow-lg ${stepColors[index].glow}` : ''
+                          }`}></div>
+                          
+                          {/* Arrow Point */}
+                          <div className={`w-0 h-0 mx-auto transition-all duration-500`}
+                            style={{
+                              borderLeft: '24px solid transparent',
+                              borderRight: '24px solid transparent',
+                              borderTop: `12px solid ${
+                                isActive || isCompleted
+                                  ? stepColors[index].bg.includes('blue') ? '#2563eb' :
+                                    stepColors[index].bg.includes('purple') ? '#9333ea' :
+                                    stepColors[index].bg.includes('green') ? '#16a34a' :
+                                    stepColors[index].bg.includes('cyan') ? '#0891b2' :
+                                    stepColors[index].bg.includes('yellow') ? '#ca8a04' :
+                                    '#db2777'
+                                  : darkMode ? '#4b5563' : '#d1d5db'
+                              }`
+                            }}
+                          ></div>
                         </div>
                       </div>
                     </div>
                   )}
+
+                  {/* Step Content Card */}
+                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
+                    isVisible 
+                      ? 'opacity-100 transform translate-x-0' 
+                      : 'opacity-0 transform translate-x-8'
+                  } ${
+                    isActive 
+                      ? darkMode
+                        ? `bg-gray-700 border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}` 
+                        : `bg-white border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}`
+                      : darkMode 
+                        ? `bg-gray-700 border ${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/30')} hover:${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/50')}` 
+                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                  } shadow-lg hover:shadow-xl`}
+                  style={{
+                    transitionDelay: `${index * 0.1 + 0.4}s`
+                  }}>
                     
                     {/* Icon and Title */}
                     <div className="flex items-center space-x-4 mb-3">
