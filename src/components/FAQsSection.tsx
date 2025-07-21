@@ -23,7 +23,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
     },
     {
       question: "What types of projects can use SecureServe?",
-      answer: "SecureServe supports a wide range of digital projects including graphic design, web development, content writing, video editing, mobile app development, digital marketing, logo design, social media content, translations, data entry, and consulting services. Our AI can verify most digital deliverables including documents, images, videos, code repositories, websites, and structured data. If you're unsure whether your project type is supported, contact our team for a quick assessment."
+      answer: "Our MVP currently focuses on video production projects including promotional videos, corporate training content, social media videos, product demonstrations, educational content, event recordings, and animation. Video projects are ideal for our AI verification system because they involve complex technical specifications (resolution, frame rates, audio quality, color grading) that can be objectively measured. While we start with video deliverables due to their clear technical requirements, our AI-powered verification system is designed to expand to other digital creative services like graphic design, web development, digital marketing assets, audio production, and photography as we scale our platform."
     },
     {
       question: "How much does SecureServe charge?",
