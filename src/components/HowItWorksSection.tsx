@@ -6,116 +6,90 @@ interface HowItWorksSectionProps {
 }
 
 const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
-  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+  const [activeStep, setActiveStep] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Color schemes for each step
+  const stepColors = [
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 1
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 2
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 3
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 4
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 5
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 6
+  ];
 
   const steps = [
     {
       id: 1,
       icon: Users,
       title: "Escrow Setup",
-      description: "Both client and freelancer register with SecureServe. We verify your identity using Aadhar card, PAN or TAN number, and bank/UPI account details as per RBI regulations. Sign our service agreement to get started with secure escrow protection.",
-      color: "cyan"
+      description: "Both client and freelancer register with SecureServe. We verify your identity using Aadhar card, PAN or TAN number, and bank/UPI account details as per RBI regulations. Sign our service agreement to get started with secure escrow protection."
     },
     {
       id: 2,
       icon: FileText,
       title: "AI-Assisted Agreement",
-      description: "Upload your work requirements to SecureServe. Our AI breaks down the scope into a detailed, step-by-step deliverable checklist. The freelancer reviews and agrees to provide the stated service, and an agreement is signed with clear release conditions.",
-      color: "purple"
+      description: "Upload your work requirements to SecureServe. Our AI breaks down the scope into a detailed, step-by-step deliverable checklist. The freelancer reviews and agrees to provide the stated service, and an agreement is signed with clear release conditions."
     },
     {
       id: 3,
       icon: Shield,
       title: "Escrow Deposit",
-      description: "The client securely deposits the agreed-upon funds into SecureServe's RBI-compliant escrow account. Your money is held safely until the work is completed and verified according to the agreed terms.",
-      color: "pink"
+      description: "The client securely deposits the agreed-upon funds into SecureServe's RBI-compliant escrow account. Your money is held safely until the work is completed and verified according to the agreed terms."
     },
     {
       id: 4,
       icon: CheckCircle,
       title: "AI-Verified Deliverables",
-      description: "The freelancer completes the work and uploads it to SecureServe. Our AI system automatically verifies the deliverables against the previously agreed checklist. Both parties are instantly informed whether the work meets requirements.",
-      color: "purple"
+      description: "The freelancer completes the work and uploads it to SecureServe. Our AI system automatically verifies the deliverables against the previously agreed checklist. Both parties are instantly informed whether the work meets requirements."
     },
     {
       id: 5,
       icon: Zap,
       title: "Release of Assets",
-      description: "If the work meets all requirements, both parties sign off digitally. Money is instantly transferred to the freelancer's account while the client downloads the verified final work. If requirements aren't met, we initiate revisions or process a refund.",
-      color: "cyan"
+      description: "If the work meets all requirements, both parties sign off digitally. Money is instantly transferred to the freelancer's account while the client downloads the verified final work. If requirements aren't met, we initiate revisions or process a refund."
     },
     {
       id: 6,
       icon: Upload,
       title: "Transaction Completion",
-      description: "SecureServe ensures all required legal documentation is completed and recorded with appropriate authorities. Your transaction is fully compliant, documented, and secure for future reference.",
-      color: "pink"
+      description: "SecureServe ensures all required legal documentation is completed and recorded with appropriate authorities. Your transaction is fully compliant, documented, and secure for future reference."
     }
   ];
 
-  const getColorClasses = (color: string) => {
-    const colorMap = {
-      cyan: {
-        chevron: 'text-cyan-400',
-        border: 'border-cyan-500',
-        shadow: 'shadow-cyan-500/20',
-        iconBg: darkMode ? 'bg-cyan-900/20' : 'bg-cyan-50',
-        iconColor: darkMode ? 'text-cyan-400' : 'text-cyan-500',
-        cardBg: darkMode ? 'bg-gray-800' : 'bg-white',
-        cardBorder: darkMode ? 'border-cyan-500/30' : 'border-cyan-200'
-      },
-      purple: {
-        chevron: 'text-purple-400',
-        border: 'border-purple-500',
-        shadow: 'shadow-purple-500/20',
-        iconBg: darkMode ? 'bg-purple-900/20' : 'bg-purple-50',
-        iconColor: darkMode ? 'text-purple-400' : 'text-purple-500',
-        cardBg: darkMode ? 'bg-gray-800' : 'bg-white',
-        cardBorder: darkMode ? 'border-purple-500/30' : 'border-purple-200'
-      },
-      pink: {
-        chevron: 'text-pink-400',
-        border: 'border-pink-500',
-        shadow: 'shadow-pink-500/20',
-        iconBg: darkMode ? 'bg-pink-900/20' : 'bg-pink-50',
-        iconColor: darkMode ? 'text-pink-400' : 'text-pink-500',
-        cardBg: darkMode ? 'bg-gray-800' : 'bg-white',
-        cardBorder: darkMode ? 'border-pink-500/30' : 'border-pink-200'
+  // Scroll-based highlighting
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
+
+      const sectionTop = sectionRef.current.offsetTop;
+      const sectionHeight = sectionRef.current.offsetHeight;
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Check if section is in view
+      if (scrollY + windowHeight > sectionTop && scrollY < sectionTop + sectionHeight) {
+        // Calculate which step should be active based on scroll position
+        const relativeScroll = scrollY + windowHeight - sectionTop;
+        const stepHeight = sectionHeight / steps.length;
+        const newActiveStep = Math.min(
+          Math.floor(relativeScroll / stepHeight),
+          steps.length - 1
+        );
+        
+        if (newActiveStep >= 0 && newActiveStep !== activeStep) {
+          setActiveStep(newActiveStep);
+        }
       }
     };
-    return colorMap[color as keyof typeof colorMap];
-  };
 
-  // Intersection Observer for step animations
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const stepIndex = parseInt(entry.target.getAttribute('data-step-index') || '0');
-            setVisibleSteps(prev => {
-              if (!prev.includes(stepIndex)) {
-                return [...prev, stepIndex].sort((a, b) => a - b);
-              }
-              return prev;
-            });
-          }
-        });
-      },
-      {
-        threshold: 0.3,
-        rootMargin: '-50px 0px'
-      }
-    );
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
 
-    stepRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
-  }, []);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeStep, steps.length]);
 
   return (
     <section 
@@ -125,7 +99,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
         darkMode ? 'bg-gray-800' : 'bg-gray-50'
       }`}
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Section Heading */}
         <div className="text-center mb-16">
           <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 ${
@@ -140,87 +114,127 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
           </p>
         </div>
 
-        {/* Animated Timeline */}
+        {/* Vertical Timeline */}
         <div className="relative">
-          {/* Central Vertical Line */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-b from-cyan-500 via-purple-500 to-pink-500 opacity-30 h-full"></div>
-
           {/* Steps */}
-          <div className="space-y-16">
+          <div className="space-y-12">
             {steps.map((step, index) => {
               const IconComponent = step.icon;
-              const colorClasses = getColorClasses(step.color);
-              const isVisible = visibleSteps.includes(index);
-              const isRight = index % 2 === 0; // Even indices on right, odd on left
+              const isActive = index === activeStep;
+              const isCompleted = index < activeStep;
               
               return (
                 <div
                   key={step.id}
                   ref={(el) => (stepRefs.current[index] = el)}
-                  data-step-index={index}
-                  className="relative"
+                  className={`relative flex items-start transition-all duration-700 ${
+                    isActive ? 'transform scale-105' : ''
+                  }`}
+                  style={{
+                    animationDelay: `${index * 0.2}s`,
+                    animation: 'fadeInUp 0.8s ease-out forwards'
+                  }}
                 >
-                  {/* Central Chevron */}
-                  <div className="absolute left-1/2 transform -translate-x-1/2 z-20">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-700 ${
-                      isVisible 
-                        ? `${colorClasses.cardBg} ${colorClasses.cardBorder} border-2 scale-110 ${colorClasses.shadow} shadow-xl` 
-                        : 'bg-gray-600 border-2 border-gray-500 scale-90 opacity-50'
-                    }`}>
-                      <ChevronDown className={`h-6 w-6 transition-all duration-700 ${
-                        isVisible ? colorClasses.chevron : 'text-gray-400'
-                      } ${isVisible ? 'animate-bounce' : ''}`} />
-                    </div>
+                  {/* Step Chevron Arrow */}
+                  <div className="relative z-10 flex-shrink-0 mb-4">
+                    <ChevronDown className={`h-12 w-12 transition-all duration-500 ${
+                      isActive 
+                        ? `scale-110 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }` 
+                        : isCompleted
+                          ? `opacity-80 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }`
+                          : `opacity-50 text-gray-400`
+                    }`} />
                   </div>
 
-                  {/* Step Content */}
-                  <div className={`flex items-center ${isRight ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`w-5/12 transition-all duration-1000 ${
-                      isVisible 
-                        ? 'opacity-100 transform translate-y-0' 
-                        : `opacity-0 transform ${isRight ? 'translate-x-8' : '-translate-x-8'} translate-y-4`
-                    }`} style={{ transitionDelay: `${index * 200}ms` }}>
-                      
-                      {/* Step Card */}
-                      <div className={`p-6 rounded-2xl transition-all duration-500 hover:scale-105 ${
-                        colorClasses.cardBg
-                      } ${colorClasses.cardBorder} border-2 ${colorClasses.shadow} shadow-lg hover:shadow-xl`}>
-                        
-                        {/* Step Number Badge */}
-                        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold mb-4 ${
-                          colorClasses.iconBg
-                        } ${colorClasses.iconColor}`}>
-                          {step.id}
-                        </div>
-
-                        {/* Icon and Title */}
-                        <div className="flex items-center space-x-4 mb-4">
-                          <div className={`p-3 rounded-full ${colorClasses.iconBg}`}>
-                            <IconComponent className={`h-6 w-6 ${colorClasses.iconColor}`} />
-                          </div>
-                          
-                          <h3 className={`text-xl font-semibold ${
-                            darkMode ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {step.title}
-                          </h3>
-                        </div>
-
-                        {/* Description */}
-                        <p className={`text-base leading-relaxed ${
-                          darkMode ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                          {step.description}
-                        </p>
-
-                        {/* Connecting Line to Center */}
-                        <div className={`absolute top-1/2 ${
-                          isRight ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'
-                        } w-16 h-0.5 ${
-                          isVisible ? colorClasses.border.replace('border-', 'bg-') : 'bg-gray-500'
-                        } transition-all duration-700 opacity-30`}></div>
+                  {/* Step Content Card */}
+                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
+                    isActive 
+                      ? darkMode
+                        ? `bg-gray-700 border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }` 
+                        : `bg-white border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }`
+                      : darkMode 
+                        ? `bg-gray-700 border ${
+                            index === 0 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            index === 1 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 2 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 3 ? 'border-gray-500/30 hover:border-gray-500/50' :
+                            index === 4 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            'border-pink-500/30 hover:border-pink-500/50'
+                          }` 
+                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                  } shadow-lg hover:shadow-xl`}>
+                    
+                    {/* Icon and Title */}
+                    <div className="flex items-center space-x-4 mb-3">
+                      <div className={`p-3 rounded-full transition-all duration-300 ${
+                        isActive 
+                          ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+                          : darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                      }`}>
+                        <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
+                          isActive 
+                            ? darkMode ? 'text-purple-400' : 'text-purple-600'
+                            : darkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`} />
                       </div>
+                      
+                      <h3 className={`text-xl font-semibold transition-colors duration-300 ${
+                        isActive 
+                          ? darkMode ? 'text-white' : 'text-gray-900'
+                          : darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        {step.title}
+                      </h3>
                     </div>
+
+                    {/* Description */}
+                    <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                      isActive 
+                        ? darkMode ? 'text-gray-200' : 'text-gray-600'
+                        : darkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      {step.description}
+                    </p>
+
+                    {/* Active Step Glow Effect */}
+                    {isActive && (
+                      <div className={`absolute inset-0 rounded-2xl opacity-5 pointer-events-none ${
+                        index === 0 ? 'bg-cyan-500' :
+                        index === 1 ? 'bg-purple-500' :
+                        index === 2 ? 'bg-purple-500' :
+                        index === 3 ? 'bg-gray-500' :
+                        index === 4 ? 'bg-cyan-500' :
+                        'bg-pink-500'
+                      }`}></div>
+                    )}
                   </div>
                 </div>
               );
