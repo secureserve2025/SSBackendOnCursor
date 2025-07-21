@@ -258,7 +258,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     {isActive && (
                       <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
                     )}
-                  </div>
                 </div>
               );
             })}
