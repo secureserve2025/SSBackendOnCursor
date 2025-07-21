@@ -210,38 +210,38 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                       <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
                     )}
                   </div>
+
+                  {/* Triangular Arrow Below Each Step (except last) */}
+                  {index < steps.length - 1 && (
+                    <div className="flex justify-center mt-8 mb-4">
+                      <div 
+                        className={`w-0 h-0 transition-all duration-700 ${
+                          isVisible 
+                            ? 'opacity-100 transform translate-y-0' 
+                            : 'opacity-0 transform translate-y-4'
+                        }`}
+                        style={{
+                          borderLeft: '20px solid transparent',
+                          borderRight: '20px solid transparent',
+                          borderTop: `24px solid ${
+                            isActive 
+                              ? stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#blue' ? '#2563eb' :
+                                stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#purple' ? '#9333ea' :
+                                stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#green' ? '#16a34a' :
+                                stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#cyan' ? '#0891b2' :
+                                stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#yellow' ? '#ca8a04' :
+                                '#db2777'
+                              : '#6b7280'
+                          }`,
+                          transitionDelay: `${index * 0.1 + 0.6}s`,
+                          filter: isActive ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' : 'none'
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
-
-            {/* Triangular Arrow Below Each Step (except last) */}
-            {index < steps.length - 1 && (
-              <div className="flex justify-center mt-8 mb-4">
-                <div 
-                  className={`w-0 h-0 transition-all duration-700 ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-y-0' 
-                      : 'opacity-0 transform translate-y-4'
-                  }`}
-                  style={{
-                    borderLeft: '20px solid transparent',
-                    borderRight: '20px solid transparent',
-                    borderTop: `24px solid ${
-                      isActive 
-                        ? stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#blue' ? '#2563eb' :
-                          stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#purple' ? '#9333ea' :
-                          stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#green' ? '#16a34a' :
-                          stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#cyan' ? '#0891b2' :
-                          stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#yellow' ? '#ca8a04' :
-                          '#db2777'
-                        : '#6b7280'
-                    }`,
-                    transitionDelay: `${index * 0.1 + 0.6}s`,
-                    filter: isActive ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' : 'none'
-                  }}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
