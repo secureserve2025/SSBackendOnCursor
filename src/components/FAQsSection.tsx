@@ -36,8 +36,8 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
     {
       question: "How long does verification take?",
       answer: "AI verification typically completes within 2-5 minutes for most digital deliverables. Complex projects like large websites or extensive code repositories may take up to 15 minutes. The system processes files in real-time and provides instant feedback. If human review is requested, it takes 2-4 hours during business hours. Once verification passes, payment is released immediately to your account. We prioritize speed without compromising accuracy."
-    },
-    {
+    }
+  ];
 
   const toggleFAQ = (index: number) => {
     setOpenFAQ(openFAQ === index ? null : index);
