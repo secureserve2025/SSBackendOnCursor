@@ -27,7 +27,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
     },
     {
       question: "How much does SecureServe charge?",
-      answer: "SecureServe charges a competitive 3.5% service fee split between both parties (1.75% each for freelancer and client). This covers AI verification, secure escrow services, dispute resolution, and platform maintenance. There are no hidden fees, setup costs, or monthly subscriptions. You only pay when you successfully complete a project. Compared to traditional payment disputes and chargebacks, our fee structure saves both time and money while providing guaranteed payment security."
+      answer: "SecureServe charges a competitive 7% service fee split between both parties (3.5% each for freelancer and client). This covers AI verification, secure escrow services, dispute resolution, and platform maintenance. There are no hidden fees, setup costs, or monthly subscriptions. You only pay when you successfully complete a project. Compared to traditional payment disputes and chargebacks, our fee structure saves both time and money while providing guaranteed payment security."
     },
     {
       question: "What if I disagree with the AI verification?",
