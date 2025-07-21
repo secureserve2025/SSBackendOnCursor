@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserX, RefreshCw, AlertTriangle, DollarSign } from 'lucide-react';
+import { UserX, RefreshCw, AlertTriangle, DollarSign, MessageSquareX } from 'lucide-react';
 
 interface BenefitsSectionProps {
   darkMode: boolean;
@@ -8,14 +8,19 @@ interface BenefitsSectionProps {
 const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
   const painPoints = [
     {
+      icon: MessageSquareX,
+      title: "Subjective quality disputes",
+      delay: "0s"
+    },
+    {
       icon: RefreshCw,
       title: "Endless revision delaying your payment",
-      delay: "0s"
+      delay: "0.2s"
     },
     {
       icon: DollarSign,
       title: "Unpredictable payment schedules",
-      delay: "0.2s"
+      delay: "0.4s"
     }
   ];
 
