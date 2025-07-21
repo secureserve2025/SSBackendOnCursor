@@ -22,10 +22,6 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
             Join thousands of Indian freelancers who never worry about payment delays anymore
           </p>
           
-          {/* CTA Button */}
-          <button className="bg-white text-purple-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-            Get Started
-          </button>
         </div>
       </section>
 
