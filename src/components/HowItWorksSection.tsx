@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Shield, Upload, CheckCircle, Zap, Users, ChevronDown } from 'lucide-react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users } from 'lucide-react';
 
 interface HowItWorksSectionProps {
   darkMode: boolean;
@@ -163,13 +163,21 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   style={{
                     transitionDelay: `${index * 0.1 + 0.2}s`
                   }}>
-                    <ChevronDown className={`h-12 w-12 transition-all duration-700 ${
+                    <svg 
+                      className={`h-16 w-16 transition-all duration-700 ${
                       isActive 
                         ? `scale-125 animate-bounce ${stepColors[index].chevron}` 
                         : isCompleted
                           ? `opacity-90 scale-110 ${stepColors[index].chevron}`
                           : `opacity-30 text-gray-500 scale-90`
-                    }`} />
+                    }`}
+                      viewBox="0 0 24 24" 
+                      fill="currentColor"
+                    >
+                      <path d="M7 10l5 5 5-5H7z" />
+                      <rect x="6" y="8" width="12" height="3" rx="1" />
+                      <rect x="8" y="11" width="8" height="2" rx="1" />
+                    </svg>
                   </div>
 
                   {/* Step Content Card */}
