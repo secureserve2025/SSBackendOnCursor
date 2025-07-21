@@ -30,19 +30,19 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
   const getGlowClasses = (glowColor: string) => {
     const glowMap = {
       pink: {
-        glow: 'hover:shadow-2xl hover:shadow-pink-500/30 hover:border-pink-400',
+        glow: 'hover:shadow-[0_0_50px_rgba(236,72,153,0.6)] hover:border-pink-400',
         iconGlow: 'group-hover:shadow-lg group-hover:shadow-pink-500/50',
-        transform: 'hover:scale-105 hover:-translate-y-2'
+        transform: 'hover:scale-110 hover:-translate-y-4 hover:rotate-1'
       },
       purple: {
-        glow: 'hover:shadow-2xl hover:shadow-purple-500/30 hover:border-purple-400',
+        glow: 'hover:shadow-[0_0_50px_rgba(147,51,234,0.6)] hover:border-purple-400',
         iconGlow: 'group-hover:shadow-lg group-hover:shadow-purple-500/50',
-        transform: 'hover:scale-105 hover:-translate-y-2'
+        transform: 'hover:scale-110 hover:-translate-y-4 hover:rotate-1'
       },
       cyan: {
-        glow: 'hover:shadow-2xl hover:shadow-cyan-500/30 hover:border-cyan-400',
+        glow: 'hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] hover:border-cyan-400',
         iconGlow: 'group-hover:shadow-lg group-hover:shadow-cyan-500/50',
-        transform: 'hover:scale-105 hover:-translate-y-2'
+        transform: 'hover:scale-110 hover:-translate-y-4 hover:rotate-1'
       }
     };
     return glowMap[glowColor as keyof typeof glowMap];
@@ -71,8 +71,8 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                 key={index}
                 className={`group relative p-6 rounded-2xl transition-all duration-500 transform-gpu perspective-1000 ${
                   darkMode 
-                    ? `bg-gray-900 border border-purple-500/30 ${glowClasses.glow} ${glowClasses.transform}` 
-                    : `bg-white border border-gray-200 ${glowClasses.glow} ${glowClasses.transform}`
+                    ? `bg-gray-900 border border-purple-500/30 ${glowClasses.glow} hover:scale-110 hover:-translate-y-4 hover:rotate-1` 
+                    : `bg-white border border-gray-200 ${glowClasses.glow} hover:scale-110 hover:-translate-y-4 hover:rotate-1`
                 } shadow-lg`}
                 style={{
                   animationDelay: point.delay,
