@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Shield, Upload, CheckCircle, Zap, Users, ArrowDown } from 'lucide-react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users, ChevronDown } from 'lucide-react';
 
 interface HowItWorksSectionProps {
   darkMode: boolean;
@@ -116,11 +116,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
 
         {/* Vertical Timeline */}
         <div className="relative">
-          {/* Timeline Line */}
-          <div className={`absolute left-8 top-0 bottom-0 w-0.5 ${
-            darkMode ? 'bg-gray-600' : 'bg-gray-300'
-          }`}></div>
-
           {/* Steps */}
           <div className="space-y-12">
             {steps.map((step, index) => {
@@ -140,27 +135,30 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     animation: 'fadeInUp 0.8s ease-out forwards'
                   }}
                 >
-                  {/* Step Number Circle */}
-                  <div className="relative z-10 flex-shrink-0">
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
+                  {/* Step Chevron Arrow */}
+                  <div className="relative z-10 flex-shrink-0 mb-4">
+                    <div className={`w-16 h-16 flex items-center justify-center transition-all duration-500 ${
                       isActive 
-                        ? `${stepColors[index].bg} scale-110 shadow-lg ${stepColors[index].shadow}` 
+                        ? `scale-110 shadow-lg ${stepColors[index].shadow}` 
                         : isCompleted
-                          ? `${stepColors[index].bg} opacity-80`
-                          : `${stepColors[index].bg} opacity-50`
+                          ? `opacity-80`
+                          : `opacity-50`
                     }`}>
-                      <span className={`text-xl font-bold transition-colors duration-300 ${
-                        stepColors[index].text
+                      <ChevronDown className={`h-12 w-12 transition-colors duration-300 ${
+                        isActive 
+                          ? stepColors[index].bg.replace('bg-', 'text-')
+                          : isCompleted
+                            ? stepColors[index].bg.replace('bg-', 'text-')
+                            : 'text-gray-400'
                       }`}>
-                        {step.id}
-                      </span>
+                      </ChevronDown>
                     </div>
                   </div>
 
                   {/* Step Content Card */}
                   <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
                     isActive 
-                      ? darkMode 
+                      ? darkMode
                         ? 'bg-gray-700 border-2 border-purple-500 shadow-xl shadow-purple-500/20' 
                         : 'bg-white border-2 border-purple-500 shadow-xl shadow-purple-500/20'
                       : darkMode 
@@ -205,23 +203,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                       <div className="absolute inset-0 rounded-2xl bg-purple-500 opacity-5 pointer-events-none"></div>
                     )}
                   </div>
-
-                  {/* Downward Arrow (except for last step) */}
-                  {index < steps.length - 1 && (
-                    <div className={`absolute left-8 -bottom-6 transform -translate-x-1/2 transition-all duration-500 ${
-                      isActive || isCompleted ? 'opacity-100 scale-100' : 'opacity-50 scale-75'
-                    }`}>
-                      <div className={`p-2 rounded-full ${
-                        isActive || isCompleted 
-                          ? darkMode ? 'bg-purple-600' : 'bg-purple-500'
-                          : darkMode ? 'bg-gray-600' : 'bg-gray-400'
-                      }`}>
-                        <ArrowDown className={`h-4 w-4 ${
-                          isActive || isCompleted ? 'text-white' : 'text-gray-300'
-                        }`} />
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
