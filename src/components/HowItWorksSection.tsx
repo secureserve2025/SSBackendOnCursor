@@ -227,7 +227,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
             })}
           </div>
         </div>
-
+      </div>
     </section>
   );
 };
