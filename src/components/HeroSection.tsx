@@ -57,7 +57,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               </p>
 
               {/* Performance Analytics */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+              <div className="grid grid-cols-2 gap-8 pt-8 max-w-md mx-auto">
                 <div className="text-center">
                   <div className={`text-2xl sm:text-3xl font-bold ${
                     darkMode ? 'text-blue-400' : 'text-blue-600'
@@ -81,32 +81,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                     darkMode ? 'text-gray-400' : 'text-gray-500'
                   }`}>
                     Successful Closures
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    0
-                  </div>
-                  <div className={`text-sm font-medium ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    Chargebacks
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    0
-                  </div>
-                  <div className={`text-sm font-medium ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    Disputes
                   </div>
                 </div>
               </div>
