@@ -139,9 +139,23 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   <div className="relative z-10 flex-shrink-0 mb-4">
                     <ChevronDown className={`h-12 w-12 transition-all duration-500 ${
                       isActive 
-                        ? `scale-110 ${stepColors[index].bg.replace('bg-', 'text-')}` 
+                        ? `scale-110 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }` 
                         : isCompleted
-                          ? `opacity-80 ${stepColors[index].bg.replace('bg-', 'text-')}`
+                          ? `opacity-80 ${
+                            index === 0 ? 'text-cyan-400' :
+                            index === 1 ? 'text-purple-500' :
+                            index === 2 ? 'text-purple-500' :
+                            index === 3 ? 'text-gray-400' :
+                            index === 4 ? 'text-cyan-400' :
+                            'text-pink-500'
+                          }`
                           : `opacity-50 text-gray-400`
                     }`} />
                   </div>
@@ -150,10 +164,31 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
                     isActive 
                       ? darkMode
-                        ? 'bg-gray-700 border-2 border-purple-500 shadow-xl shadow-purple-500/20' 
-                        : 'bg-white border-2 border-purple-500 shadow-xl shadow-purple-500/20'
+                        ? `bg-gray-700 border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }` 
+                        : `bg-white border-2 ${
+                            index === 0 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            index === 1 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 2 ? 'border-purple-500 shadow-xl shadow-purple-500/20' :
+                            index === 3 ? 'border-gray-500 shadow-xl shadow-gray-500/20' :
+                            index === 4 ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' :
+                            'border-pink-500 shadow-xl shadow-pink-500/20'
+                          }`
                       : darkMode 
-                        ? 'bg-gray-700 border border-purple-500/30 hover:border-purple-500/50' 
+                        ? `bg-gray-700 border ${
+                            index === 0 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            index === 1 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 2 ? 'border-purple-500/30 hover:border-purple-500/50' :
+                            index === 3 ? 'border-gray-500/30 hover:border-gray-500/50' :
+                            index === 4 ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                            'border-pink-500/30 hover:border-pink-500/50'
+                          }` 
                         : 'bg-white border border-gray-200 hover:border-gray-300'
                   } shadow-lg hover:shadow-xl`}>
                     
