@@ -39,13 +39,13 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
         </div>
 
         {/* Pain Points Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="max-w-2xl mx-auto space-y-6">
           {painPoints.map((point, index) => {
             const IconComponent = point.icon;
             return (
               <div
                 key={index}
-                className={`group relative p-6 rounded-2xl transition-all duration-500 hover:scale-105 hover:shadow-xl ${
+                className={`group relative p-6 rounded-2xl transition-all duration-500 hover:scale-102 hover:shadow-xl ${
                   darkMode 
                     ? 'bg-slate-900 border border-slate-700 hover:border-red-500/50' 
                     : 'bg-white border border-gray-200 hover:border-red-300'
@@ -55,25 +55,27 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                   animation: 'fadeInUp 0.8s ease-out forwards'
                 }}
               >
-                {/* Animated Icon */}
-                <div className={`mb-4 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${
-                  darkMode ? 'bg-red-900/20' : 'bg-red-50'
-                }`}>
-                  <IconComponent className={`h-8 w-8 transition-colors duration-300 ${
-                    darkMode 
-                      ? 'text-red-400 group-hover:text-red-300' 
-                      : 'text-red-500 group-hover:text-red-600'
-                  }`} />
-                </div>
+                <div className="flex items-center space-x-4">
+                  {/* Animated Icon */}
+                  <div className={`flex-shrink-0 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${
+                    darkMode ? 'bg-red-900/20' : 'bg-red-50'
+                  }`}>
+                    <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
+                      darkMode 
+                        ? 'text-red-400 group-hover:text-red-300' 
+                        : 'text-red-500 group-hover:text-red-600'
+                    }`} />
+                  </div>
 
-                {/* Pain Point Text */}
-                <p className={`text-sm sm:text-base leading-relaxed transition-colors duration-300 ${
-                  darkMode 
-                    ? 'text-gray-300 group-hover:text-white' 
-                    : 'text-gray-600 group-hover:text-gray-900'
-                }`}>
-                  {point.title}
-                </p>
+                  {/* Pain Point Text */}
+                  <p className={`flex-1 text-base sm:text-lg font-medium leading-relaxed transition-colors duration-300 ${
+                    darkMode 
+                      ? 'text-gray-300 group-hover:text-white' 
+                      : 'text-gray-600 group-hover:text-gray-900'
+                  }`}>
+                    {point.title}
+                  </p>
+                </div>
 
                 {/* Subtle Background Animation */}
                 <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-5 transition-opacity duration-300 ${
