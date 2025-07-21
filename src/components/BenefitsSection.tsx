@@ -56,8 +56,19 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                 }}
               >
                 <div className="flex items-center space-x-4">
-                  {/* Animated Icon */}
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${
+                  {/* Pain Point Text */}
+                  <p className={`text-center text-base sm:text-lg font-medium leading-relaxed transition-colors duration-300 ${
+                    darkMode 
+                      ? 'text-gray-300 group-hover:text-white' 
+                      : 'text-gray-600 group-hover:text-gray-900'
+                  }`}>
+                    {point.title}
+                  </p>
+                </div>
+
+                {/* Centered Animated Icon */}
+                <div className="flex justify-center mt-4">
+                  <div className={`w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${
                     darkMode ? 'bg-red-900/20' : 'bg-red-50'
                   }`}>
                     <IconComponent className={`h-5 w-5 transition-colors duration-300 ${
@@ -66,15 +77,6 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                         : 'text-red-500 group-hover:text-red-600'
                     }`} />
                   </div>
-
-                  {/* Pain Point Text */}
-                  <p className={`flex-1 text-base sm:text-lg font-medium leading-relaxed transition-colors duration-300 ${
-                    darkMode 
-                      ? 'text-gray-300 group-hover:text-white' 
-                      : 'text-gray-600 group-hover:text-gray-900'
-                  }`}>
-                    {point.title}
-                  </p>
                 </div>
 
                 {/* Subtle Background Animation */}
