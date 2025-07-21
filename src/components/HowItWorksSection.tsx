@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Shield, Upload, CheckCircle, Zap, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users, ArrowDown } from 'lucide-react';
 
 interface HowItWorksSectionProps {
   darkMode: boolean;
@@ -7,15 +7,17 @@ interface HowItWorksSectionProps {
 
 const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
   const [activeStep, setActiveStep] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Color schemes for each step
   const stepColors = [
-    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white' }, // Step 1
-    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white' }, // Step 2
-    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white' }, // Step 3
-    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white' }, // Step 4
-    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white' }, // Step 5
-    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white' }, // Step 6
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 1
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 2
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 3
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white', shadow: 'shadow-purple-500/25' }, // Step 4
+    { bg: 'bg-cyan-600', border: 'border-cyan-500', text: 'text-white', shadow: 'shadow-cyan-500/25' }, // Step 5
+    { bg: 'bg-pink-600', border: 'border-pink-500', text: 'text-white', shadow: 'shadow-pink-500/25' }, // Step 6
   ];
 
   const steps = [
@@ -57,20 +59,47 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
     }
   ];
 
-  // Auto-advance through steps
+  // Scroll-based highlighting
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % steps.length);
-    }, 4000); // Change every 4 seconds
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
 
-    return () => clearInterval(interval);
-  }, [steps.length]);
+      const sectionTop = sectionRef.current.offsetTop;
+      const sectionHeight = sectionRef.current.offsetHeight;
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Check if section is in view
+      if (scrollY + windowHeight > sectionTop && scrollY < sectionTop + sectionHeight) {
+        // Calculate which step should be active based on scroll position
+        const relativeScroll = scrollY + windowHeight - sectionTop;
+        const stepHeight = sectionHeight / steps.length;
+        const newActiveStep = Math.min(
+          Math.floor(relativeScroll / stepHeight),
+          steps.length - 1
+        );
+        
+        if (newActiveStep >= 0 && newActiveStep !== activeStep) {
+          setActiveStep(newActiveStep);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeStep, steps.length]);
 
   return (
-    <section id="how-it-works" className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
-      darkMode ? 'bg-gray-800' : 'bg-gray-50'
-    }`}>
-      <div className="max-w-7xl mx-auto">
+    <section 
+      ref={sectionRef}
+      id="how-it-works" 
+      className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
+        darkMode ? 'bg-gray-800' : 'bg-gray-50'
+      }`}
+    >
+      <div className="max-w-4xl mx-auto">
         {/* Section Heading */}
         <div className="text-center mb-16">
           <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 ${
@@ -85,32 +114,40 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="max-w-5xl mx-auto space-y-8">
-          {steps.map((step, index) => {
-            const IconComponent = step.icon;
-            const isActive = index === activeStep;
-            const isLeft = index % 2 === 0; // Odd steps (1,3,5) on left, Even steps (2,4,6) on right
-            
-            return (
-              <div
-                key={step.id}
-                className={`relative transition-all duration-500 ${
-                  isActive ? 'transform scale-105' : ''
-                }`}
-                style={{
-                  animationDelay: `${index * 0.2}s`,
-                  animation: 'fadeInUp 0.8s ease-out forwards'
-                }}
-              >
-                {/* Step Layout */}
-                <div className={`flex items-center gap-8 ${isLeft ? '' : 'flex-row-reverse'}`}>
+        {/* Vertical Timeline */}
+        <div className="relative">
+          {/* Timeline Line */}
+          <div className={`absolute left-8 top-0 bottom-0 w-0.5 ${
+            darkMode ? 'bg-gray-600' : 'bg-gray-300'
+          }`}></div>
+
+          {/* Steps */}
+          <div className="space-y-12">
+            {steps.map((step, index) => {
+              const IconComponent = step.icon;
+              const isActive = index === activeStep;
+              const isCompleted = index < activeStep;
+              
+              return (
+                <div
+                  key={step.id}
+                  ref={(el) => (stepRefs.current[index] = el)}
+                  className={`relative flex items-start transition-all duration-700 ${
+                    isActive ? 'transform scale-105' : ''
+                  }`}
+                  style={{
+                    animationDelay: `${index * 0.2}s`,
+                    animation: 'fadeInUp 0.8s ease-out forwards'
+                  }}
+                >
                   {/* Step Number Circle */}
-                  <div className="flex-shrink-0">
+                  <div className="relative z-10 flex-shrink-0">
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
                       isActive 
-                        ? `${stepColors[index].bg} scale-110 shadow-lg shadow-purple-500/25` 
-                        : `${stepColors[index].bg} opacity-70 hover:opacity-90`
+                        ? `${stepColors[index].bg} scale-110 shadow-lg ${stepColors[index].shadow}` 
+                        : isCompleted
+                          ? `${stepColors[index].bg} opacity-80`
+                          : `${stepColors[index].bg} opacity-50`
                     }`}>
                       <span className={`text-xl font-bold transition-colors duration-300 ${
                         stepColors[index].text
@@ -121,7 +158,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   </div>
 
                   {/* Step Content Card */}
-                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-500 ${
+                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-500 ${
                     isActive 
                       ? darkMode 
                         ? 'bg-gray-700 border-2 border-purple-500 shadow-xl shadow-purple-500/20' 
@@ -168,10 +205,27 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                       <div className="absolute inset-0 rounded-2xl bg-purple-500 opacity-5 pointer-events-none"></div>
                     )}
                   </div>
+
+                  {/* Downward Arrow (except for last step) */}
+                  {index < steps.length - 1 && (
+                    <div className={`absolute left-8 -bottom-6 transform -translate-x-1/2 transition-all duration-500 ${
+                      isActive || isCompleted ? 'opacity-100 scale-100' : 'opacity-50 scale-75'
+                    }`}>
+                      <div className={`p-2 rounded-full ${
+                        isActive || isCompleted 
+                          ? darkMode ? 'bg-purple-600' : 'bg-purple-500'
+                          : darkMode ? 'bg-gray-600' : 'bg-gray-400'
+                      }`}>
+                        <ArrowDown className={`h-4 w-4 ${
+                          isActive || isCompleted ? 'text-white' : 'text-gray-300'
+                        }`} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Progress Indicators */}
@@ -179,11 +233,18 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
           {steps.map((_, index) => (
             <button
               key={index}
-              onClick={() => setActiveStep(index)}
+              onClick={() => {
+                const element = stepRefs.current[index];
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === activeStep 
                   ? 'bg-purple-600 scale-125' 
-                  : darkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
+                  : index < activeStep
+                    ? 'bg-purple-400'
+                    : darkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
               }`}
               aria-label={`Go to step ${index + 1}`}
             />
