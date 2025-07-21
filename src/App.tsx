@@ -8,43 +8,18 @@ import FAQsSection from './components/FAQsSection';
 import CTASection from './components/CTASection';
 
 function App() {
-  // Dark mode state management
-  const [darkMode, setDarkMode] = useState(false);
+  // Always use dark mode
+  const darkMode = true;
 
-  // Initialize dark mode from localStorage or system preference
+  // Set dark mode class on document
   useEffect(() => {
-    const savedMode = localStorage.getItem('darkMode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedMode !== null) {
-      setDarkMode(JSON.parse(savedMode));
-    } else {
-      setDarkMode(prefersDark);
-    }
+    document.documentElement.classList.add('dark');
   }, []);
 
-  // Save dark mode preference to localStorage
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    
-    // Update document class for global styling
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode ? 'bg-slate-900' : 'bg-white'
-    }`}>
+    <div className="min-h-screen transition-colors duration-300 bg-slate-900">
       {/* Header Component */}
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Header darkMode={darkMode} />
       
       {/* Hero Section */}
       <HeroSection darkMode={darkMode} />
