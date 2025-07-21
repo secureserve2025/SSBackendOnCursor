@@ -17,6 +17,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
           
           {/* CTA Subtitle */}
           <p className="text-lg sm:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
+          </p>
           <p className="text-lg sm:text-xl text-white/90 mb-10 leading-relaxed max-w-2xl mx-auto">
             Join thousands of Indian freelancers who never worry about payment delays anymore
           </p>
