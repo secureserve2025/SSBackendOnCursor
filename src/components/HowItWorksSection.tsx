@@ -252,3 +252,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
         </div>
       </div>
     </section>
+  );
+};
+
+export default HowItWorksSection;
