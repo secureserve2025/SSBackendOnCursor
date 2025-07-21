@@ -11,7 +11,7 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
   const faqs = [
     {
       question: "How does the AI verify if work meets requirements?",
-      answer: "Our advanced AI system analyzes your deliverables against the project specifications using multiple verification methods. For visual content, it checks resolution, format, dimensions, and quality standards. For written content, it evaluates word count, structure, and adherence to guidelines. For code, it reviews functionality, documentation, and best practices. The AI creates a detailed checklist during project setup and systematically verifies each requirement, providing instant feedback on what passes or needs revision."
+      answer: "Our advanced AI analyzes deliverables against agreed specification checklist. Consider video content for example. It checks resolution, color balance, aspect ratio, lighting quality, audio bitrate, and so on. The system creates a match score where ≥85% triggers automatic approval and payment release, 60-84% flags discrepancies for quick manual review with AI-generated evidence (timestamps, frame samples, audio clips), and <60% initiates automatic refunds. Clients receive a detailed \"Delivery Report\" showing which requirements passed, AI confidence scores, and explanatory notes, ensuring complete transparency and eliminating subjective disputes through objective and technical verification."
     },
     {
       question: "What happens if the AI verification fails?",
