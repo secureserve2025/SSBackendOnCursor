@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Shield, Upload, CheckCircle, Zap, Users, ChevronDown } from 'lucide-react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users } from 'lucide-react';
 
 interface HowItWorksSectionProps {
   darkMode: boolean;
 }
 
 const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
-  const sectionRef = useRef<HTMLElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Color schemes for each step
   const stepColors = [
@@ -60,55 +56,8 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
     }
   ];
 
-  // Progressive reveal animation
-  useEffect(() => {
-    const revealTimer = setInterval(() => {
-      setVisibleSteps(prev => {
-        if (prev.length < steps.length) {
-          return [...prev, prev.length];
-        }
-        clearInterval(revealTimer);
-        return prev;
-      });
-    }, 800); // Reveal each step every 800ms
-
-    return () => clearInterval(revealTimer);
-  }, [steps.length]);
-  // Scroll-based highlighting
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-
-      const sectionTop = sectionRef.current.offsetTop;
-      const sectionHeight = sectionRef.current.offsetHeight;
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-
-      // Check if section is in view
-      if (scrollY + windowHeight > sectionTop && scrollY < sectionTop + sectionHeight) {
-        // Calculate which step should be active based on scroll position
-        const relativeScroll = scrollY + windowHeight - sectionTop;
-        const stepHeight = sectionHeight / steps.length;
-        const newActiveStep = Math.min(
-          Math.floor(relativeScroll / stepHeight),
-          steps.length - 1
-        );
-        
-        if (newActiveStep >= 0 && newActiveStep !== activeStep) {
-          setActiveStep(newActiveStep);
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeStep, steps.length]);
-
   return (
     <section 
-      ref={sectionRef}
       id="how-it-works" 
       className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
         darkMode ? 'bg-gray-800' : 'bg-gray-50'
@@ -135,80 +84,43 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
           <div className="space-y-12">
             {steps.map((step, index) => {
               const IconComponent = step.icon;
-              const isActive = index === activeStep;
-              const isCompleted = index < activeStep;
-              const isVisible = visibleSteps.includes(index);
               
               return (
                 <div
                   key={step.id}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  className={`relative flex items-start transition-all duration-700 ${
-                    isActive ? 'transform scale-105' : ''
-                  } ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-y-0' 
-                      : 'opacity-0 transform translate-y-8'
-                  }`}
-                  style={{
-                    transitionDelay: `${index * 0.1}s`
-                  }}
+                  className="relative flex items-start"
                 >
 
                   {/* Step Content Card */}
-                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-x-0' 
-                      : 'opacity-0 transform translate-x-8'
-                  } ${
-                    isActive 
-                      ? darkMode
-                        ? `bg-gray-700 border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}` 
-                        : `bg-white border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}`
-                      : darkMode 
-                        ? `bg-gray-700 border ${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/30')} hover:${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/50')}` 
-                        : 'bg-white border border-gray-200 hover:border-gray-300'
-                  } shadow-lg hover:shadow-xl`}
-                  style={{
-                    transitionDelay: `${index * 0.1 + 0.4}s`
-                  }}>
+                  <div className={`flex-1 p-6 rounded-2xl ${
+                    darkMode 
+                      ? 'bg-gray-700 border border-gray-600' 
+                      : 'bg-white border border-gray-200'
+                  } shadow-lg`}>
                     
                     {/* Icon and Title */}
                     <div className="flex items-center space-x-4 mb-3">
-                      <div className={`p-3 rounded-full transition-all duration-500 ${
-                        isActive 
-                          ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
-                          : darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                      <div className={`p-3 rounded-full ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-100'
                       }`}>
-                        <IconComponent className={`h-6 w-6 transition-all duration-500 ${
-                          isActive 
-                            ? darkMode ? 'text-purple-400 scale-110' : 'text-purple-600 scale-110'
-                            : darkMode ? 'text-gray-400' : 'text-gray-500'
+                        <IconComponent className={`h-6 w-6 ${
+                          darkMode ? 'text-gray-400' : 'text-gray-500'
                         }`} />
                       </div>
                       
-                      <h3 className={`text-xl font-semibold transition-colors duration-500 ${
-                        isActive 
-                          ? darkMode ? 'text-white' : 'text-gray-900'
-                          : darkMode ? 'text-gray-300' : 'text-gray-700'
+                      <h3 className={`text-xl font-semibold ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
                       }`}>
                         {step.title}
                       </h3>
                     </div>
 
                     {/* Description */}
-                    <p className={`text-base leading-relaxed transition-colors duration-500 ${
-                      isActive 
-                        ? darkMode ? 'text-gray-200' : 'text-gray-600'
-                        : darkMode ? 'text-gray-400' : 'text-gray-500'
+                    <p className={`text-base leading-relaxed ${
+                      darkMode ? 'text-gray-400' : 'text-gray-500'
                     }`}>
                       {step.description}
                     </p>
-
-                    {/* Active Step Glow Effect */}
-                    {isActive && (
-                      <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
-                    )}
                   </div>
                 </div>
               );
