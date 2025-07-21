@@ -10,20 +10,43 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
     {
       icon: MessageSquareX,
       title: "Subjective quality disputes",
-      delay: "0s"
+      delay: "0s",
+      glowColor: "pink"
     },
     {
       icon: RefreshCw,
       title: "Endless revision delaying your payment",
-      delay: "0.2s"
+      delay: "0.2s",
+      glowColor: "purple"
     },
     {
       icon: DollarSign,
       title: "Unpredictable payment schedules",
-      delay: "0.4s"
+      delay: "0.4s",
+      glowColor: "cyan"
     }
   ];
 
+  const getGlowClasses = (glowColor: string) => {
+    const glowMap = {
+      pink: {
+        glow: 'hover:shadow-2xl hover:shadow-pink-500/30 hover:border-pink-400',
+        iconGlow: 'group-hover:shadow-lg group-hover:shadow-pink-500/50',
+        transform: 'hover:scale-105 hover:-translate-y-2'
+      },
+      purple: {
+        glow: 'hover:shadow-2xl hover:shadow-purple-500/30 hover:border-purple-400',
+        iconGlow: 'group-hover:shadow-lg group-hover:shadow-purple-500/50',
+        transform: 'hover:scale-105 hover:-translate-y-2'
+      },
+      cyan: {
+        glow: 'hover:shadow-2xl hover:shadow-cyan-500/30 hover:border-cyan-400',
+        iconGlow: 'group-hover:shadow-lg group-hover:shadow-cyan-500/50',
+        transform: 'hover:scale-105 hover:-translate-y-2'
+      }
+    };
+    return glowMap[glowColor as keyof typeof glowMap];
+  };
   return (
     <section className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
       darkMode ? 'bg-gray-800' : 'bg-gray-50'
@@ -42,14 +65,15 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
         <div className="max-w-2xl mx-auto space-y-6">
           {painPoints.map((point, index) => {
             const IconComponent = point.icon;
+            const glowClasses = getGlowClasses(point.glowColor);
             return (
               <div
                 key={index}
-                className={`group relative p-6 rounded-2xl transition-all duration-500 hover:scale-102 hover:shadow-xl ${
+                className={`group relative p-6 rounded-2xl transition-all duration-500 transform-gpu perspective-1000 ${
                   darkMode 
-                    ? `bg-gray-900 border border-purple-500/30 hover:border-pink-500 hover:shadow-2xl hover:shadow-pink-500/25` 
-                    : 'bg-white border border-gray-200 hover:border-purple-300 hover:shadow-2xl hover:shadow-purple-400/25'
-                }`}
+                    ? `bg-gray-900 border border-purple-500/30 ${glowClasses.glow} ${glowClasses.transform}` 
+                    : `bg-white border border-gray-200 ${glowClasses.glow} ${glowClasses.transform}`
+                } shadow-lg`}
                 style={{
                   animationDelay: point.delay,
                   animation: 'fadeInUp 0.8s ease-out forwards'
@@ -57,8 +81,8 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
               >
                 <div className="flex items-center space-x-4">
                   {/* Animated Icon */}
-                  <div className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${
-                    darkMode ? 'bg-pink-900/20' : 'bg-purple-50'
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full transition-all duration-300 group-hover:scale-110 flex items-center justify-center ${glowClasses.iconGlow} ${
+                    darkMode ? 'bg-pink-900/20 group-hover:bg-pink-900/30' : 'bg-purple-50 group-hover:bg-purple-100'
                   }`}>
                     <IconComponent className={`h-5 w-5 transition-colors duration-300 ${
                       darkMode 
@@ -78,9 +102,14 @@ const BenefitsSection: React.FC<BenefitsSectionProps> = ({ darkMode }) => {
                 </div>
 
                 {/* Subtle Background Animation */}
-                <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-5 transition-opacity duration-300 ${
-                  darkMode ? 'bg-pink-400' : 'bg-purple-500'
+                <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${
+                  point.glowColor === 'pink' ? 'bg-pink-400' :
+                  point.glowColor === 'purple' ? 'bg-purple-400' :
+                  'bg-cyan-400'
                 }`}></div>
+
+                {/* 3D Pop Effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
             );
           })}
