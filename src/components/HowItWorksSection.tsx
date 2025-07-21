@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Shield, Upload, CheckCircle, Zap, Users, ArrowDown } from 'lucide-react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users, ChevronDown } from 'lucide-react';
 
 interface HowItWorksSectionProps {
   darkMode: boolean;
@@ -163,27 +163,25 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                   style={{
                     transitionDelay: `${index * 0.1 + 0.2}s`
                   }}>
-                    <div className={`w-0 h-0 transition-all duration-700 ${
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-700 ${
                       isActive 
-                        ? `scale-125 animate-bounce` 
+                        ? `scale-125 animate-bounce shadow-lg` 
                         : isCompleted
-                          ? `opacity-90 scale-110`
+                          ? `opacity-90 scale-110 shadow-md`
                           : `opacity-30 scale-90`
-                    }`}
-                    style={{
-                      borderLeft: '24px solid transparent',
-                      borderRight: '24px solid transparent',
-                      borderTop: `32px solid ${
+                    } ${
+                      isActive || isCompleted 
+                        ? stepColors[index].bg
+                        : 'bg-gray-500'
+                    }`}>
+                      <ChevronDown className={`h-6 w-6 transition-all duration-700 ${
                         isActive || isCompleted 
-                          ? stepColors[index].chevron === 'text-blue-400' ? '#60a5fa' :
-                            stepColors[index].chevron === 'text-purple-400' ? '#a78bfa' :
-                            stepColors[index].chevron === 'text-green-400' ? '#4ade80' :
-                            stepColors[index].chevron === 'text-cyan-400' ? '#22d3ee' :
-                            stepColors[index].chevron === 'text-yellow-400' ? '#facc15' :
-                            '#f472b6'
-                          : '#6b7280'
-                      }`
-                    }} />
+                          ? 'text-white' 
+                          : 'text-gray-300'
+                      } ${
+                        isActive ? 'animate-pulse' : ''
+                      }`} />
+                    </div>
                   </div>
 
                   {/* Step Content Card */}
