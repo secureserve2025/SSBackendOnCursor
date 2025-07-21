@@ -13,7 +13,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
   const exploreLinks = [
     { label: 'How it works', href: '#how-it-works', onClick: () => scrollToSection('how-it-works') },
     { label: 'FAQs', href: '#faqs', onClick: () => scrollToSection('faqs') },
-    { label: 'Contact us', href: '#contact' },
+    { label: 'Contact us', href: '#contact', onClick: () => scrollToFooter() },
   ];
 
   const indianLanguages = [
@@ -42,6 +42,14 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
     }
   };
 
+  const scrollToFooter = () => {
+    // Scroll to the bottom of the page to show the footer
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth'
+    });
+    setIsExploreOpen(false); // Close dropdown after clicking
+  };
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
       darkMode ? 'bg-gray-900/95' : 'bg-white/95'
