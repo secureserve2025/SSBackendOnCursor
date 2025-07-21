@@ -38,10 +38,6 @@ const FAQsSection: React.FC<FAQsSectionProps> = ({ darkMode }) => {
       answer: "AI verification typically completes within 2-5 minutes for most digital deliverables. Complex projects like large websites or extensive code repositories may take up to 15 minutes. The system processes files in real-time and provides instant feedback. If human review is requested, it takes 2-4 hours during business hours. Once verification passes, payment is released immediately to your account. We prioritize speed without compromising accuracy."
     },
     {
-      question: "Can I use SecureServe for ongoing/retainer work?",
-      answer: "Yes! SecureServe supports both one-time projects and ongoing retainer arrangements. For retainer work, you can set up milestone-based payments where funds are released upon completion of specific deliverables or time periods. This ensures steady cash flow while maintaining quality standards. You can create recurring escrow deposits for monthly retainers, with automatic verification and release based on agreed-upon criteria. This is perfect for ongoing content creation, maintenance work, or consulting services."
-    }
-  ];
 
   const toggleFAQ = (index: number) => {
     setOpenFAQ(openFAQ === index ? null : index);
