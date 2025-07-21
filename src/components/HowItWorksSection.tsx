@@ -140,83 +140,84 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
               const isVisible = visibleSteps.includes(index);
               
               return (
-                <div
-                  key={step.id}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  className={`relative flex items-start transition-all duration-700 ${
-                    isActive ? 'transform scale-105' : ''
-                  } ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-y-0' 
-                      : 'opacity-0 transform translate-y-8'
-                  }`}
-                  style={{
-                    transitionDelay: `${index * 0.1}s`
-                  }}
-                >
-
-                  {/* Step Content Card */}
-                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-x-0' 
-                      : 'opacity-0 transform translate-x-8'
-                  } ${
-                    isActive 
-                      ? darkMode
-                        ? `bg-gray-700 border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}` 
-                        : `bg-white border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}`
-                      : darkMode 
-                        ? `bg-gray-700 border ${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/30')} hover:${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/50')}` 
-                        : 'bg-white border border-gray-200 hover:border-gray-300'
-                  } shadow-lg hover:shadow-xl`}
-                  style={{
-                    transitionDelay: `${index * 0.1 + 0.4}s`
-                  }}>
-                    
-                    {/* Icon and Title */}
-                    <div className="flex items-center space-x-4 mb-3">
-                      <div className={`p-3 rounded-full transition-all duration-500 ${
-                        isActive 
-                          ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
-                          : darkMode ? 'bg-gray-600' : 'bg-gray-100'
-                      }`}>
-                        <IconComponent className={`h-6 w-6 transition-all duration-500 ${
-                          isActive 
-                            ? darkMode ? 'text-purple-400 scale-110' : 'text-purple-600 scale-110'
-                            : darkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`} />
-                      </div>
-                      
-                      <h3 className={`text-xl font-semibold transition-colors duration-500 ${
-                        isActive 
-                          ? darkMode ? 'text-white' : 'text-gray-900'
-                          : darkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        {step.title}
-                      </h3>
-                    </div>
-
-                    {/* Description */}
-                    <p className={`text-base leading-relaxed transition-colors duration-500 ${
+                <React.Fragment key={step.id}>
+                  {/* Step Content */}
+                  <div
+                    ref={(el) => (stepRefs.current[index] = el)}
+                    className={`relative flex items-start transition-all duration-700 ${
+                      isActive ? 'transform scale-105' : ''
+                    } ${
+                      isVisible 
+                        ? 'opacity-100 transform translate-y-0' 
+                        : 'opacity-0 transform translate-y-8'
+                    }`}
+                    style={{
+                      transitionDelay: `${index * 0.1}s`
+                    }}
+                  >
+                    {/* Step Content Card */}
+                    <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
+                      isVisible 
+                        ? 'opacity-100 transform translate-x-0' 
+                        : 'opacity-0 transform translate-x-8'
+                    } ${
                       isActive 
-                        ? darkMode ? 'text-gray-200' : 'text-gray-600'
-                        : darkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      {step.description}
-                    </p>
+                        ? darkMode
+                          ? `bg-gray-700 border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}` 
+                          : `bg-white border-2 shadow-2xl ${stepColors[index].border} shadow-xl ${stepColors[index].glow}`
+                        : darkMode 
+                          ? `bg-gray-700 border ${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/30')} hover:${stepColors[index].border.replace('border-', 'border-').replace('-500', '-500/50')}` 
+                          : 'bg-white border border-gray-200 hover:border-gray-300'
+                    } shadow-lg hover:shadow-xl`}
+                    style={{
+                      transitionDelay: `${index * 0.1 + 0.4}s`
+                    }}>
+                      
+                      {/* Icon and Title */}
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className={`p-3 rounded-full transition-all duration-500 ${
+                          isActive 
+                            ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+                            : darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                        }`}>
+                          <IconComponent className={`h-6 w-6 transition-all duration-500 ${
+                            isActive 
+                              ? darkMode ? 'text-purple-400 scale-110' : 'text-purple-600 scale-110'
+                              : darkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`} />
+                        </div>
+                        
+                        <h3 className={`text-xl font-semibold transition-colors duration-500 ${
+                          isActive 
+                            ? darkMode ? 'text-white' : 'text-gray-900'
+                            : darkMode ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {step.title}
+                        </h3>
+                      </div>
 
-                    {/* Active Step Glow Effect */}
-                    {isActive && (
-                      <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
-                    )}
+                      {/* Description */}
+                      <p className={`text-base leading-relaxed transition-colors duration-500 ${
+                        isActive 
+                          ? darkMode ? 'text-gray-200' : 'text-gray-600'
+                          : darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        {step.description}
+                      </p>
+
+                      {/* Active Step Glow Effect */}
+                      {isActive && (
+                        <div className={`absolute inset-0 rounded-2xl opacity-10 pointer-events-none animate-pulse ${stepColors[index].bg}`}></div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Triangular Arrow Below Each Step (except last) */}
+                  {/* Triangular Arrow Between Steps (except after last step) */}
                   {index < steps.length - 1 && (
-                    <div className="flex justify-center mt-8 mb-4">
+                    <div className="flex justify-center my-8">
                       <div 
                         className={`w-0 h-0 transition-all duration-700 ${
-                          isVisible 
+                          visibleSteps.includes(index) 
                             ? 'opacity-100 transform translate-y-0' 
                             : 'opacity-0 transform translate-y-4'
                         }`}
@@ -224,7 +225,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                           borderLeft: '20px solid transparent',
                           borderRight: '20px solid transparent',
                           borderTop: `24px solid ${
-                            isActive 
+                            index === activeStep 
                               ? stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#blue' ? '#2563eb' :
                                 stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#purple' ? '#9333ea' :
                                 stepColors[index].bg.replace('bg-', '#').replace('-600', '') === '#green' ? '#16a34a' :
@@ -234,12 +235,12 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                               : '#6b7280'
                           }`,
                           transitionDelay: `${index * 0.1 + 0.6}s`,
-                          filter: isActive ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' : 'none'
+                          filter: index === activeStep ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' : 'none'
                         }}
                       />
                     </div>
                   )}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
