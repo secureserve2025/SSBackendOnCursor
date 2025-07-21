@@ -1,0 +1,44 @@
+import React from 'react';
+
+interface CTASectionProps {
+  darkMode: boolean;
+}
+
+const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
+  return (
+    <>
+      {/* Call to Action Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-600 to-blue-700">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Main CTA Heading */}
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+            Ready to Secure Your Freelance Future?
+          </h2>
+          
+          {/* CTA Subtitle */}
+          <p className="text-lg sm:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
+            Join thousands of Indian freelancers who never worry about payment delays anymore
+          </p>
+          
+          {/* CTA Button */}
+          <button className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+            Get Started
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className={`py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
+        darkMode ? 'bg-slate-800' : 'bg-gray-800'
+      }`}>
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-gray-400 text-sm">
+            © 2025 SecureServe. Built for Indian freelancers, by Indian freelancers.
+          </p>
+        </div>
+      </footer>
+    </>
+  );
+};
+
+export default CTASection;

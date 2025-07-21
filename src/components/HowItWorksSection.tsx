@@ -1,0 +1,197 @@
+import React, { useState, useEffect } from 'react';
+import { FileText, Shield, Upload, CheckCircle, Zap, Users } from 'lucide-react';
+
+interface HowItWorksSectionProps {
+  darkMode: boolean;
+}
+
+const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
+  const [activeStep, setActiveStep] = useState(0);
+
+  // Color schemes for each step
+  const stepColors = [
+    { bg: 'bg-blue-600', border: 'border-blue-500', text: 'text-white' }, // Step 1
+    { bg: 'bg-purple-600', border: 'border-purple-500', text: 'text-white' }, // Step 2
+    { bg: 'bg-green-600', border: 'border-green-500', text: 'text-white' }, // Step 3
+    { bg: 'bg-orange-600', border: 'border-orange-500', text: 'text-white' }, // Step 4
+    { bg: 'bg-red-600', border: 'border-red-500', text: 'text-white' }, // Step 5
+    { bg: 'bg-indigo-600', border: 'border-indigo-500', text: 'text-white' }, // Step 6
+  ];
+
+  const steps = [
+    {
+      id: 1,
+      icon: Users,
+      title: "Escrow Setup",
+      description: "Both client and freelancer register with SecureServe. We verify your identity using Aadhar card, PAN or TAN number, and bank/UPI account details as per RBI regulations. Sign our service agreement to get started with secure escrow protection."
+    },
+    {
+      id: 2,
+      icon: FileText,
+      title: "AI-Assisted Agreement",
+      description: "Upload your work requirements to SecureServe. Our AI breaks down the scope into a detailed, step-by-step deliverable checklist. The freelancer reviews and agrees to provide the stated service, and an agreement is signed with clear release conditions."
+    },
+    {
+      id: 3,
+      icon: Shield,
+      title: "Escrow Deposit",
+      description: "The client securely deposits the agreed-upon funds into SecureServe's RBI-compliant escrow account. Your money is held safely until the work is completed and verified according to the agreed terms."
+    },
+    {
+      id: 4,
+      icon: CheckCircle,
+      title: "AI-Verified Deliverables",
+      description: "The freelancer completes the work and uploads it to SecureServe. Our AI system automatically verifies the deliverables against the previously agreed checklist. Both parties are instantly informed whether the work meets requirements."
+    },
+    {
+      id: 5,
+      icon: Zap,
+      title: "Release of Assets",
+      description: "If the work meets all requirements, both parties sign off digitally. Money is instantly transferred to the freelancer's account while the client downloads the verified final work. If requirements aren't met, we initiate revisions or process a refund."
+    },
+    {
+      id: 6,
+      icon: Upload,
+      title: "Transaction Completion",
+      description: "SecureServe ensures all required legal documentation is completed and recorded with appropriate authorities. Your transaction is fully compliant, documented, and secure for future reference."
+    }
+  ];
+
+  // Auto-advance through steps
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length);
+    }, 4000); // Change every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [steps.length]);
+
+  return (
+    <section id="how-it-works" className={`py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
+      darkMode ? 'bg-slate-800' : 'bg-gray-50'
+    }`}>
+      <div className="max-w-7xl mx-auto">
+        {/* Section Heading */}
+        <div className="text-center mb-16">
+          <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            How SecureServe Works
+          </h2>
+          <p className={`text-lg sm:text-xl ${
+            darkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            Simple, secure, and powered by AI to protect both freelancers and clients
+          </p>
+        </div>
+
+        {/* Steps */}
+        <div className="max-w-5xl mx-auto space-y-8">
+          {steps.map((step, index) => {
+            const IconComponent = step.icon;
+            const isActive = index === activeStep;
+            const isLeft = index % 2 === 0; // Odd steps (1,3,5) on left, Even steps (2,4,6) on right
+            
+            return (
+              <div
+                key={step.id}
+                className={`relative transition-all duration-500 ${
+                  isActive ? 'transform scale-105' : ''
+                }`}
+                style={{
+                  animationDelay: `${index * 0.2}s`,
+                  animation: 'fadeInUp 0.8s ease-out forwards'
+                }}
+              >
+                {/* Step Layout */}
+                <div className={`flex items-center gap-8 ${isLeft ? '' : 'flex-row-reverse'}`}>
+                  {/* Step Number Circle */}
+                  <div className="flex-shrink-0">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
+                      isActive 
+                        ? `${stepColors[index].bg} scale-110 shadow-lg shadow-blue-500/25` 
+                        : `${stepColors[index].bg} opacity-70 hover:opacity-90`
+                    }`}>
+                      <span className={`text-xl font-bold transition-colors duration-300 ${
+                        stepColors[index].text
+                      }`}>
+                        {step.id}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Step Content Card */}
+                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-500 ${
+                    isActive 
+                      ? darkMode 
+                        ? 'bg-slate-700 border-2 border-blue-500 shadow-xl shadow-blue-500/20' 
+                        : 'bg-white border-2 border-blue-500 shadow-xl shadow-blue-500/20'
+                      : darkMode 
+                        ? 'bg-slate-700 border border-slate-600 hover:border-slate-500' 
+                        : 'bg-white border border-gray-200 hover:border-gray-300'
+                  } shadow-lg hover:shadow-xl`}>
+                    
+                    {/* Icon and Title */}
+                    <div className="flex items-center space-x-4 mb-3">
+                      <div className={`p-3 rounded-full transition-all duration-300 ${
+                        isActive 
+                          ? darkMode ? 'bg-blue-900/30' : 'bg-blue-100'
+                          : darkMode ? 'bg-slate-600' : 'bg-gray-100'
+                      }`}>
+                        <IconComponent className={`h-6 w-6 transition-colors duration-300 ${
+                          isActive 
+                            ? darkMode ? 'text-blue-400' : 'text-blue-600'
+                            : darkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`} />
+                      </div>
+                      
+                      <h3 className={`text-xl font-semibold transition-colors duration-300 ${
+                        isActive 
+                          ? darkMode ? 'text-white' : 'text-gray-900'
+                          : darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        {step.title}
+                      </h3>
+                    </div>
+
+                    {/* Description */}
+                    <p className={`text-base leading-relaxed transition-colors duration-300 ${
+                      isActive 
+                        ? darkMode ? 'text-gray-200' : 'text-gray-600'
+                        : darkMode ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      {step.description}
+                    </p>
+
+                    {/* Active Step Glow Effect */}
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-2xl bg-blue-500 opacity-5 pointer-events-none"></div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Progress Indicators */}
+        <div className="flex justify-center mt-12 space-x-2">
+          {steps.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveStep(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === activeStep 
+                  ? 'bg-blue-600 scale-125' 
+                  : darkMode ? 'bg-slate-600 hover:bg-slate-500' : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+              aria-label={`Go to step ${index + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default HowItWorksSection;
