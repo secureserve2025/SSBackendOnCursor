@@ -38,9 +38,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
           <div className="max-w-lg mx-auto bg-gray-800 rounded-2xl p-8 border border-purple-500/30">
             <div className="flex items-center space-x-2 mb-6">
               <svg className="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25M12 18.75L9.75 21 12 18.75zm0 0L14.25 21 12 18.75z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                <circle cx="12" cy="8" r="2" strokeWidth={2} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
               <h3 className="text-xl font-semibold text-purple-400">Send us a message</h3>
             </div>
