@@ -228,29 +228,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
           </div>
         </div>
 
-        {/* Progress Indicators */}
-        <div className="flex justify-center mt-12 space-x-2">
-          {steps.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                const element = stepRefs.current[index];
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === activeStep 
-                  ? 'bg-purple-600 scale-125' 
-                  : index < activeStep
-                    ? 'bg-purple-400'
-                    : darkMode ? 'bg-gray-600 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
-              }`}
-              aria-label={`Go to step ${index + 1}`}
-            />
-          ))}
-        </div>
-      </div>
     </section>
   );
 };
