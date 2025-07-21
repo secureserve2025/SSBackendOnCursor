@@ -106,7 +106,7 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
                 }}
               >
                 {/* Animated Icon */}
-                <div className={`mb-4 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${colorClasses.iconBg} mx-auto flex items-center justify-center`}>
+                <div className={`mb-4 w-16 h-16 rounded-full transition-all duration-300 group-hover:scale-110 ${colorClasses.iconBg} mx-auto flex items-center justify-center`}>
                   <IconComponent className={`h-8 w-8 transition-colors duration-300 ${colorClasses.iconColor}`} />
                 </div>
 
