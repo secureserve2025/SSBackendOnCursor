@@ -48,6 +48,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                 <span className={darkMode ? 'text-cyan-400' : 'text-purple-600'}>
                   AI-Powered Escrow Platform
                 </span>{' '}
+                </span>
                 for Freelancers & Clients
               </h1>
               
@@ -99,7 +100,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                 <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Video Editing Project Uploaded
                 </h3>
-                <div className="w-full bg-blue-200 rounded-full h-2">
                 <div className="w-full bg-purple-200 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-purple-500 to-cyan-400 h-2 rounded-full transition-all duration-1000 ease-out" 
