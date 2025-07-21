@@ -154,55 +154,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     transitionDelay: `${index * 0.1}s`
                   }}
                 >
-                  {/* Downward Arrow Block */}
-                  {index < steps.length - 1 && (
-                    <div className="flex flex-col items-center mr-6">
-                      <div className={`w-12 h-16 relative transition-all duration-700 ${
-                        isVisible 
-                          ? 'opacity-100 transform translate-y-0' 
-                          : 'opacity-0 transform translate-y-4'
-                      }`}
-                      style={{
-                        transitionDelay: `${index * 0.1 + 0.2}s`
-                      }}>
-                        {/* Arrow Block Shape */}
-                        <div className={`w-full h-full relative ${
-                          isActive 
-                            ? 'transform scale-110' 
-                            : isCompleted 
-                              ? 'transform scale-105' 
-                              : 'transform scale-100'
-                        } transition-transform duration-500`}>
-                          {/* Arrow Rectangle */}
-                          <div className={`w-8 h-10 mx-auto rounded-t-md transition-all duration-500 ${
-                            isActive || isCompleted
-                              ? stepColors[index].bg
-                              : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-                          } ${
-                            isActive ? `shadow-lg ${stepColors[index].glow}` : ''
-                          }`}></div>
-                          
-                          {/* Arrow Point */}
-                          <div className={`w-0 h-0 mx-auto transition-all duration-500`}
-                            style={{
-                              borderLeft: '24px solid transparent',
-                              borderRight: '24px solid transparent',
-                              borderTop: `12px solid ${
-                                isActive || isCompleted
-                                  ? stepColors[index].bg.includes('blue') ? '#2563eb' :
-                                    stepColors[index].bg.includes('purple') ? '#9333ea' :
-                                    stepColors[index].bg.includes('green') ? '#16a34a' :
-                                    stepColors[index].bg.includes('cyan') ? '#0891b2' :
-                                    stepColors[index].bg.includes('yellow') ? '#ca8a04' :
-                                    '#db2777'
-                                  : darkMode ? '#4b5563' : '#d1d5db'
-                              }`
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Step Content Card */}
                   <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
