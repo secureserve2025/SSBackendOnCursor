@@ -154,38 +154,9 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                     transitionDelay: `${index * 0.1}s`
                   }}
                 >
-                  {/* Step Chevron Arrow */}
-                  <div className={`relative z-10 flex-shrink-0 mb-4 transition-all duration-700 ${
-                    isVisible 
-                      ? 'opacity-100 transform translate-y-0 rotate-0' 
-                      : 'opacity-0 transform -translate-y-4 rotate-180'
-                  }`}
-                  style={{
-                    transitionDelay: `${index * 0.1 + 0.2}s`
-                  }}>
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-700 ${
-                      isActive 
-                        ? `scale-125 animate-bounce shadow-lg` 
-                        : isCompleted
-                          ? `opacity-90 scale-110 shadow-md`
-                          : `opacity-30 scale-90`
-                    } ${
-                      isActive || isCompleted 
-                        ? stepColors[index].bg
-                        : 'bg-gray-500'
-                    }`}>
-                      <ChevronDown className={`h-6 w-6 transition-all duration-700 ${
-                        isActive || isCompleted 
-                          ? 'text-white' 
-                          : 'text-gray-300'
-                      } ${
-                        isActive ? 'animate-pulse' : ''
-                      }`} />
-                    </div>
-                  </div>
 
                   {/* Step Content Card */}
-                  <div className={`ml-8 flex-1 p-6 rounded-2xl transition-all duration-700 ${
+                  <div className={`flex-1 p-6 rounded-2xl transition-all duration-700 ${
                     isVisible 
                       ? 'opacity-100 transform translate-x-0' 
                       : 'opacity-0 transform translate-x-8'
