@@ -1,10 +1,22 @@
 import React from 'react';
+import { useState } from 'react';
 
 interface CTASectionProps {
   darkMode: boolean;
 }
 
 const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowConfirmation(true);
+  };
+
+  const closeConfirmation = () => {
+    setShowConfirmation(false);
+  };
+
   return (
     <>
       {/* Call to Action Section */}
@@ -32,7 +44,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
             </div>
             <div className="w-12 h-0.5 bg-purple-400 mb-6"></div>
             
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSendMessage}>
               {/* Name Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
@@ -84,6 +96,29 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
           
         </div>
       </section>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full border border-purple-500/30 text-center">
+            <h3 className="text-2xl font-bold text-purple-400 mb-4">
+              Thank you!
+            </h3>
+            <p className="text-white text-lg mb-2">
+              Your message has been sent successfully.
+            </p>
+            <p className="text-gray-300 text-base mb-6">
+              We'll get back to you soon.
+            </p>
+            <button
+              onClick={closeConfirmation}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className={`py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${
