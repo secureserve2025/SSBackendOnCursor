@@ -106,12 +106,12 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
                 }}
               >
                 {/* Animated Icon */}
-                <div className={`mb-4 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${colorClasses.iconBg}`}>
+                <div className={`mb-4 p-3 rounded-full transition-all duration-300 group-hover:scale-110 ${colorClasses.iconBg} mx-auto flex items-center justify-center`}>
                   <IconComponent className={`h-8 w-8 transition-colors duration-300 ${colorClasses.iconColor}`} />
                 </div>
 
                 {/* Benefit Title */}
-                <h3 className={`text-xl font-semibold mb-3 transition-colors duration-300 ${
+                <h3 className={`text-xl font-semibold mb-3 transition-colors duration-300 text-center ${
                   darkMode 
                     ? 'text-white group-hover:text-white' 
                     : 'text-gray-900 group-hover:text-gray-900'
@@ -120,7 +120,7 @@ const SecureServeBenefits: React.FC<SecureServeBenefitsProps> = ({ darkMode }) =
                 </h3>
 
                 {/* Benefit Description */}
-                <p className={`text-sm sm:text-base leading-relaxed transition-colors duration-300 ${
+                <p className={`text-sm sm:text-base leading-relaxed transition-colors duration-300 text-center ${
                   darkMode 
                     ? 'text-gray-300 group-hover:text-gray-200' 
                     : 'text-gray-600 group-hover:text-gray-700'
