@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, User, Mail, Lock, Eye, EyeOff, ArrowLeft, Briefcase, Star, TrendingUp } from 'lucide-react';
+import { Shield, User, Mail, Lock, Eye, EyeOff, ArrowLeft, Star, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FreelancerLogin: React.FC = () => {
@@ -52,7 +52,7 @@ const FreelancerLogin: React.FC = () => {
           <div className="bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-8 text-center">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-white/20 p-3 rounded-full">
-                <Briefcase className="h-8 w-8 text-white" />
+                <User className="h-8 w-8 text-white" />
               </div>
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">
