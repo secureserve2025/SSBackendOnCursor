@@ -1,0 +1,182 @@
+import React, { useState } from 'react';
+import { Shield, Building, Mail, Lock, Eye, EyeOff, ArrowLeft, Users, CheckCircle, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const ClientLogin: React.FC = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({
+    email: '',
+    password: ''
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle client login logic here
+    console.log('Client login:', formData);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23a855f7" fill-opacity="0.05"%3E%3Cpath d="M30 30l15-15v30l-15-15zm-15 0l15 15V15l-15 15z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+      
+      <div className="relative max-w-md w-full">
+        {/* Back to Home */}
+        <div className="mb-6">
+          <Link 
+            to="/" 
+            className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-sm font-medium">Back to Home</span>
+          </Link>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-2xl border border-purple-200/50 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-white/20 p-3 rounded-full">
+                <Building className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Client Login
+            </h1>
+            <p className="text-purple-100 text-sm">
+              Manage your projects and connect with top freelancers
+            </p>
+          </div>
+
+          {/* Form Section */}
+          <div className="px-8 py-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Field */}
+              <div>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Business Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="company@domain.com"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-purple-500 transition-colors bg-purple-50/30"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password"
+                    className="w-full pl-10 pr-12 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-purple-500 transition-colors bg-purple-50/30"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-400 hover:text-purple-600"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-purple-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">Keep me signed in</span>
+                </label>
+                <a href="#" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  Reset password?
+                </a>
+              </div>
+
+              {/* Login Button */}
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              >
+                Access Client Dashboard
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-gray-300"></div>
+              <span className="px-4 text-sm text-gray-500">or</span>
+              <div className="flex-1 border-t border-gray-300"></div>
+            </div>
+
+            {/* Sign Up Link */}
+            <div className="text-center">
+              <p className="text-gray-600 text-sm">
+                Looking to hire talent?{' '}
+                <a href="#" className="text-purple-600 hover:text-purple-700 font-semibold">
+                  Create business account
+                </a>
+              </p>
+            </div>
+          </div>
+
+          {/* Benefits Footer */}
+          <div className="bg-purple-50 px-8 py-6 border-t border-purple-100">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="flex flex-col items-center">
+                <Users className="h-5 w-5 text-purple-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">Top Talent</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <CheckCircle className="h-5 w-5 text-purple-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">Quality Assured</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <Zap className="h-5 w-5 text-purple-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">Fast Delivery</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ClientLogin;

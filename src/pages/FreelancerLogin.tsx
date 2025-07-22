@@ -1,0 +1,182 @@
+import React, { useState } from 'react';
+import { Shield, User, Mail, Lock, Eye, EyeOff, ArrowLeft, Briefcase, Star, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const FreelancerLogin: React.FC = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({
+    email: '',
+    password: ''
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle freelancer login logic here
+    console.log('Freelancer login:', formData);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%2306b6d4" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+      
+      <div className="relative max-w-md w-full">
+        {/* Back to Home */}
+        <div className="mb-6">
+          <Link 
+            to="/" 
+            className="inline-flex items-center space-x-2 text-cyan-600 hover:text-cyan-700 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-sm font-medium">Back to Home</span>
+          </Link>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-2xl border border-cyan-200/50 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-white/20 p-3 rounded-full">
+                <Briefcase className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Freelancer Login
+            </h1>
+            <p className="text-cyan-100 text-sm">
+              Access your freelance dashboard and manage your projects
+            </p>
+          </div>
+
+          {/* Form Section */}
+          <div className="px-8 py-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Field */}
+              <div>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="your@email.com"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-cyan-200 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors bg-cyan-50/30"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password"
+                    className="w-full pl-10 pr-12 py-3 border-2 border-cyan-200 rounded-lg focus:outline-none focus:border-cyan-500 transition-colors bg-cyan-50/30"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-cyan-400 hover:text-cyan-600"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-cyan-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                </label>
+                <a href="#" className="text-sm text-cyan-600 hover:text-cyan-700 font-medium">
+                  Forgot password?
+                </a>
+              </div>
+
+              {/* Login Button */}
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+              >
+                Sign In as Freelancer
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="my-6 flex items-center">
+              <div className="flex-1 border-t border-gray-300"></div>
+              <span className="px-4 text-sm text-gray-500">or</span>
+              <div className="flex-1 border-t border-gray-300"></div>
+            </div>
+
+            {/* Sign Up Link */}
+            <div className="text-center">
+              <p className="text-gray-600 text-sm">
+                New to freelancing?{' '}
+                <a href="#" className="text-cyan-600 hover:text-cyan-700 font-semibold">
+                  Create freelancer account
+                </a>
+              </p>
+            </div>
+          </div>
+
+          {/* Benefits Footer */}
+          <div className="bg-cyan-50 px-8 py-6 border-t border-cyan-100">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="flex flex-col items-center">
+                <Star className="h-5 w-5 text-cyan-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">Secure Payments</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <TrendingUp className="h-5 w-5 text-cyan-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">Grow Your Business</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <Shield className="h-5 w-5 text-cyan-500 mb-1" />
+                <span className="text-xs text-gray-600 font-medium">AI Protection</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FreelancerLogin;
