@@ -176,7 +176,6 @@ const FreelancerLogin: React.FC = () => {
         </div>
       </div>
     </div>
-  )
   );
 };
 
