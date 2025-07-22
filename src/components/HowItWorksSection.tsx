@@ -177,13 +177,13 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
                       <div className="flex items-center space-x-4 mb-3">
                         <div className={`p-3 rounded-full transition-all duration-500 ${
                           isActive 
-                            ? darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
-                            : darkMode ? 'bg-gray-600' : 'bg-gray-100'
+                            ? darkMode ? `bg-${stepColors[index].bg.replace('bg-', '').replace('-600', '-900')}/30` : `bg-${stepColors[index].bg.replace('bg-', '').replace('-600', '-100')}`
+                            : darkMode ? `bg-${stepColors[index].bg.replace('bg-', '').replace('-600', '-900')}/20` : `bg-${stepColors[index].bg.replace('bg-', '').replace('-600', '-50')}`
                         }`}>
                           <IconComponent className={`h-6 w-6 transition-all duration-500 ${
                             isActive 
-                              ? darkMode ? 'text-purple-400 scale-110' : 'text-purple-600 scale-110'
-                              : darkMode ? 'text-gray-400' : 'text-gray-500'
+                              ? darkMode ? `text-${stepColors[index].bg.replace('bg-', '').replace('-600', '-400')} scale-110` : `text-${stepColors[index].bg.replace('bg-', '').replace('-600', '-600')} scale-110`
+                              : darkMode ? `text-${stepColors[index].bg.replace('bg-', '').replace('-600', '-400')}` : `text-${stepColors[index].bg.replace('bg-', '').replace('-600', '-500')}`
                           }`} />
                         </div>
                         
