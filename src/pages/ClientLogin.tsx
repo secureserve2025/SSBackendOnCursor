@@ -30,16 +30,16 @@ const ClientLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-purple-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23a855f7%22 fill-opacity=%220.05%22%3E%3Cpath d=%22M30 30l15-15v30l-15-15zm-15 0l15 15V15l-15 15z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23a855f7%22 fill-opacity=%220.1%22%3E%3Cpath d=%22M30 30l15-15v30l-15-15zm-15 0l15 15V15l-15 15z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
       
       <div className="relative max-w-md w-full">
         {/* Back to Home */}
         <div className="mb-6">
           <Link 
             to="/" 
-            className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+            className="inline-flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm font-medium">Back to Home</span>
@@ -47,7 +47,7 @@ const ClientLogin: React.FC = () => {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-2xl border border-purple-200/50 overflow-hidden">
+        <div className="bg-gray-800 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
           {/* Header Section */}
           <div className="bg-purple-600 px-8 py-8 text-center">
             <div className="flex items-center justify-center mb-4">
@@ -68,7 +68,7 @@ const ClientLogin: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
               <div>
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                <label className="block text-gray-300 text-sm font-semibold mb-2">
                   Business Email
                 </label>
                 <div className="relative">
@@ -81,7 +81,7 @@ const ClientLogin: React.FC = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="company@domain.com"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-purple-500 transition-colors bg-purple-50/30"
+                    className="w-full pl-10 pr-4 py-3 border-2 border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-400 transition-colors bg-gray-700 text-white placeholder-gray-400"
                     required
                   />
                 </div>
@@ -89,7 +89,7 @@ const ClientLogin: React.FC = () => {
 
               {/* Password Field */}
               <div>
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
+                <label className="block text-gray-300 text-sm font-semibold mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -102,13 +102,13 @@ const ClientLogin: React.FC = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
-                    className="w-full pl-10 pr-12 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:border-purple-500 transition-colors bg-purple-50/30"
+                    className="w-full pl-10 pr-12 py-3 border-2 border-purple-500/30 rounded-lg focus:outline-none focus:border-purple-400 transition-colors bg-gray-700 text-white placeholder-gray-400"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-400 hover:text-purple-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-400 hover:text-purple-300"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -120,11 +120,11 @@ const ClientLogin: React.FC = () => {
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-purple-300 rounded"
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-600 rounded bg-gray-700"
                   />
-                  <span className="ml-2 text-sm text-gray-600">Keep me signed in</span>
+                  <span className="ml-2 text-sm text-gray-300">Keep me signed in</span>
                 </label>
-                <a href="#" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                <a href="#" className="text-sm text-purple-400 hover:text-purple-300 font-medium">
                   Reset password?
                 </a>
               </div>
@@ -140,16 +140,16 @@ const ClientLogin: React.FC = () => {
 
             {/* Divider */}
             <div className="my-6 flex items-center">
-              <div className="flex-1 border-t border-gray-300"></div>
-              <span className="px-4 text-sm text-gray-500">or</span>
-              <div className="flex-1 border-t border-gray-300"></div>
+              <div className="flex-1 border-t border-gray-600"></div>
+              <span className="px-4 text-sm text-gray-400">or</span>
+              <div className="flex-1 border-t border-gray-600"></div>
             </div>
 
             {/* Sign Up Link */}
             <div className="text-center">
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-300 text-sm">
                 Looking to hire talent?{' '}
-                <a href="#" className="text-purple-600 hover:text-purple-700 font-semibold">
+                <a href="#" className="text-purple-400 hover:text-purple-300 font-semibold">
                   Create business account
                 </a>
               </p>
@@ -157,19 +157,19 @@ const ClientLogin: React.FC = () => {
           </div>
 
           {/* Benefits Footer */}
-          <div className="bg-purple-50 px-8 py-6 border-t border-purple-100">
+          <div className="bg-gray-700 px-8 py-6 border-t border-purple-500/30">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div className="flex flex-col items-center">
-                <Users className="h-5 w-5 text-purple-500 mb-1" />
-                <span className="text-xs text-gray-600 font-medium">Top Talent</span>
+                <Users className="h-5 w-5 text-purple-400 mb-1" />
+                <span className="text-xs text-gray-300 font-medium">Top Talent</span>
               </div>
               <div className="flex flex-col items-center">
-                <CheckCircle className="h-5 w-5 text-purple-500 mb-1" />
-                <span className="text-xs text-gray-600 font-medium">Quality Assured</span>
+                <CheckCircle className="h-5 w-5 text-purple-400 mb-1" />
+                <span className="text-xs text-gray-300 font-medium">Quality Assured</span>
               </div>
               <div className="flex flex-col items-center">
-                <Zap className="h-5 w-5 text-purple-500 mb-1" />
-                <span className="text-xs text-gray-600 font-medium">Fast Delivery</span>
+                <Zap className="h-5 w-5 text-purple-400 mb-1" />
+                <span className="text-xs text-gray-300 font-medium">Fast Delivery</span>
               </div>
             </div>
           </div>
