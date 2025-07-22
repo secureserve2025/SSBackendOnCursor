@@ -132,7 +132,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ darkMode }) => {
         {/* Vertical Timeline */}
         <div className="relative">
           {/* Steps */}
-          <div className="space-y-12">
+          <div className="space-y-6">
             {steps.map((step, index) => {
               const IconComponent = step.icon;
               const isActive = index === activeStep;
