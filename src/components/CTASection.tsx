@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface CTASectionProps {
   darkMode: boolean;
@@ -7,9 +7,84 @@ interface CTASectionProps {
 
 const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [isFormValid, setIsFormValid] = useState(false);
 
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Validate individual fields
+  const validateField = (name: string, value: string) => {
+    switch (name) {
+      case 'name':
+        return value.trim().length < 2 ? 'Name must be at least 2 characters long' : '';
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        return !emailRegex.test(value) ? 'Please enter a valid email address' : '';
+      case 'message':
+        return value.trim().length < 10 ? 'Message must be at least 10 characters long' : '';
+      default:
+        return '';
+    }
+  };
+
+  // Handle input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  // Handle input blur (when user leaves field)
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  // Check if form is valid
+  useEffect(() => {
+    const nameValid = formData.name.trim().length >= 2;
+    const emailValid = formData.email.trim() && emailRegex.test(formData.email);
+    const messageValid = formData.message.trim().length >= 10;
+    
+    setIsFormValid(nameValid && emailValid && messageValid);
+  }, [formData]);
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    const newErrors = {
+      name: validateField('name', formData.name),
+      email: validateField('email', formData.email),
+      message: validateField('message', formData.message)
+    };
+    
+    setErrors(newErrors);
+    
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    
+    if (!hasErrors && isFormValid) {
+      // Reset form
+      setFormData({ name: '', email: '', message: '' });
+      setErrors({ name: '', email: '', message: '' });
+      // Show confirmation
+      setShowConfirmation(true);
+    }
     setShowConfirmation(true);
   };
 
@@ -48,49 +123,109 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
               {/* Name Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
-                  Name
+                  Name *
                 </label>
                 <input
                   type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="Your full name"
-                  className="w-full px-4 py-3 bg-transparent border border-purple-500/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors"
+                  className={`w-full px-4 py-3 bg-transparent border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                    errors.name 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-purple-500/50 focus:border-purple-400'
+                  }`}
                 />
+                {errors.name && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {errors.name}
+                  </p>
+                )}
               </div>
               
               {/* Email Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="your@email.com"
-                  className="w-full px-4 py-3 bg-transparent border border-purple-500/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors"
+                  className={`w-full px-4 py-3 bg-transparent border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                    errors.email 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-purple-500/50 focus:border-purple-400'
+                  }`}
                 />
+                {errors.email && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {errors.email}
+                  </p>
+                )}
               </div>
               
               {/* Message Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
-                  Message
+                  Message *
                 </label>
                 <textarea
                   rows={5}
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="Tell us about your project..."
-                  className="w-full px-4 py-3 bg-transparent border-2 border-purple-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors resize-none"
+                  className={`w-full px-4 py-3 bg-transparent border-2 rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors resize-none ${
+                    errors.message 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-purple-500 focus:border-purple-400'
+                  }`}
                 ></textarea>
+                {errors.message && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {errors.message}
+                  </p>
+                )}
               </div>
               
               {/* Send Button */}
               <button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-md transition-colors flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                disabled={!isFormValid}
+                className={`w-full font-medium py-3 px-6 rounded-md transition-all flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                  isFormValid 
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer transform hover:scale-105' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                }`}
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 6-8 4-2 8-8-18z" />
                 </svg>
-                <span>Send Message</span>
+                <span>{isFormValid ? 'Send Message' : 'Please fill all fields'}</span>
               </button>
+              
+              {/* Form Requirements */}
+              <div className="text-center">
+                <p className="text-gray-400 text-xs">
+                  * All fields are required
+                </p>
+              </div>
             </form>
           </div>
           
