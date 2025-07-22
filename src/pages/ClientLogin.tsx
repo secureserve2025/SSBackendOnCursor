@@ -30,7 +30,7 @@ const ClientLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-rose-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-purple-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23a855f7%22 fill-opacity=%220.05%22%3E%3Cpath d=%22M30 30l15-15v30l-15-15zm-15 0l15 15V15l-15 15z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
       
@@ -49,7 +49,7 @@ const ClientLogin: React.FC = () => {
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl border border-purple-200/50 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-8 text-center">
+          <div className="bg-purple-600 px-8 py-8 text-center">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-white/20 p-3 rounded-full">
                 <Building className="h-8 w-8 text-white" />
@@ -132,7 +132,7 @@ const ClientLogin: React.FC = () => {
               {/* Login Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
                 Access Client Dashboard
               </button>
