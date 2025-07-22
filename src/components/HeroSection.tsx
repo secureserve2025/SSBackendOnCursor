@@ -288,7 +288,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
                 </button>
                 <button className={`px-4 py-3 rounded-lg font-medium transition-colors border ${
                   darkMode 
-                    ? 'border-purple-500/30 text-gray-300 hover:bg-purple-800/50' 
+                    ? 'border-purple-500/30 text-gray-300' 
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}>
                   Request Revision
