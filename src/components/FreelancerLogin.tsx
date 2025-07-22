@@ -200,3 +200,5 @@ const FreelancerLogin: React.FC = () => {
 };
 
 export default FreelancerLogin;
+  )
+}
