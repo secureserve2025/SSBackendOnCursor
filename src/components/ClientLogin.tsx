@@ -196,7 +196,6 @@ const ClientLogin: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
