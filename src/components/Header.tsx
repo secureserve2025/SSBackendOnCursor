@@ -9,6 +9,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const exploreLinks = [
     { label: 'How it works', href: '#how-it-works', onClick: () => scrollToSection('how-it-works') },
@@ -16,6 +17,10 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
     { label: 'Contact us', href: '#contact', onClick: () => scrollToFooter() },
   ];
 
+  const loginOptions = [
+    { label: 'As a Freelancer', href: '/login/freelancer' },
+    { label: 'As a Client', href: '/login/client' },
+  ];
   const indianLanguages = [
     { label: 'English', code: 'en' },
     { label: 'हिंदी (Hindi)', code: 'hi' },
@@ -144,10 +149,40 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               )}
             </div>
 
-            {/* CTA Button */}
-            <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-              Login
-            </button>
+            {/* Login Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsLoginOpen(!isLoginOpen)}
+                className={`flex items-center space-x-1 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                  isLoginOpen ? 'bg-purple-700' : ''
+                }`}
+              >
+                <span>Login</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${isLoginOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Login Dropdown Menu */}
+              {isLoginOpen && (
+                <div className={`absolute top-full right-0 mt-1 w-48 rounded-md shadow-lg ${
+                  darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
+                } py-1`}>
+                  {loginOptions.map((option) => (
+                    <a
+                      key={option.label}
+                      href={option.href}
+                      className={`block px-4 py-2 text-sm transition-colors ${
+                        darkMode 
+                          ? 'text-gray-300 hover:text-white hover:bg-purple-700/50' 
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setIsLoginOpen(false)}
+                    >
+                      {option.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -234,9 +269,24 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               
               {/* Mobile CTA */}
               <div className="px-3 pt-2">
-                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                  Login
-                </button>
+                <div className="space-y-2">
+                  <div className={`px-3 py-2 text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Login
+                  </div>
+                  {loginOptions.map((option) => (
+                    <a
+                      key={option.label}
+                      href={option.href}
+                      className={`block w-full px-6 py-3 rounded-md font-medium transition-colors text-center ${
+                        darkMode 
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      } focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2`}
+                    >
+                      {option.label}
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
