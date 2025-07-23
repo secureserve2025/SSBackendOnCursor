@@ -149,9 +149,9 @@ const FreelancerLogin: React.FC = () => {
             <div className="text-center">
               <p className="text-gray-300 text-sm">
                 Don't have an account?{' '}
-                <a href="#" className="text-cyan-400 hover:text-cyan-300 font-semibold">
+                <Link to="/signup/freelancer" className="text-cyan-400 hover:text-cyan-300 font-semibold">
                   Sign up here
-                </a>
+                </Link>
               </p>
             </div>
           </div>

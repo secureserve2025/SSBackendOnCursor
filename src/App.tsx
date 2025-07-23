@@ -9,6 +9,8 @@ import FAQsSection from './components/FAQsSection';
 import CTASection from './components/CTASection';
 import FreelancerLogin from './pages/FreelancerLogin';
 import ClientLogin from './pages/ClientLogin';
+import FreelancerSignup from './pages/FreelancerSignup';
+import ClientSignup from './pages/ClientSignup';
 
 function App() {
   // Always use dark mode
@@ -24,6 +26,8 @@ function App() {
       <Routes>
         <Route path="/login/freelancer" element={<FreelancerLogin />} />
         <Route path="/login/client" element={<ClientLogin />} />
+        <Route path="/signup/freelancer" element={<FreelancerSignup />} />
+        <Route path="/signup/client" element={<ClientSignup />} />
         <Route path="/" element={
           <div className="min-h-screen transition-colors duration-300 bg-gray-900">
             {/* Header Component */}

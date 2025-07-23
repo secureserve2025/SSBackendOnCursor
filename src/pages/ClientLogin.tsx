@@ -149,9 +149,9 @@ const ClientLogin: React.FC = () => {
             <div className="text-center">
               <p className="text-gray-300 text-sm">
                 Don't have an account?{' '}
-                <a href="#" className="text-purple-400 hover:text-purple-300 font-semibold">
+                <Link to="/signup/client" className="text-purple-400 hover:text-purple-300 font-semibold">
                   Sign up here
-                </a>
+                </Link>
               </p>
             </div>
           </div>
