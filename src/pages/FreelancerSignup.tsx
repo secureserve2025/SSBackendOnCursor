@@ -127,11 +127,6 @@ const FreelancerSignup: React.FC = () => {
         <div className="bg-gray-800 rounded-2xl shadow-2xl border border-cyan-500/30 overflow-hidden">
           {/* Header Section */}
           <div className="bg-cyan-600 px-8 py-8 text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-white/20 p-3 rounded-full">
-                <User className="h-8 w-8 text-white" />
-              </div>
-            </div>
             <h1 className="text-2xl font-bold text-white mb-2">
               Join as a Freelancer
             </h1>
