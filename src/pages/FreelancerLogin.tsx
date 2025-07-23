@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Shield, User, Mail, Lock, Eye, EyeOff, ArrowLeft, Star, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { signIn } from '../lib/supabase';
 
 const FreelancerLogin: React.FC = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -23,10 +26,51 @@ const FreelancerLogin: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle freelancer login logic here
-    console.log('Freelancer login:', formData);
+    
+    setIsLoading(true);
+    setErrors({ email: '', password: '' });
+
+    try {
+      const { data, error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setErrors({
+            email: 'Invalid email or password',
+            password: 'Invalid email or password'
+          });
+        } else {
+          setErrors({
+            email: error.message,
+            password: ''
+          });
+        }
+        return;
+      }
+
+      if (data.user) {
+        // Check if user is a freelancer
+        const userType = data.user.user_metadata?.user_type;
+        if (userType === 'freelancer') {
+          // Redirect to freelancer dashboard
+          navigate('/freelancer/dashboard');
+        } else {
+          setErrors({
+            email: 'This account is not registered as a freelancer',
+            password: ''
+          });
+        }
+      }
+    } catch (err) {
+      setErrors({
+        email: 'An unexpected error occurred',
+        password: ''
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,10 +120,18 @@ const FreelancerLogin: React.FC = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="your@email.com"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors bg-gray-700 text-white placeholder-gray-400"
+                    className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+                      errors.email 
+                        ? 'border-red-500 focus:border-red-400' 
+                        : 'border-cyan-500/30 focus:border-cyan-400'
+                    }`}
                     required
+                    disabled={isLoading}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-red-400 text-sm mt-1">{errors.email}</p>
+                )}
               </div>
 
               {/* Password Field */}
@@ -97,17 +149,26 @@ const FreelancerLogin: React.FC = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
-                    className="w-full pl-10 pr-12 py-3 border-2 border-cyan-500/30 rounded-lg focus:outline-none focus:border-cyan-400 transition-colors bg-gray-700 text-white placeholder-gray-400"
+                    className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+                      errors.password 
+                        ? 'border-red-500 focus:border-red-400' 
+                        : 'border-cyan-500/30 focus:border-cyan-400'
+                    }`}
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-cyan-400 hover:text-cyan-300"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-red-400 text-sm mt-1">{errors.password}</p>
+                )}
               </div>
 
               {/* Remember Me & Forgot Password */}
@@ -127,9 +188,14 @@ const FreelancerLogin: React.FC = () => {
               {/* Login Button */}
               <button
                 type="submit"
-                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                className={`w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 ${
+                  isLoading 
+                    ? 'bg-gray-600 cursor-not-allowed' 
+                    : 'bg-cyan-600 hover:bg-cyan-700 transform hover:scale-105'
+                } text-white`}
+                disabled={isLoading}
               >
-                Sign In as Freelancer
+                {isLoading ? 'Signing In...' : 'Sign In as Freelancer'}
               </button>
             </form>
 
