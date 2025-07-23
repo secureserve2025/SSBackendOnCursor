@@ -6,6 +6,7 @@ const FreelancerSignup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -303,7 +304,14 @@ const FreelancerSignup: React.FC = () => {
                     Terms of Service
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-cyan-400 hover:text-cyan-300 font-medium">
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPrivacyModal(true);
+                    }}
+                    className="text-cyan-400 hover:text-cyan-300 font-medium"
+                  >
                     Privacy Policy
                   </a>
                 </label>
@@ -383,6 +391,52 @@ const FreelancerSignup: React.FC = () => {
             <div className="mt-8 flex justify-end">
               <button
                 onClick={() => setShowTermsModal(false)}
+                className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-cyan-500/30">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-cyan-400">
+                Privacy Policy
+              </h3>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="text-gray-300 space-y-4 leading-relaxed">
+              <p className="text-white font-medium mb-4">
+                We respect your privacy and protect your data throughout your freelancing journey:
+              </p>
+              
+              <p>
+                Personal information like Name, Email ID, Aadhar Card Number, Mobile number, and transaction details is collected only to ensure secure payouts.
+              </p>
+              
+              <p>
+                All your data is encrypted and stored securely. We do not sell or share your information with third parties without explicit consent.
+              </p>
+              
+              <p>
+                You may update or delete your information anytime from your account dashboard.
+              </p>
+            </div>
+            
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowPrivacyModal(false)}
                 className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
               >
                 Close
