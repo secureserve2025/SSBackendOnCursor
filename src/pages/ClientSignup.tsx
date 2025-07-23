@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { Building, Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { signUp } from '../lib/supabase';
 
 const ClientSignup: React.FC = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,8 +68,11 @@ const ClientSignup: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    setIsLoading(true);
+    setSuccessMessage('');
     
     const newErrors = {
       email: '',
@@ -100,10 +107,46 @@ const ClientSignup: React.FC = () => {
     const hasErrors = Object.values(newErrors).some(error => error !== '');
     
     if (!hasErrors) {
-      // Handle client signup logic here
-      console.log('Client signup:', formData);
-      // You can add API call here
+      try {
+        const { data, error } = await signUp(formData.email, formData.password, 'client');
+        
+        if (error) {
+          if (error.message.includes('already registered')) {
+            setErrors({
+              email: 'This email is already registered',
+              password: '',
+              confirmPassword: ''
+            });
+          } else {
+            setErrors({
+              email: error.message,
+              password: '',
+              confirmPassword: ''
+            });
+          }
+          return;
+        }
+
+        if (data.user) {
+          setSuccessMessage('Account created successfully! Please check your email to verify your account.');
+          // Reset form
+          setFormData({ email: '', password: '', confirmPassword: '' });
+          // Redirect to login after 3 seconds
+          setTimeout(() => {
+            navigate('/login/client');
+          }, 3000);
+        }
+      } catch (err) {
+        setErrors({
+          email: 'An unexpected error occurred',
+          password: '',
+          confirmPassword: ''
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
+    setIsLoading(false);
   };
 
   return (
@@ -137,6 +180,16 @@ const ClientSignup: React.FC = () => {
 
           {/* Form Section */}
           <div className="px-8 py-8">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                <p className="text-green-400 text-sm flex items-center">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {successMessage}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
               <div>
@@ -159,6 +212,7 @@ const ClientSignup: React.FC = () => {
                         : 'border-purple-500/30 focus:border-purple-400'
                     }`}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 {errors.email && (
@@ -190,11 +244,13 @@ const ClientSignup: React.FC = () => {
                         : 'border-purple-500/30 focus:border-purple-400'
                     }`}
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-400 hover:text-purple-300"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -255,11 +311,13 @@ const ClientSignup: React.FC = () => {
                         : 'border-purple-500/30 focus:border-purple-400'
                     }`}
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-400 hover:text-purple-300"
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -285,6 +343,7 @@ const ClientSignup: React.FC = () => {
                   id="terms"
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-600 rounded bg-gray-700 mt-1"
                   required
+                  disabled={isLoading}
                 />
                 <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
                   I agree to the{' '}
@@ -315,9 +374,14 @@ const ClientSignup: React.FC = () => {
               {/* Signup Button */}
               <button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                className={`w-full font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                  isLoading 
+                    ? 'bg-gray-600 cursor-not-allowed' 
+                    : 'bg-purple-600 hover:bg-purple-700 transform hover:scale-105'
+                } text-white`}
+                disabled={isLoading}
               >
-                Create Client Account
+                {isLoading ? 'Creating Account...' : 'Create Client Account'}
               </button>
             </form>
 
