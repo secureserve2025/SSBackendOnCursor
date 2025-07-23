@@ -51,7 +51,7 @@ const ClientLogin: React.FC = () => {
           {/* Header Section */}
           <div className="bg-purple-600 px-8 py-8 text-center">
             <h1 className="text-2xl font-bold text-white mb-2">
-              Client Login
+              Welcome to Your Account!
             </h1>
             <p className="text-purple-100 text-sm">
               Manage your projects and connect with top freelancers
