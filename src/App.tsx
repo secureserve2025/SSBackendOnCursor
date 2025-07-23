@@ -11,6 +11,7 @@ import FreelancerLogin from './pages/FreelancerLogin';
 import ClientLogin from './pages/ClientLogin';
 import FreelancerSignup from './pages/FreelancerSignup';
 import ClientSignup from './pages/ClientSignup';
+import FreelancerDashboard from './pages/FreelancerDashboard';
 
 function App() {
   // Always use dark mode
@@ -28,6 +29,7 @@ function App() {
         <Route path="/login/client" element={<ClientLogin />} />
         <Route path="/signup/freelancer" element={<FreelancerSignup />} />
         <Route path="/signup/client" element={<ClientSignup />} />
+        <Route path="/freelancer/dashboard" element={<FreelancerDashboard />} />
         <Route path="/" element={
           <div className="min-h-screen transition-colors duration-300 bg-gray-900">
             {/* Header Component */}
