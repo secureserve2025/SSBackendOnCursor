@@ -10,6 +10,7 @@ interface ProfileData {
   countryCode: string;
   upiId: string;
   aadharNumber: string;
+  freelancerId: string;
 }
 
 const FreelancerDashboard: React.FC = () => {
@@ -25,7 +26,8 @@ const FreelancerDashboard: React.FC = () => {
     mobileNumber: '',
     countryCode: '+91',
     upiId: '',
-    aadharNumber: ''
+    aadharNumber: '',
+    freelancerId: ''
   });
   const [originalData, setOriginalData] = useState<ProfileData>({
     fullName: '',
@@ -33,7 +35,8 @@ const FreelancerDashboard: React.FC = () => {
     mobileNumber: '',
     countryCode: '+91',
     upiId: '',
-    aadharNumber: ''
+    aadharNumber: '',
+    freelancerId: ''
   });
   const [errors, setErrors] = useState<Partial<ProfileData>>({});
 
@@ -93,6 +96,21 @@ const FreelancerDashboard: React.FC = () => {
     return Math.round((completed / fields.length) * 100);
   };
 
+  // Generate unique freelancer ID based on email
+  const generateFreelancerId = (email: string) => {
+    // Create a hash from email for consistency
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) {
+      const char = email.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Convert to positive number and ensure 9 digits
+    const positiveHash = Math.abs(hash);
+    const nineDigitId = String(positiveHash).padStart(9, '0').slice(0, 9);
+    return `F${nineDigitId}`;
+  };
   // Handle input changes
   const handleInputChange = (field: keyof ProfileData, value: string) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
@@ -152,7 +170,14 @@ const FreelancerDashboard: React.FC = () => {
   // Handle save changes
   const handleSave = () => {
     if (validateForm()) {
-      setOriginalData({ ...profileData });
+      // Generate freelancer ID if profile is being completed for the first time
+      if (!profileData.freelancerId && profileData.email) {
+        const newFreelancerId = generateFreelancerId(profileData.email);
+        setProfileData(prev => ({ ...prev, freelancerId: newFreelancerId }));
+        setOriginalData({ ...profileData, freelancerId: newFreelancerId });
+      } else {
+        setOriginalData({ ...profileData });
+      }
       setHasChanges(false);
       setIsEditing(false);
       setLastUpdated(new Date());
@@ -246,6 +271,30 @@ const FreelancerDashboard: React.FC = () => {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
+          {/* Freelancer ID */}
+          <div className="md:col-span-2">
+            <label className="block text-gray-300 text-sm font-semibold mb-2">
+              Freelancer ID
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={profileData.freelancerId || 'Will be assigned after profile completion'}
+                disabled
+                className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60"
+              />
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <Shield className="h-5 w-5 text-cyan-400" />
+              </div>
+            </div>
+            <p className="text-gray-400 text-xs mt-1">
+              {profileData.freelancerId 
+                ? 'Your unique freelancer identification number' 
+                : 'ID will be automatically generated when you complete your profile'
+              }
+            </p>
+          </div>
+
           {/* Full Name */}
           <div>
             <label className="block text-gray-300 text-sm font-semibold mb-2">
