@@ -458,7 +458,9 @@ const FreelancerDashboard: React.FC = () => {
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">Welcome, Freelancer</span>
+              <span className="text-gray-300">
+                Welcome, {profileData.fullName || 'Freelancer'}
+              </span>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
