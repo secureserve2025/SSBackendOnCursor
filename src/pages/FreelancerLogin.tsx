@@ -55,7 +55,7 @@ const FreelancerLogin: React.FC = () => {
                 <User className="h-8 w-8 text-white" />
               </div>
             </div>
-            <p className="text-cyan-100 text-sm">
+            <p className="text-cyan-100 text-base">
               Access your freelance dashboard and manage your projects
             </p>
           </div>
