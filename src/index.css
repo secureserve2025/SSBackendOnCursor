@@ -49,6 +49,16 @@
   animation: swingHover 3s ease-in-out infinite;
 }
 
+/* Hide scrollbar for tab navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Fade in up animation for benefits section */
 @keyframes fadeInUp {
   0% {

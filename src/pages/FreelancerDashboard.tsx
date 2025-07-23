@@ -206,30 +206,34 @@ const FreelancerDashboard: React.FC = () => {
   };
 
   const renderProfileContent = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Welcome Banner for New Users */}
       {isNewUser && (
-        <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-2xl p-6">
-          <div className="flex items-start space-x-4">
+        <div 
+          className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-2xl p-4 sm:p-6"
+          role="alert"
+          aria-live="polite"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
             <div className="flex-shrink-0">
-              <CheckCircle className="h-8 w-8 text-cyan-400" />
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-white mb-2">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">
                 Welcome to SecureServe! 🎉
-              </h3>
-              <p className="text-gray-300 mb-4">
+              </h2>
+              <p className="text-sm sm:text-base text-gray-300 mb-4">
                 Please complete your profile information to get started with projects and receive secure payments.
               </p>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-32 bg-gray-700 rounded-full h-2">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                  <div className="flex-1 sm:w-32 bg-gray-700 rounded-full h-2" role="progressbar" aria-valuenow={calculateCompletion()} aria-valuemin={0} aria-valuemax={100} aria-label="Profile completion progress">
                     <div 
                       className="bg-gradient-to-r from-cyan-400 to-purple-400 h-2 rounded-full transition-all duration-500"
                       style={{ width: `${calculateCompletion()}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium text-cyan-400">
+                  <span className="text-sm font-medium text-cyan-400 whitespace-nowrap">
                     {calculateCompletion()}% Complete
                   </span>
                 </div>
@@ -241,53 +245,58 @@ const FreelancerDashboard: React.FC = () => {
 
       {/* Last Updated Info for Returning Users */}
       {!isNewUser && lastUpdated && (
-        <div className="flex items-center justify-between bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-2">
-            <Clock className="h-5 w-5 text-gray-400" />
-            <span className="text-gray-300">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" aria-hidden="true" />
+            <span className="text-sm sm:text-base text-gray-300">
               Last updated: {lastUpdated.toLocaleDateString()} at {lastUpdated.toLocaleTimeString()}
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-400" />
-            <span className="text-green-400 font-medium">Profile Complete</span>
+            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" aria-hidden="true" />
+            <span className="text-sm sm:text-base text-green-400 font-medium">Profile Complete</span>
           </div>
         </div>
       )}
 
       {/* Profile Form */}
-      <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-white">Profile Information</h2>
+      <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Profile Information</h2>
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 w-full sm:w-auto"
+              aria-label="Edit profile information"
             >
-              <Edit3 className="h-4 w-4" />
+              <Edit3 className="h-4 w-4" aria-hidden="true" />
               <span>Edit Profile</span>
             </button>
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <form className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8" noValidate>
           {/* Freelancer ID */}
-          <div className="md:col-span-2">
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+          <div className="lg:col-span-2">
+            <label htmlFor="freelancer-id" className="block text-gray-300 text-sm font-semibold mb-2">
               Freelancer ID
             </label>
             <div className="relative">
               <input
+                id="freelancer-id"
+                name="freelancerId"
                 type="text"
                 value={profileData.freelancerId || 'Will be assigned after profile completion'}
                 disabled
-                className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60"
+                className="w-full px-4 py-3 pr-12 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60 text-sm sm:text-base"
+                aria-describedby="freelancer-id-help"
+                tabIndex={-1}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <Shield className="h-5 w-5 text-cyan-400" />
+                <Shield className="h-5 w-5 text-cyan-400" aria-hidden="true" />
               </div>
             </div>
-            <p className="text-gray-400 text-xs mt-1">
+            <p id="freelancer-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
               {profileData.freelancerId 
                 ? 'Your unique freelancer identification number' 
                 : 'ID will be automatically generated when you complete your profile'
@@ -297,52 +306,66 @@ const FreelancerDashboard: React.FC = () => {
 
           {/* Full Name */}
           <div>
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+            <label htmlFor="full-name" className="block text-gray-300 text-sm font-semibold mb-2">
               Full Name *
             </label>
             <input
+              id="full-name"
+              name="fullName"
               type="text"
               value={profileData.fullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
               placeholder="Enter your full legal name"
               disabled={!isEditing}
-              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+              required
+              aria-invalid={errors.fullName ? 'true' : 'false'}
+              aria-describedby={errors.fullName ? 'full-name-error' : undefined}
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                 errors.fullName 
                   ? 'border-red-500 focus:border-red-400' 
-                  : 'border-gray-600 focus:border-cyan-400'
+                  : 'border-gray-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
               } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
             {errors.fullName && (
-              <p className="text-red-400 text-sm mt-1">{errors.fullName}</p>
+              <p id="full-name-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.fullName}
+              </p>
             )}
           </div>
 
           {/* Email Address (Read-only) */}
           <div>
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+            <label htmlFor="email" className="block text-gray-300 text-sm font-semibold mb-2">
               Email Address
             </label>
             <input
+              id="email"
+              name="email"
               type="email"
               value={profileData.email}
               disabled
-              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60"
+              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60 text-sm sm:text-base"
+              aria-describedby="email-help"
+              tabIndex={-1}
             />
-            <p className="text-gray-400 text-xs mt-1">Email cannot be changed</p>
+            <p id="email-help" className="text-gray-400 text-xs sm:text-sm mt-1">Email cannot be changed</p>
           </div>
 
           {/* Mobile Number */}
           <div>
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+            <label htmlFor="mobile-number" className="block text-gray-300 text-sm font-semibold mb-2">
               Mobile Number *
             </label>
             <div className="flex space-x-2">
               <select
+                id="country-code"
+                name="countryCode"
                 value={profileData.countryCode}
                 onChange={(e) => handleInputChange('countryCode', e.target.value)}
                 disabled={!isEditing}
-                className={`px-3 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white ${
-                  'border-gray-600 focus:border-cyan-400'
+                aria-label="Country code"
+                className={`px-2 sm:px-3 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white text-sm sm:text-base ${
+                  'border-gray-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
                 } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 {countryCodes.map((country) => (
@@ -352,55 +375,72 @@ const FreelancerDashboard: React.FC = () => {
                 ))}
               </select>
               <input
+                id="mobile-number"
+                name="mobileNumber"
                 type="tel"
                 value={profileData.mobileNumber}
                 onChange={(e) => handleInputChange('mobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="Enter 10-digit mobile number"
                 disabled={!isEditing}
-                className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+                required
+                maxLength={10}
+                aria-invalid={errors.mobileNumber ? 'true' : 'false'}
+                aria-describedby={errors.mobileNumber ? 'mobile-error' : undefined}
+                className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                   errors.mobileNumber 
                     ? 'border-red-500 focus:border-red-400' 
-                    : 'border-gray-600 focus:border-cyan-400'
+                    : 'border-gray-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
                 } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
             {errors.mobileNumber && (
-              <p className="text-red-400 text-sm mt-1">{errors.mobileNumber}</p>
+              <p id="mobile-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.mobileNumber}
+              </p>
             )}
           </div>
 
           {/* UPI ID */}
           <div>
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+            <label htmlFor="upi-id" className="block text-gray-300 text-sm font-semibold mb-2">
               UPI ID *
             </label>
             <input
+              id="upi-id"
+              name="upiId"
               type="text"
               value={profileData.upiId}
               onChange={(e) => handleInputChange('upiId', e.target.value)}
               placeholder="yourname@paytm, 9876543210@ybl"
               disabled={!isEditing}
-              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+              required
+              aria-invalid={errors.upiId ? 'true' : 'false'}
+              aria-describedby={`upi-help ${errors.upiId ? 'upi-error' : ''}`.trim()}
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                 errors.upiId 
                   ? 'border-red-500 focus:border-red-400' 
-                  : 'border-gray-600 focus:border-cyan-400'
+                  : 'border-gray-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
               } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
-            <p className="text-gray-400 text-xs mt-1">
+            <p id="upi-help" className="text-gray-400 text-xs sm:text-sm mt-1">
               Example: yourname@paytm, 9876543210@ybl
             </p>
             {errors.upiId && (
-              <p className="text-red-400 text-sm mt-1">{errors.upiId}</p>
+              <p id="upi-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.upiId}
+              </p>
             )}
           </div>
 
           {/* Aadhar Card Number */}
-          <div className="md:col-span-2">
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
+          <div className="lg:col-span-2">
+            <label htmlFor="aadhar-number" className="block text-gray-300 text-sm font-semibold mb-2">
               Aadhar Card Number *
             </label>
             <div className="relative">
               <input
+                id="aadhar-number"
+                name="aadharNumber"
                 type="text"
                 value={isEditing ? formatAadhar(profileData.aadharNumber) : maskAadhar(profileData.aadharNumber)}
                 onChange={(e) => {
@@ -410,48 +450,57 @@ const FreelancerDashboard: React.FC = () => {
                 placeholder="xxxx-xxxx-xxxx"
                 disabled={!isEditing}
                 maxLength={14}
-                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
+                required
+                aria-invalid={errors.aadharNumber ? 'true' : 'false'}
+                aria-describedby={`aadhar-help ${errors.aadharNumber ? 'aadhar-error' : ''}`.trim()}
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                   errors.aadharNumber 
                     ? 'border-red-500 focus:border-red-400' 
-                    : 'border-gray-600 focus:border-cyan-400'
+                    : 'border-gray-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
                 } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <Shield className="h-5 w-5 text-green-400" />
+                <Shield className="h-5 w-5 text-green-400" aria-hidden="true" />
               </div>
             </div>
             <div className="flex items-center space-x-2 mt-1">
-              <Shield className="h-4 w-4 text-green-400" />
-              <p className="text-green-400 text-xs">
+              <Shield className="h-4 w-4 text-green-400" aria-hidden="true" />
+              <p id="aadhar-help" className="text-green-400 text-xs sm:text-sm">
                 Your Aadhar details are encrypted and secure
               </p>
             </div>
             {errors.aadharNumber && (
-              <p className="text-red-400 text-sm mt-1">{errors.aadharNumber}</p>
+              <p id="aadhar-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.aadharNumber}
+              </p>
             )}
           </div>
-        </div>
+        </form>
 
         {/* Action Buttons */}
         {isEditing && (
-          <div className="flex items-center justify-end space-x-4 mt-8 pt-6 border-t border-gray-700">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 mt-6 sm:mt-8 pt-6 border-t border-gray-700">
             <button
               onClick={handleCancel}
-              className="flex items-center space-x-2 px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+              className="flex items-center justify-center space-x-2 px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 focus:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+              type="button"
+              aria-label="Cancel profile changes"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
               <span>Cancel</span>
             </button>
             <button
               onClick={handleSave}
               disabled={!hasChanges}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-colors ${
+              type="button"
+              aria-label="Save profile changes"
+              className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 ${
                 hasChanges 
-                  ? 'bg-cyan-600 hover:bg-cyan-700 text-white' 
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  ? 'bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white focus:ring-cyan-400' 
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
               }`}
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-4 w-4" aria-hidden="true" />
               <span>Save Changes</span>
             </button>
           </div>
@@ -466,26 +515,26 @@ const FreelancerDashboard: React.FC = () => {
         return renderProfileContent();
       case 'projects':
         return (
-          <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 text-center">
-            <Briefcase className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">My Projects</h3>
-            <p className="text-gray-400">Your project management interface will be available here.</p>
+          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
+            <Briefcase className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">My Projects</h2>
+            <p className="text-sm sm:text-base text-gray-400">Your project management interface will be available here.</p>
           </div>
         );
       case 'transactions':
         return (
-          <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 text-center">
-            <CreditCard className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Transactions</h3>
-            <p className="text-gray-400">Your payment history and transaction details will appear here.</p>
+          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
+            <CreditCard className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Transactions</h2>
+            <p className="text-sm sm:text-base text-gray-400">Your payment history and transaction details will appear here.</p>
           </div>
         );
       case 'messages':
         return (
-          <div className="bg-gray-800 rounded-2xl p-8 border border-gray-700 text-center">
-            <MessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Messages</h3>
-            <p className="text-gray-400">Communication with clients will be managed here.</p>
+          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
+            <MessageSquare className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Messages</h2>
+            <p className="text-sm sm:text-base text-gray-400">Communication with clients will be managed here.</p>
           </div>
         );
       default:
@@ -494,25 +543,30 @@ const FreelancerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900" role="main">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 lg:px-8">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 sm:px-6 lg:px-8" role="banner">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link 
+              to="/" 
+              className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded-lg p-1"
+              aria-label="SecureServe Home"
+            >
               <Shield className="h-8 w-8 text-cyan-400" />
               <span className="text-xl font-bold text-white">SecureServe</span>
             </Link>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-300">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className="text-gray-300 text-sm sm:text-base hidden sm:inline">
                 Welcome, {profileData.fullName || 'Freelancer'}
               </span>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm"
+                className="px-3 py-2 sm:px-4 bg-red-600 hover:bg-red-700 focus:bg-red-700 text-white rounded-lg transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                aria-label="Logout from dashboard"
               >
                 Logout
               </button>
@@ -522,35 +576,45 @@ const FreelancerDashboard: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8" role="main">
         {/* Tab Navigation */}
-        <div className="mb-8">
+        <nav className="mb-6 sm:mb-8" role="navigation" aria-label="Dashboard navigation">
           <div className="border-b border-gray-700">
-            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+            <div className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                    className={`flex items-center space-x-1 sm:space-x-2 py-3 sm:py-4 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-gray-900 ${
                       activeTab === tab.id
                         ? 'border-cyan-400 text-cyan-400'
                         : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
                     }`}
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`${tab.id}-panel`}
+                    id={`${tab.id}-tab`}
                   >
-                    <IconComponent className="h-5 w-5" />
+                    <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span>{tab.label}</span>
                   </button>
                 );
               })}
-            </nav>
+            </div>
           </div>
-        </div>
+        </nav>
 
         {/* Tab Content */}
-        {renderTabContent()}
-      </div>
+        <div 
+          role="tabpanel" 
+          id={`${activeTab}-panel`} 
+          aria-labelledby={`${activeTab}-tab`}
+        >
+          {renderTabContent()}
+        </div>
+      </main>
     </div>
   );
 };
