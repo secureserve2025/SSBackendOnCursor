@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 const ClientSignup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -291,7 +292,14 @@ const ClientSignup: React.FC = () => {
                 />
                 <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
                   I agree to the{' '}
-                  <a href="#" className="text-purple-400 hover:text-purple-300 font-medium">
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowTermsModal(true);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 font-medium"
+                  >
                     Terms of Service
                   </a>{' '}
                   and{' '}
@@ -329,6 +337,60 @@ const ClientSignup: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms of Service Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-purple-500/30">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-purple-400">
+                Terms of Service
+              </h3>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="text-gray-300 space-y-4 leading-relaxed">
+              <p className="text-white font-medium mb-4">
+                By creating a client account on SecureServe, you agree to the following:
+              </p>
+              
+              <p>
+                You will define clear project requirements and milestones for freelancers you engage with.
+              </p>
+              
+              <p>
+                Project funds are placed in escrow and released only when you approve submitted deliverables.
+              </p>
+              
+              <p>
+                Our AI-assisted systems help track progress and facilitate fair dispute resolution, if needed.
+              </p>
+              
+              <p>
+                You agree to maintain transparency in communication and ensure timely feedback or release of funds.
+              </p>
+              
+              <p>
+                Misuse of the platform, including failure to honor escrow terms or abusive behavior, may lead to account restrictions.
+              </p>
+            </div>
+            
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
