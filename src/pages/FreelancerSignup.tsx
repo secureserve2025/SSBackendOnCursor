@@ -131,7 +131,7 @@ const FreelancerSignup: React.FC = () => {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">
-              Join as Freelancer
+              Join as a Freelancer
             </h1>
             <p className="text-cyan-100 text-sm">
               Create your account and start earning securely
