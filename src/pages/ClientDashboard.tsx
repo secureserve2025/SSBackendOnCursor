@@ -192,7 +192,7 @@ const ClientDashboard: React.FC = () => {
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Freelancer ID</div>
-                <div className="text-right">Value Transferred (₹)</div>
+                <div className="text-right">Value (₹)</div>
                 <div className="text-center">Value Status</div>
               </div>
             </div>
