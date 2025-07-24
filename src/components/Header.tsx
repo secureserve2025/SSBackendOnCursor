@@ -13,7 +13,6 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
 
   const exploreLinks = [
     { label: 'How it works', href: '#how-it-works', onClick: () => scrollToSection('how-it-works') },
-    { label: 'About Us', href: '#about-us', onClick: () => scrollToSection('about-us') },
     { label: 'FAQs', href: '#faqs', onClick: () => scrollToSection('faqs') },
     { label: 'Contact us', href: '#contact', onClick: () => scrollToFooter() },
   ];
