@@ -166,6 +166,87 @@ const ClientDashboard: React.FC = () => {
     </div>
   );
 
+  const renderTransactionsContent = () => (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Transactions Header */}
+      <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Transaction History</h2>
+            <p className="text-sm sm:text-base text-gray-300">
+              View your payment history and project transactions
+            </p>
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <CreditCard className="h-4 w-4" aria-hidden="true" />
+            <span>₹0 Total Spent</span>
+          </div>
+        </div>
+
+        {/* Transactions Table */}
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            {/* Table Header */}
+            <div className="bg-gray-700 rounded-t-lg">
+              <div className="grid grid-cols-4 gap-4 p-4 text-sm font-semibold text-gray-300">
+                <div className="text-left">Project ID</div>
+                <div className="text-left">Project Name</div>
+                <div className="text-left">Freelancer ID</div>
+                <div className="text-right">Value Transferred (₹)</div>
+              </div>
+            </div>
+
+            {/* Table Body - Empty State */}
+            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+              <div className="p-8 sm:p-12 text-center">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                    <CreditCard className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">
+                      No Transactions Yet
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                      Your payment history will appear here once you complete projects and make payments. 
+                      All transactions are secure and processed through our escrow system.
+                    </p>
+                  </div>
+                  <div className="pt-4">
+                    <button
+                      onClick={() => setActiveTab('add-project')}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      aria-label="Create a new project"
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      <span>Create Project</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Transaction Summary */}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-gray-700 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-red-400">₹0</div>
+            <div className="text-sm text-gray-300">Total Spent</div>
+          </div>
+          <div className="bg-gray-700 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-blue-400">0</div>
+            <div className="text-sm text-gray-300">Projects Funded</div>
+          </div>
+          <div className="bg-gray-700 rounded-lg p-4 text-center">
+            <div className="text-2xl font-bold text-purple-400">₹0</div>
+            <div className="text-sm text-gray-300">Average Project Cost</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
@@ -175,13 +256,7 @@ const ClientDashboard: React.FC = () => {
       case 'projects':
         return renderMyProjectsContent();
       case 'transactions':
-        return (
-          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
-            <CreditCard className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Transactions</h2>
-            <p className="text-sm sm:text-base text-gray-400">View your payment history and transaction details.</p>
-          </div>
-        );
+        return renderTransactionsContent();
       case 'messages':
         return (
           <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
