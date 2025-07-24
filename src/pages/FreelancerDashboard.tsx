@@ -620,11 +620,12 @@ const FreelancerDashboard: React.FC = () => {
           <div className="min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-4 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Client ID</div>
                 <div className="text-right">Value Transferred (₹)</div>
+                <div className="text-center">Value Status</div>
               </div>
             </div>
 
