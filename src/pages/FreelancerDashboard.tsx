@@ -509,6 +509,95 @@ const FreelancerDashboard: React.FC = () => {
     </div>
   );
 
+  const renderMyProjectsContent = () => (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Projects Header */}
+      <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">My Projects</h2>
+            <p className="text-sm sm:text-base text-gray-300">
+              Manage and track your active and completed projects
+            </p>
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <Briefcase className="h-4 w-4" aria-hidden="true" />
+            <span>0 Total Projects</span>
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <div className="overflow-x-auto">
+          <div className="min-w-full">
+            {/* Table Header */}
+            <div className="bg-gray-700 rounded-t-lg">
+              <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
+                <div className="text-left">Project ID</div>
+                <div className="text-left">Project Name</div>
+                <div className="text-left">Client ID</div>
+                <div className="text-center">Status</div>
+                <div className="text-right">Value (₹)</div>
+              </div>
+            </div>
+
+            {/* Table Body - Empty State */}
+            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+              <div className="p-8 sm:p-12 text-center">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                    <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">
+                      No Projects Yet
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                      Your projects will appear here once clients start hiring you. 
+                      Make sure your profile is complete to attract more clients.
+                    </p>
+                  </div>
+                  <div className="pt-4">
+                    <button
+                      onClick={() => setActiveTab('profile')}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      aria-label="Complete your profile"
+                    >
+                      <User className="h-4 w-4" aria-hidden="true" />
+                      <span>Complete Profile</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Legend */}
+        <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-300 mb-3">Project Status Legend:</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-gray-300">Complete</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-300">Active</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span className="text-gray-300">Manual Revision</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-gray-300">Approval Pending</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
