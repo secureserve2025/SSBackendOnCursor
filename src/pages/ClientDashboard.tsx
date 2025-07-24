@@ -173,13 +173,7 @@ const ClientDashboard: React.FC = () => {
       case 'add-project':
         return <AddProjectForm />;
       case 'projects':
-        return (
-          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
-            <Briefcase className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">My Projects</h2>
-            <p className="text-sm sm:text-base text-gray-400">Manage your active and completed projects.</p>
-          </div>
-        );
+        return renderMyProjectsContent();
       case 'transactions':
         return (
           <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
