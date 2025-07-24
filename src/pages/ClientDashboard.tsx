@@ -99,12 +99,14 @@ const ClientDashboard: React.FC = () => {
           <div className="min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-7 gap-4 p-4 text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Freelancer ID</div>
                 <div className="text-center">Status</div>
-                <div className="text-right">Value (₹)</div>
+                <div className="text-center">Deliverable List</div>
+                <div className="text-center">Work Product</div>
+                <div className="text-center">Verification Report</div>
               </div>
             </div>
 
