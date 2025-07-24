@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, Briefcase, Plus, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Building } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Briefcase, Plus, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Building, Upload, ChevronDown, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, signOut } from '../lib/supabase';
 
@@ -513,13 +513,7 @@ const ClientDashboard: React.FC = () => {
       case 'profile':
         return renderProfileContent();
       case 'add-project':
-        return (
-          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
-            <Plus className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Add New Project</h2>
-            <p className="text-sm sm:text-base text-gray-400">Create and post new projects to hire freelancers.</p>
-          </div>
-        );
+        return renderAddProjectContent();
       case 'projects':
         return (
           <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
@@ -547,6 +541,556 @@ const ClientDashboard: React.FC = () => {
       default:
         return renderProfileContent();
     }
+  };
+
+  const renderAddProjectContent = () => {
+    const [projectData, setProjectData] = useState({
+      category: 'Video Production',
+      projectName: '',
+      description: '',
+      freelancerId: '',
+      completionDate: '',
+      files: [] as File[]
+    });
+    
+    const [deliverables, setDeliverables] = useState([
+      { id: 1, text: '' },
+      { id: 2, text: '' },
+      { id: 3, text: '' }
+    ]);
+    
+    const [showDeliverables, setShowDeliverables] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+    const [errors, setErrors] = useState<{[key: string]: string}>({});
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    const categoryOptions = [
+      { value: 'Video Production', label: 'Video Production', enabled: true },
+      { value: 'Content', label: 'Content', enabled: false },
+      { value: 'UI/UX Design', label: 'UI/UX Design', enabled: false },
+      { value: 'Gen AI', label: 'Gen AI', enabled: false }
+    ];
+    
+    const acceptedFileTypes = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.avi,.mkv,.txt,.zip,.rar';
+    
+    // Get tomorrow's date for minimum date validation
+    const getTomorrowDate = () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    };
+    
+    const handleInputChange = (field: string, value: string) => {
+      setProjectData(prev => ({ ...prev, [field]: value }));
+      if (errors[field]) {
+        setErrors(prev => ({ ...prev, [field]: '' }));
+      }
+    };
+    
+    const handleDeliverableChange = (id: number, value: string) => {
+      setDeliverables(prev => 
+        prev.map(item => item.id === id ? { ...item, text: value } : item)
+      );
+    };
+    
+    const addDeliverable = () => {
+      if (deliverables.length < 10) {
+        const newId = Math.max(...deliverables.map(d => d.id)) + 1;
+        setDeliverables(prev => [...prev, { id: newId, text: '' }]);
+      }
+    };
+    
+    const removeDeliverable = (id: number) => {
+      if (deliverables.length > 1) {
+        setDeliverables(prev => prev.filter(item => item.id !== id));
+      }
+    };
+    
+    const validateForm = () => {
+      const newErrors: {[key: string]: string} = {};
+      
+      if (!projectData.projectName.trim()) {
+        newErrors.projectName = 'Project name is required';
+      }
+      
+      if (!projectData.description.trim()) {
+        newErrors.description = 'Project description is required';
+      } else if (projectData.description.trim().length < 50) {
+        newErrors.description = 'Description must be at least 50 characters';
+      }
+      
+      if (!projectData.freelancerId.trim()) {
+        newErrors.freelancerId = 'Freelancer ID is required';
+      } else if (!/^F\d{9}$/.test(projectData.freelancerId)) {
+        newErrors.freelancerId = 'Invalid format. Use F followed by 9 digits (e.g., F123456789)';
+      }
+      
+      if (!projectData.completionDate) {
+        newErrors.completionDate = 'Completion date is required';
+      } else {
+        const selectedDate = new Date(projectData.completionDate);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        if (selectedDate < tomorrow) {
+          newErrors.completionDate = 'Completion date must be at least tomorrow';
+        }
+      }
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+    
+    const handleDrag = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.type === 'dragenter' || e.type === 'dragover') {
+        setDragActive(true);
+      } else if (e.type === 'dragleave') {
+        setDragActive(false);
+      }
+    };
+    
+    const handleDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      
+      const files = Array.from(e.dataTransfer.files);
+      handleFiles(files);
+    };
+    
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+      }
+    };
+    
+    const handleFiles = (files: File[]) => {
+      const validFiles = files.filter(file => {
+        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+        return acceptedFileTypes.includes(extension);
+      });
+      
+      // Simulate upload progress
+      validFiles.forEach(file => {
+        const fileName = file.name;
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setUploadProgress(prev => ({ ...prev, [fileName]: progress }));
+          if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              setUploadProgress(prev => {
+                const newProgress = { ...prev };
+                delete newProgress[fileName];
+                return newProgress;
+              });
+            }, 1000);
+          }
+        }, 100);
+      });
+      
+      setProjectData(prev => ({
+        ...prev,
+        files: [...prev.files, ...validFiles]
+      }));
+    };
+    
+    const removeFile = (index: number) => {
+      setProjectData(prev => ({
+        ...prev,
+        files: prev.files.filter((_, i) => i !== index)
+      }));
+    };
+    
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (validateForm()) {
+        setShowDeliverables(true);
+      }
+    };
+    
+    const handleGenerateAI = () => {
+      // Simulate AI generation
+      const aiDeliverables = [
+        'High-quality 1080p video resolution',
+        'Professional color grading and correction',
+        'Clear audio with noise reduction',
+        'Smooth transitions and cuts',
+        'Brand-consistent graphics and titles',
+        'Optimized file format (MP4/MOV)',
+        'Delivery within specified duration',
+        'Source files and project backup'
+      ];
+      
+      const newDeliverables = aiDeliverables.slice(0, 8).map((text, index) => ({
+        id: index + 1,
+        text
+      }));
+      
+      setDeliverables(newDeliverables);
+    };
+    
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 sm:mb-8">Create New Project</h2>
+          
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8" noValidate>
+            {/* Project Category */}
+            <div>
+              <label htmlFor="project-category" className="block text-gray-300 text-sm font-semibold mb-2">
+                Project Category *
+              </label>
+              <div className="relative">
+                <select
+                  id="project-category"
+                  value={projectData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-700 text-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 text-sm sm:text-base"
+                  required
+                >
+                  {categoryOptions.map((option) => (
+                    <option 
+                      key={option.value} 
+                      value={option.value}
+                      disabled={!option.enabled}
+                      className={!option.enabled ? 'text-gray-500' : ''}
+                    >
+                      {option.label} {!option.enabled ? '(Enabled Soon)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                Currently only Video Production projects are available. Other categories coming soon!
+              </p>
+            </div>
+            
+            {/* Project Name */}
+            <div>
+              <label htmlFor="project-name" className="block text-gray-300 text-sm font-semibold mb-2">
+                Project Name *
+              </label>
+              <input
+                id="project-name"
+                type="text"
+                value={projectData.projectName}
+                onChange={(e) => handleInputChange('projectName', e.target.value)}
+                placeholder="Enter a descriptive project name"
+                className={`w-full px-4 py-3 border-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none transition-colors text-sm sm:text-base ${
+                  errors.projectName 
+                    ? 'border-red-500 focus:border-red-400' 
+                    : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                }`}
+                required
+                aria-invalid={errors.projectName ? 'true' : 'false'}
+                aria-describedby={errors.projectName ? 'project-name-error' : undefined}
+              />
+              {errors.projectName && (
+                <p id="project-name-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                  {errors.projectName}
+                </p>
+              )}
+            </div>
+            
+            {/* Project Description */}
+            <div>
+              <label htmlFor="project-description" className="block text-gray-300 text-sm font-semibold mb-2">
+                Project Requirement Description *
+              </label>
+              <textarea
+                id="project-description"
+                rows={6}
+                value={projectData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Provide detailed requirements, expectations, style preferences, target audience, and any specific instructions..."
+                className={`w-full px-4 py-3 border-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none transition-colors resize-none text-sm sm:text-base ${
+                  errors.description 
+                    ? 'border-red-500 focus:border-red-400' 
+                    : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                }`}
+                required
+                aria-invalid={errors.description ? 'true' : 'false'}
+                aria-describedby={`description-help ${errors.description ? 'description-error' : ''}`.trim()}
+              />
+              <div className="flex justify-between items-center mt-1">
+                <p id="description-help" className="text-gray-400 text-xs sm:text-sm">
+                  Minimum 50 characters required
+                </p>
+                <span className={`text-xs sm:text-sm ${
+                  projectData.description.length >= 50 ? 'text-green-400' : 'text-gray-400'
+                }`}>
+                  {projectData.description.length}/50
+                </span>
+              </div>
+              {errors.description && (
+                <p id="description-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                  {errors.description}
+                </p>
+              )}
+            </div>
+            
+            {/* Freelancer ID and Completion Date Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              {/* Freelancer ID */}
+              <div>
+                <label htmlFor="freelancer-id" className="block text-gray-300 text-sm font-semibold mb-2">
+                  Freelancer ID *
+                </label>
+                <input
+                  id="freelancer-id"
+                  type="text"
+                  value={projectData.freelancerId}
+                  onChange={(e) => handleInputChange('freelancerId', e.target.value.toUpperCase())}
+                  placeholder="F123456789"
+                  className={`w-full px-4 py-3 border-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none transition-colors text-sm sm:text-base ${
+                    errors.freelancerId 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                  }`}
+                  required
+                  maxLength={10}
+                  aria-invalid={errors.freelancerId ? 'true' : 'false'}
+                  aria-describedby={`freelancer-id-help ${errors.freelancerId ? 'freelancer-id-error' : ''}`.trim()}
+                />
+                <p id="freelancer-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
+                  Format: F followed by 9 digits (e.g., F123456789)
+                </p>
+                {errors.freelancerId && (
+                  <p id="freelancer-id-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                    {errors.freelancerId}
+                  </p>
+                )}
+              </div>
+              
+              {/* Completion Date */}
+              <div>
+                <label htmlFor="completion-date" className="block text-gray-300 text-sm font-semibold mb-2">
+                  Desired Completion Date *
+                </label>
+                <input
+                  id="completion-date"
+                  type="date"
+                  value={projectData.completionDate}
+                  onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                  min={getTomorrowDate()}
+                  className={`w-full px-4 py-3 border-2 rounded-lg bg-gray-700 text-white focus:outline-none transition-colors text-sm sm:text-base ${
+                    errors.completionDate 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                  }`}
+                  required
+                  aria-invalid={errors.completionDate ? 'true' : 'false'}
+                  aria-describedby={`completion-date-help ${errors.completionDate ? 'completion-date-error' : ''}`.trim()}
+                />
+                <p id="completion-date-help" className="text-gray-400 text-xs sm:text-sm mt-1">
+                  Minimum date: Tomorrow
+                </p>
+                {errors.completionDate && (
+                  <p id="completion-date-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                    {errors.completionDate}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* File Upload Section */}
+            <div>
+              <label className="block text-gray-300 text-sm font-semibold mb-2">
+                Upload Project Files
+              </label>
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-6 sm:p-8 transition-all duration-300 ${
+                  dragActive 
+                    ? 'border-purple-400 bg-purple-900/20' 
+                    : 'border-gray-600 hover:border-gray-500'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={acceptedFileTypes}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  aria-label="Upload project files"
+                />
+                
+                <div className="text-center">
+                  <Upload className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300 text-sm sm:text-base mb-2">
+                    Drag and drop files here, or{' '}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-purple-400 hover:text-purple-300 font-medium underline focus:outline-none focus:ring-2 focus:ring-purple-400 rounded"
+                    >
+                      browse
+                    </button>
+                  </p>
+                  <p className="text-gray-400 text-xs sm:text-sm">
+                    Supported formats: PDF, DOC, DOCX, JPG, PNG, MP4, MOV, AVI, MKV, TXT, ZIP, RAR
+                  </p>
+                </div>
+              </div>
+              
+              {/* Uploaded Files List */}
+              {projectData.files.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-gray-300 text-sm font-medium">Uploaded Files:</h4>
+                  {projectData.files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-700 rounded-lg p-3">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="flex-shrink-0">
+                          <CheckCircle className="h-5 w-5 text-green-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm truncate">{file.name}</p>
+                          <p className="text-gray-400 text-xs">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="flex-shrink-0 text-red-400 hover:text-red-300 p-1 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Upload Progress */}
+              {Object.keys(uploadProgress).length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {Object.entries(uploadProgress).map(([fileName, progress]) => (
+                    <div key={fileName} className="bg-gray-700 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white text-sm truncate">{fileName}</span>
+                        <span className="text-purple-400 text-sm">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-600 rounded-full h-2">
+                        <div 
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Submit Button */}
+            {!showDeliverables && (
+              <div className="flex justify-end pt-6 border-t border-gray-700">
+                <button
+                  type="submit"
+                  className="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <span>Continue to Deliverables</span>
+                  <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+                </button>
+              </div>
+            )}
+          </form>
+        </div>
+        
+        {/* Deliverables Section */}
+        {showDeliverables && (
+          <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Project Deliverables Checklist</h3>
+            <p className="text-gray-300 text-sm sm:text-base mb-6">
+              Define specific deliverables that the freelancer must provide. This checklist will be used for AI verification.
+            </p>
+            
+            <div className="space-y-4 mb-6">
+              {deliverables.map((deliverable, index) => (
+                <div key={deliverable.id} className="flex items-center space-x-3">
+                  <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    {index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={deliverable.text}
+                    onChange={(e) => handleDeliverableChange(deliverable.id, e.target.value)}
+                    placeholder={`Deliverable ${index + 1} (e.g., High-quality 1080p video resolution)`}
+                    className="flex-1 px-4 py-3 border-2 border-gray-600 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 text-sm sm:text-base"
+                    aria-label={`Deliverable ${index + 1}`}
+                  />
+                  {deliverables.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeDeliverable(deliverable.id)}
+                      className="flex-shrink-0 text-red-400 hover:text-red-300 p-2 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                      aria-label={`Remove deliverable ${index + 1}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                {deliverables.length < 10 && (
+                  <button
+                    type="button"
+                    onClick={addDeliverable}
+                    className="flex items-center justify-center space-x-2 px-4 py-2 border border-purple-500 text-purple-400 rounded-lg hover:bg-purple-900/20 focus:bg-purple-900/20 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Deliverable</span>
+                  </button>
+                )}
+                <span className="text-gray-400 text-sm self-center">
+                  {deliverables.length}/10 deliverables
+                </span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={handleGenerateAI}
+                className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 transform hover:scale-105"
+              >
+                <Zap className="h-4 w-4" />
+                <span>Generate via AI Assistant</span>
+              </button>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-700">
+              <button
+                type="button"
+                onClick={() => setShowDeliverables(false)}
+                className="flex items-center justify-center space-x-2 px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 focus:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                <span>Back to Project Details</span>
+              </button>
+              <button
+                type="button"
+                className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>Create Project</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
