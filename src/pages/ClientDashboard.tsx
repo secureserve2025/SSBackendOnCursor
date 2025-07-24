@@ -460,8 +460,8 @@ const ClientDashboard: React.FC = () => {
                     }`}
                     role="tab"
                     aria-selected={activeTab === tab.id}
-                    aria-controls={\`${tab.id}-panel`}
-                    id={\`${tab.id}-tab`}
+                    aria-controls={`${tab.id}-panel`}
+                    id={`${tab.id}-tab`}
                   >
                     <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span>{tab.label}</span>
