@@ -10,6 +10,62 @@ interface ProfileData {
   mobileNumber: string;
   countryCode: string;
   businessType: string;
+}
+
+const ClientDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('profile');
+  const [profileData, setProfileData] = useState<ProfileData>({
+    companyName: '',
+    email: '',
+    mobileNumber: '',
+    countryCode: '',
+    businessType: ''
+  });
+  const navigate = useNavigate();
+
+  const tabs = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'add-project', label: 'Add Project', icon: Plus },
+    { id: 'projects', label: 'My Projects', icon: Briefcase },
+    { id: 'transactions', label: 'Transactions', icon: CreditCard },
+    { id: 'messages', label: 'Messages', icon: MessageSquare }
+  ];
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+        // Load profile data here
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        navigate('/login');
+      }
+    };
+
+    loadUserData();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const renderProfileContent = () => {
+    return (
+      <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700">
+        <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">Profile Information</h2>
+        <p className="text-sm sm:text-base text-gray-400">Manage your profile settings and information.</p>
+      </div>
+    );
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -325,6 +381,19 @@ interface ProfileData {
                   Minimum 50 characters required
                 </p>
                 <span className={`text-xs sm:text-sm ${
+                  projectData.description.length < 50 ? 'text-red-400' : 'text-green-400'
+                }`}>
+                  {projectData.description.length}/50
+                </span>
+              </div>
+              {errors.description && (
+                <p id="description-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                  {errors.description}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
               <button
                 type="button"
                 className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -333,8 +402,8 @@ interface ProfileData {
                 <span>Create Project</span>
               </button>
             </div>
-          </div>
-        )}
+          </form>
+        </div>
       </div>
     );
   };
@@ -391,8 +460,8 @@ interface ProfileData {
                     }`}
                     role="tab"
                     aria-selected={activeTab === tab.id}
-                    aria-controls={`${tab.id}-panel`}
-                    id={`${tab.id}-tab`}
+                    aria-controls={\`${tab.id}-panel`}
+                    id={\`${tab.id}-tab`}
                   >
                     <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span>{tab.label}</span>
@@ -406,8 +475,8 @@ interface ProfileData {
         {/* Tab Content */}
         <div 
           role="tabpanel" 
-          id={`${activeTab}-panel`} 
-          aria-labelledby={`${activeTab}-tab`}
+          id={\`${activeTab}-panel`} 
+          aria-labelledby={\`${activeTab}-tab`}
         >
           {renderTabContent()}
         </div>
