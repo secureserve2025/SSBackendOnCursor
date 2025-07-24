@@ -475,8 +475,8 @@ const ClientDashboard: React.FC = () => {
         {/* Tab Content */}
         <div 
           role="tabpanel" 
-          id={\`${activeTab}-panel`} 
-          aria-labelledby={\`${activeTab}-tab`}
+          id={`${activeTab}-panel`} 
+          aria-labelledby={`${activeTab}-tab`}
         >
           {renderTabContent()}
         </div>
