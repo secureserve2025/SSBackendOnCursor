@@ -258,17 +258,149 @@ const ClientDashboard: React.FC = () => {
       case 'transactions':
         return renderTransactionsContent();
       case 'messages':
-        return (
-          <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
-            <MessageSquare className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4" aria-hidden="true" />
-            <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Messages</h2>
-            <p className="text-sm sm:text-base text-gray-400">Communicate with freelancers and manage conversations.</p>
-          </div>
-        );
+        return renderMessagesContent();
       default:
         return renderProfileContent();
     }
   };
+
+  const renderMessagesContent = () => (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Message Composition Form */}
+      <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Send Message</h2>
+          <p className="text-sm sm:text-base text-gray-300">
+            Communicate with freelancers about your projects
+          </p>
+        </div>
+
+        <form className="space-y-6" noValidate>
+          {/* Freelancer ID Selection */}
+          <div>
+            <label htmlFor="freelancer-select" className="block text-gray-300 text-sm font-semibold mb-2">
+              Select Freelancer *
+            </label>
+            <select
+              id="freelancer-select"
+              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white text-sm sm:text-base"
+              required
+            >
+              <option value="">Choose a freelancer...</option>
+              <option value="F123456789">John Smith (ID: F123456789)</option>
+              <option value="F987654321">Sarah Johnson (ID: F987654321)</option>
+              <option value="F456789123">Mike Chen (ID: F456789123)</option>
+            </select>
+          </div>
+
+          {/* Project ID Selection */}
+          <div>
+            <label htmlFor="project-select" className="block text-gray-300 text-sm font-semibold mb-2">
+              Select Project *
+            </label>
+            <select
+              id="project-select"
+              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white text-sm sm:text-base"
+              required
+            >
+              <option value="">Choose a project...</option>
+              <option value="P67890">Corporate Video Production (ID: P67890)</option>
+              <option value="P54321">Social Media Campaign (ID: P54321)</option>
+              <option value="P98765">Product Demo Video (ID: P98765)</option>
+            </select>
+          </div>
+
+          {/* Subject Category */}
+          <div>
+            <label htmlFor="subject-category" className="block text-gray-300 text-sm font-semibold mb-2">
+              Subject Category *
+            </label>
+            <select
+              id="subject-category"
+              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white text-sm sm:text-base"
+              required
+            >
+              <option value="">Select category...</option>
+              <option value="deliverable-checklist">Deliverable Checklist</option>
+              <option value="work-verification">Work Verification</option>
+              <option value="manual-revision">Invoking Manual Revision</option>
+              <option value="work-approval">Work Approval</option>
+            </select>
+          </div>
+
+          {/* Message Content */}
+          <div>
+            <label htmlFor="message-content" className="block text-gray-300 text-sm font-semibold mb-2">
+              Message Content *
+            </label>
+            <textarea
+              id="message-content"
+              rows={6}
+              placeholder="Type your message here..."
+              maxLength={1000}
+              className="w-full px-4 py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base resize-none"
+              required
+            />
+            <div className="flex justify-between items-center mt-1">
+              <p className="text-gray-400 text-xs sm:text-sm">Maximum 1000 characters</p>
+              <span className="text-xs sm:text-sm text-gray-400">0/1000</span>
+            </div>
+          </div>
+
+          {/* File Attachments */}
+          <div>
+            <label className="block text-gray-300 text-sm font-semibold mb-2">
+              File Attachments (Optional)
+            </label>
+            <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-colors">
+              <Upload className="mx-auto h-8 w-8 text-gray-400 mb-4" />
+              <p className="text-gray-300 font-medium mb-2">
+                Drag and drop files here
+              </p>
+              <p className="text-sm text-gray-400 mb-4">or</p>
+              <button
+                type="button"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                Browse Files
+              </button>
+              <p className="text-xs text-gray-400 mt-4">
+                Supported: PDF, DOC, DOCX, JPG, PNG, MP4, ZIP, etc. Max 10MB per file
+              </p>
+            </div>
+          </div>
+
+          {/* Send Button */}
+          <div className="pt-6 border-t border-gray-700">
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center space-x-2 py-3 sm:py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-base sm:text-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span>Send Message</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Messages Thread */}
+      <div className="bg-gray-800 rounded-2xl p-6 sm:p-8 border border-gray-700 text-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+            <MessageSquare className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg sm:text-xl font-semibold text-white">
+              No messages yet
+            </h3>
+            <p className="text-sm sm:text-base text-gray-400 max-w-md">
+              Start a conversation with a freelancer to discuss project details, deliverables, and approvals.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderAddProjectContent = () => {
     const [projectData, setProjectData] = useState({
