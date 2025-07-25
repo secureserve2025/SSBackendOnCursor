@@ -10,8 +10,15 @@ interface ProfileData {
   mobileNumber: string;
   countryCode: string;
   companyName: string;
-  businessType: string;
+  panTanNumber: string;
   clientId: string;
+}
+
+interface FormErrors {
+  fullName: string;
+  mobileNumber: string;
+  companyName: string;
+  panTanNumber: string;
 }
 
 const ClientDashboard: React.FC = () => {
@@ -26,7 +33,7 @@ const ClientDashboard: React.FC = () => {
     mobileNumber: '',
     countryCode: '+91',
     companyName: '',
-    businessType: '',
+    panTanNumber: '',
     clientId: ''
   });
   const [originalData, setOriginalData] = useState<ProfileData>({
@@ -35,10 +42,15 @@ const ClientDashboard: React.FC = () => {
     mobileNumber: '',
     countryCode: '+91',
     companyName: '',
-    businessType: '',
+    panTanNumber: '',
     clientId: ''
   });
-  const [errors, setErrors] = useState<Partial<ProfileData>>({});
+  const [errors, setErrors] = useState<FormErrors>({
+    fullName: '',
+    mobileNumber: '',
+    companyName: '',
+    panTanNumber: ''
+  });
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -104,7 +116,7 @@ const ClientDashboard: React.FC = () => {
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
-    const fields = ['fullName', 'mobileNumber', 'companyName', 'businessType'];
+    const fields = ['fullName', 'mobileNumber', 'companyName', 'panTanNumber'];
     const completed = fields.filter(field => profileData[field as keyof ProfileData].trim() !== '').length;
     return Math.round((completed / fields.length) * 100);
   };
@@ -125,41 +137,61 @@ const ClientDashboard: React.FC = () => {
     return `C${nineDigitId}`;
   };
 
+  // Validate individual fields
+  const validateField = (field: keyof ProfileData, value: string): string => {
+    switch (field) {
+      case 'fullName':
+        return value.trim().length < 2 ? 'Full name must be at least 2 characters long' : '';
+      case 'mobileNumber':
+        const phoneRegex = /^\d{10}$/;
+        if (!value.trim()) return 'Mobile number is required';
+        return !phoneRegex.test(value) ? 'Please enter a valid 10-digit mobile number' : '';
+      case 'companyName':
+        return value.trim().length < 2 ? 'Company/Organization name must be at least 2 characters long' : '';
+      case 'panTanNumber':
+        const panTanRegex = /^[A-Z0-9]{10}$/;
+        if (!value.trim()) return 'PAN/TAN number is required';
+        return !panTanRegex.test(value.toUpperCase()) ? 'PAN/TAN must be exactly 10 alphanumeric characters' : '';
+      default:
+        return '';
+    }
+  };
+
   // Handle input changes
   const handleInputChange = (field: keyof ProfileData, value: string) => {
+    // Format PAN/TAN to uppercase
+    if (field === 'panTanNumber') {
+      value = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    }
+    
     setProfileData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
     
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  // Handle input blur for validation
+  const handleInputBlur = (field: keyof ProfileData, value: string) => {
+    const error = validateField(field, value);
+    if (error) {
+      setErrors(prev => ({ ...prev, [field]: error }));
     }
   };
 
   // Validate form fields
   const validateForm = () => {
-    const newErrors: Partial<ProfileData> = {};
-
-    if (!profileData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
-
-    if (!profileData.mobileNumber.trim()) {
-      newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(profileData.mobileNumber)) {
-      newErrors.mobileNumber = 'Please enter a valid 10-digit mobile number';
-    }
-
-    if (!profileData.companyName.trim()) {
-      newErrors.companyName = 'Company/Organization name is required';
-    }
-
-    if (!profileData.businessType.trim()) {
-      newErrors.businessType = 'Business type is required';
-    }
+    const newErrors: FormErrors = {
+      fullName: validateField('fullName', profileData.fullName),
+      mobileNumber: validateField('mobileNumber', profileData.mobileNumber),
+      companyName: validateField('companyName', profileData.companyName),
+      panTanNumber: validateField('panTanNumber', profileData.panTanNumber)
+    };
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.values(newErrors).every(error => error === '');
   };
 
   // Handle save changes
@@ -187,7 +219,12 @@ const ClientDashboard: React.FC = () => {
     setProfileData({ ...originalData });
     setHasChanges(false);
     setIsEditing(false);
-    setErrors({});
+    setErrors({
+      fullName: '',
+      mobileNumber: '',
+      companyName: '',
+      panTanNumber: ''
+    });
   };
 
   const renderProfileContent = () => (
@@ -419,36 +456,36 @@ const ClientDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Business Type */}
+          {/* PAN/TAN Number */}
           <div>
-            <label htmlFor="business-type" className="block text-gray-300 text-sm font-semibold mb-2">
-              Business Type *
+            <label htmlFor="pan-tan-number" className="block text-gray-300 text-sm font-semibold mb-2">
+              PAN/TAN Number *
             </label>
-            <select
-              id="business-type"
-              name="businessType"
-              value={profileData.businessType}
-              onChange={(e) => handleInputChange('businessType', e.target.value)}
+            <input
+              id="pan-tan-number"
+              name="panTanNumber"
+              type="text"
+              value={profileData.panTanNumber}
+              onChange={(e) => handleInputChange('panTanNumber', e.target.value)}
+              onBlur={(e) => handleInputBlur('panTanNumber', e.target.value)}
+              placeholder="ABCDE1234F"
               disabled={!isEditing}
+              maxLength={10}
               required
-              aria-invalid={errors.businessType ? 'true' : 'false'}
-              aria-describedby={errors.businessType ? 'business-type-error' : undefined}
-              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white text-sm sm:text-base ${
-                errors.businessType 
+              aria-invalid={errors.panTanNumber ? 'true' : 'false'}
+              aria-describedby={`pan-tan-help ${errors.panTanNumber ? 'pan-tan-error' : ''}`.trim()}
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
+                errors.panTanNumber 
                   ? 'border-red-500 focus:border-red-400' 
                   : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
               } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              <option value="">Select business type</option>
-              {businessTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            {errors.businessType && (
-              <p id="business-type-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
-                {errors.businessType}
+            />
+            <p id="pan-tan-help" className="text-gray-400 text-xs sm:text-sm mt-1">
+              10-character alphanumeric identifier (e.g., ABCDE1234F)
+            </p>
+            {errors.panTanNumber && (
+              <p id="pan-tan-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.panTanNumber}
               </p>
             )}
           </div>
