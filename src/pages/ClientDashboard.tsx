@@ -492,11 +492,8 @@ const ClientDashboard: React.FC = () => {
       navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
-      }
-    };
-
-    loadUserData();
-  }, [navigate]);
+    }
+  };
 
   const renderMyProjectsContent = () => (
     <div className="space-y-6 sm:space-y-8">
