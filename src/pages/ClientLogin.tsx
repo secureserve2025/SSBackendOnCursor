@@ -108,7 +108,7 @@ const ClientLogin: React.FC = () => {
               {/* Email Field */}
               <div>
                 <label className="block text-gray-300 text-sm font-semibold mb-2">
-                  Business Email
+                  Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -119,7 +119,7 @@ const ClientLogin: React.FC = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="company@domain.com"
+                    placeholder="your@email.com"
                     className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 ${
                       errors.email 
                         ? 'border-red-500 focus:border-red-400' 
