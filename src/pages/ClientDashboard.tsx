@@ -53,7 +53,7 @@ const ClientDashboard: React.FC = () => {
     fullName: '',
     mobileNumber: '',
     companyName: '',
-    panTanNumber: ''
+    panTanNumber: '',
     upiId: ''
   });
 
