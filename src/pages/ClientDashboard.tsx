@@ -82,7 +82,7 @@ const ClientDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'add-project', label: 'Add Project', icon: Plus },
+    { id: 'add-project', label: 'New Project', icon: Plus },
     { id: 'projects', label: 'My Projects', icon: Briefcase },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageSquare }
