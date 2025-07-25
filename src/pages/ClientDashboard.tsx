@@ -496,6 +496,11 @@ const ClientDashboard: React.FC = () => {
                 {errors.panTanNumber}
               </p>
             )}
+            {errors.panTanNumber && (
+              <p id="pan-tan-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.panTanNumber}
+              </p>
+            )}
           </div>
         </form>
           {/* UPI ID */}
