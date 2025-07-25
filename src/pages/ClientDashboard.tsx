@@ -11,6 +11,7 @@ interface ProfileData {
   countryCode: string;
   companyName: string;
   panTanNumber: string;
+  upiId: string;
   clientId: string;
 }
 
@@ -19,6 +20,7 @@ interface FormErrors {
   mobileNumber: string;
   companyName: string;
   panTanNumber: string;
+  upiId: string;
 }
 
 const ClientDashboard: React.FC = () => {
@@ -34,6 +36,7 @@ const ClientDashboard: React.FC = () => {
     countryCode: '+91',
     companyName: '',
     panTanNumber: '',
+    upiId: '',
     clientId: ''
   });
   const [originalData, setOriginalData] = useState<ProfileData>({
@@ -43,6 +46,7 @@ const ClientDashboard: React.FC = () => {
     countryCode: '+91',
     companyName: '',
     panTanNumber: '',
+    upiId: '',
     clientId: ''
   });
   const [errors, setErrors] = useState<FormErrors>({
@@ -50,6 +54,7 @@ const ClientDashboard: React.FC = () => {
     mobileNumber: '',
     companyName: '',
     panTanNumber: ''
+    upiId: ''
   });
 
   const countryCodes = [
@@ -116,7 +121,7 @@ const ClientDashboard: React.FC = () => {
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
-    const fields = ['fullName', 'mobileNumber', 'companyName', 'panTanNumber'];
+    const fields = ['fullName', 'mobileNumber', 'companyName', 'panTanNumber', 'upiId'];
     const completed = fields.filter(field => profileData[field as keyof ProfileData].trim() !== '').length;
     return Math.round((completed / fields.length) * 100);
   };
@@ -151,6 +156,9 @@ const ClientDashboard: React.FC = () => {
       case 'panTanNumber':
         const panTanRegex = /^[A-Z0-9]{10}$/;
         if (!value.trim()) return 'PAN/TAN number is required';
+      case 'upiId':
+        if (!value.trim()) return 'UPI ID is required';
+        return !/^[\w.-]+@[\w.-]+$/.test(value) ? 'Please enter a valid UPI ID' : '';
         return !panTanRegex.test(value.toUpperCase()) ? 'PAN/TAN must be exactly 10 alphanumeric characters' : '';
       default:
         return '';
@@ -490,6 +498,38 @@ const ClientDashboard: React.FC = () => {
             )}
           </div>
         </form>
+          {/* UPI ID */}
+          <div>
+            <label htmlFor="upi-id" className="block text-gray-300 text-sm font-semibold mb-2">
+              UPI ID *
+            </label>
+            <input
+              id="upi-id"
+              name="upiId"
+              type="text"
+              value={profileData.upiId}
+              onChange={(e) => handleInputChange('upiId', e.target.value)}
+              onBlur={(e) => handleInputBlur('upiId', e.target.value)}
+              placeholder="yourname@paytm, 9876543210@ybl"
+              disabled={!isEditing}
+              required
+              aria-invalid={errors.upiId ? 'true' : 'false'}
+              aria-describedby={`upi-help ${errors.upiId ? 'upi-error' : ''}`.trim()}
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
+                errors.upiId 
+                  ? 'border-red-500 focus:border-red-400' 
+                  : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+              } ${!isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
+            />
+            <p id="upi-help" className="text-gray-400 text-xs sm:text-sm mt-1">
+              Example: yourname@paytm, 9876543210@ybl
+            </p>
+            {errors.upiId && (
+              <p id="upi-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
+                {errors.upiId}
+              </p>
+            )}
+          </div>
 
         {/* Action Buttons */}
         {isEditing && (
