@@ -15,22 +15,13 @@ import FreelancerDashboard from './pages/FreelancerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 
 function App() {
-  // Dark mode state with dark mode as default
-  const [darkMode, setDarkMode] = useState(true);
-
-  // Toggle dark mode function
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  // Always use dark mode
+  const darkMode = true;
 
   // Set dark mode class on document
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   return (
     <Router>
@@ -44,7 +35,7 @@ function App() {
         <Route path="/" element={
           <div className="min-h-screen transition-colors duration-300 bg-gray-900">
             {/* Header Component */}
-            <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+            <Header darkMode={darkMode} />
             
             {/* Hero Section */}
             <HeroSection darkMode={darkMode} />
