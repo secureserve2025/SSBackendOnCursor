@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Shield, Menu, X, Globe, ChevronDown } from 'lucide-react';
+import { Shield, Menu, X, Globe, ChevronDown, Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   darkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ darkMode }) => {
+const Header: React.FC<HeaderProps> = ({ darkMode, toggleDarkMode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
@@ -101,6 +102,19 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
                 </div>
               )}
             </div>
+
+            {/* Dark/Light Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2 rounded-md transition-colors ${
+                darkMode 
+                  ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+              aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
+            >
+              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
 
             {/* Language Selector */}
             <div className="relative">
@@ -219,7 +233,20 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
               </div>
               
               {/* Mobile Controls */}
-              <div className="flex items-center justify-between px-3 py-2">
+              <div className="flex items-center justify-between px-3 py-2 space-x-2">
+                {/* Mobile Dark/Light Mode Toggle */}
+                <button
+                  onClick={toggleDarkMode}
+                  className={`p-2 rounded-md transition-colors ${
+                    darkMode 
+                      ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  aria-label={`Switch to ${darkMode ? 'light' : 'dark'} mode`}
+                >
+                  {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </button>
+
                 <div className="relative">
                   <button
                     onClick={() => setIsLanguageOpen(!isLanguageOpen)}
