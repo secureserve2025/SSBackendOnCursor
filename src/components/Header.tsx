@@ -22,18 +22,7 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
     { label: 'As a Client', href: '/login/client' },
   ];
   const indianLanguages = [
-    { label: 'English', code: 'en' },
-    { label: 'हिंदी (Hindi)', code: 'hi' },
-    { label: 'বাংলা (Bengali)', code: 'bn' },
-    { label: 'తెలుగు (Telugu)', code: 'te' },
-    { label: 'मराठी (Marathi)', code: 'mr' },
-    { label: 'தமிழ் (Tamil)', code: 'ta' },
-    { label: 'ગુજરાતી (Gujarati)', code: 'gu' },
-    { label: 'ಕನ್ನಡ (Kannada)', code: 'kn' },
-    { label: 'മലയാളം (Malayalam)', code: 'ml' },
-    { label: 'ਪੰਜਾਬੀ (Punjabi)', code: 'pa' },
-    { label: 'ଓଡ଼ିଆ (Odia)', code: 'or' },
-    { label: 'অসমীয়া (Assamese)', code: 'as' },
+    { label: 'English', code: 'en' }
   ];
 
   const scrollToSection = (sectionId: string) => {
