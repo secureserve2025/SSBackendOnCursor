@@ -103,40 +103,6 @@ const Header: React.FC<HeaderProps> = ({ darkMode }) => {
             </div>
 
             {/* Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className={`p-2 rounded-md transition-colors ${
-                  darkMode 
-                    ? 'text-gray-300 hover:text-white hover:bg-purple-800/50' 
-                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                aria-label="Select language"
-              >
-                <Globe className="h-5 w-5" />
-              </button>
-              
-              {/* Language Dropdown Menu */}
-              {isLanguageOpen && (
-                <div className={`absolute top-full right-0 mt-1 w-56 rounded-md shadow-lg ${
-                  darkMode ? 'bg-gray-800 border border-purple-500/30' : 'bg-white border border-gray-200'
-                } py-1 max-h-64 overflow-y-auto`}>
-                  {indianLanguages.map((language) => (
-                    <button
-                      key={language.code}
-                      className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                        darkMode 
-                          ? 'text-gray-300 hover:text-white hover:bg-purple-700/50' 
-                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                      onClick={() => setIsLanguageOpen(false)}
-                    >
-                      {language.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Login Dropdown */}
             <div className="relative">
