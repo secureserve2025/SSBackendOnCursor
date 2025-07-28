@@ -14,12 +14,14 @@ const FreelancerSignup: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    agreeToTerms: false
   });
   const [errors, setErrors] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    agreeToTerms: ''
   });
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
@@ -45,8 +47,10 @@ const FreelancerSignup: React.FC = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    
+    setFormData(prev => ({ ...prev, [name]: newValue }));
     
     // Clear error when user starts typing
     if (errors[name as keyof typeof errors]) {
@@ -77,7 +81,8 @@ const FreelancerSignup: React.FC = () => {
     const newErrors = {
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      agreeToTerms: ''
     };
 
     // Email validation
@@ -101,6 +106,11 @@ const FreelancerSignup: React.FC = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    // Terms agreement validation
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the Terms of Service and Privacy Policy';
+    }
+
     setErrors(newErrors);
 
     // Check if there are any errors
@@ -115,13 +125,15 @@ const FreelancerSignup: React.FC = () => {
             setErrors({
               email: 'This email is already registered',
               password: '',
-              confirmPassword: ''
+              confirmPassword: '',
+              agreeToTerms: ''
             });
           } else {
             setErrors({
               email: error.message,
               password: '',
-              confirmPassword: ''
+              confirmPassword: '',
+              agreeToTerms: ''
             });
           }
           return;
@@ -130,7 +142,7 @@ const FreelancerSignup: React.FC = () => {
         if (data.user) {
           setSuccessMessage('Account created successfully! Please check your email to verify your account.');
           // Reset form
-          setFormData({ email: '', password: '', confirmPassword: '' });
+          setFormData({ email: '', password: '', confirmPassword: '', agreeToTerms: false });
           // Redirect to login after 3 seconds
           setTimeout(() => {
             navigate('/login/freelancer');
@@ -140,7 +152,8 @@ const FreelancerSignup: React.FC = () => {
         setErrors({
           email: 'An unexpected error occurred',
           password: '',
-          confirmPassword: ''
+          confirmPassword: '',
+          agreeToTerms: ''
         });
       } finally {
         setIsLoading(false);
@@ -337,38 +350,49 @@ const FreelancerSignup: React.FC = () => {
               </div>
 
               {/* Terms and Conditions */}
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-600 rounded bg-gray-700 mt-1"
-                  required
-                  disabled={isLoading}
-                />
-                <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
-                  I agree to the{' '}
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowTermsModal(true);
-                    }}
-                    className="text-cyan-400 hover:text-cyan-300 font-medium"
-                  >
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a 
-                    href="#" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowPrivacyModal(true);
-                    }}
-                    className="text-cyan-400 hover:text-cyan-300 font-medium"
-                  >
-                    Privacy Policy
-                  </a>
-                </label>
+              <div>
+                <div className="flex items-start">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    name="agreeToTerms"
+                    checked={formData.agreeToTerms}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-600 rounded bg-gray-700 mt-1"
+                    required
+                    disabled={isLoading}
+                  />
+                  <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
+                    I agree to the{' '}
+                    <a 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowTermsModal(true);
+                      }}
+                      className="text-cyan-400 hover:text-cyan-300 font-medium"
+                    >
+                      Terms of Service
+                    </a>{' '}
+                    and{' '}
+                    <a 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowPrivacyModal(true);
+                      }}
+                      className="text-cyan-400 hover:text-cyan-300 font-medium"
+                    >
+                      Privacy Policy
+                    </a>
+                  </label>
+                </div>
+                {errors.agreeToTerms && (
+                  <p className="text-red-400 text-sm mt-1 flex items-center">
+                    <X className="h-4 w-4 mr-1" />
+                    {errors.agreeToTerms}
+                  </p>
+                )}
               </div>
 
               {/* Signup Button */}

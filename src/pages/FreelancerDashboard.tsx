@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut } from '../lib/supabase';
+import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType } from '../lib/supabase';
 
 interface ProfileData {
   fullName: string;
@@ -19,6 +19,7 @@ const FreelancerDashboard: React.FC = () => {
   const [isNewUser, setIsNewUser] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
@@ -64,21 +65,48 @@ const FreelancerDashboard: React.FC = () => {
       try {
         const { user } = await getCurrentUser();
         if (user) {
-          setProfileData(prev => ({
-            ...prev,
-            email: user.email || ''
-          }));
-          setOriginalData(prev => ({
-            ...prev,
-            email: user.email || ''
-          }));
+          // Get user type and profile
+          const { userType, profile } = await getUserType(user.id);
           
-          // Simulate checking if user has completed profile
-          const hasCompletedProfile = user.user_metadata?.profile_completed;
-          setIsNewUser(!hasCompletedProfile);
-          
-          if (hasCompletedProfile) {
-            setLastUpdated(new Date(user.updated_at || Date.now()));
+          if (userType === 'freelancer' && profile) {
+            // Load existing profile data
+            setProfileData({
+              fullName: profile.full_name || '',
+              email: profile.email || user.email || '',
+              mobileNumber: profile.mobile_number || '',
+              countryCode: profile.country_code || '+91',
+              upiId: profile.upi_id || '',
+              aadharNumber: profile.aadhar_number || '',
+              freelancerId: profile.freelancer_id || ''
+            });
+            
+            setOriginalData({
+              fullName: profile.full_name || '',
+              email: profile.email || user.email || '',
+              mobileNumber: profile.mobile_number || '',
+              countryCode: profile.country_code || '+91',
+              upiId: profile.upi_id || '',
+              aadharNumber: profile.aadhar_number || '',
+              freelancerId: profile.freelancer_id || ''
+            });
+            
+            // Check if profile is complete
+            setIsNewUser(!profile.profile_completed);
+            
+            if (profile.profile_completed) {
+              setLastUpdated(new Date(profile.updated_at || Date.now()));
+            }
+          } else {
+            // New user or wrong user type
+            setProfileData(prev => ({
+              ...prev,
+              email: user.email || ''
+            }));
+            setOriginalData(prev => ({
+              ...prev,
+              email: user.email || ''
+            }));
+            setIsNewUser(true);
           }
         }
       } catch (error) {
@@ -98,104 +126,138 @@ const FreelancerDashboard: React.FC = () => {
 
   // Generate unique freelancer ID based on email
   const generateFreelancerId = (email: string) => {
-    // Create a hash from email for consistency
-    let hash = 0;
-    for (let i = 0; i < email.length; i++) {
-      const char = email.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    
-    // Convert to positive number and ensure 9 digits
-    const positiveHash = Math.abs(hash);
-    const nineDigitId = String(positiveHash).padStart(9, '0').slice(0, 9);
-    return `F${nineDigitId}`;
+    const timestamp = Date.now().toString().slice(-6);
+    const emailHash = email.split('@')[0].slice(0, 3).toUpperCase();
+    return `F${timestamp}${emailHash}`;
   };
-  // Handle input changes
+
   const handleInputChange = (field: keyof ProfileData, value: string) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
     
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    
+    // Check for changes
+    const hasChanged = value !== originalData[field];
+    setHasChanges(hasChanged || Object.keys(profileData).some(key => 
+      key !== field && profileData[key as keyof ProfileData] !== originalData[key as keyof ProfileData]
+    ));
   };
 
-  // Format Aadhar number with hyphens
   const formatAadhar = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 4) return numbers;
-    if (numbers.length <= 8) return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
-    return `${numbers.slice(0, 4)}-${numbers.slice(4, 8)}-${numbers.slice(8, 12)}`;
+    // Remove all non-digits
+    const cleaned = value.replace(/\D/g, '');
+    // Format as XXXX-XXXX-XXXX
+    const match = cleaned.match(/^(\d{0,4})(\d{0,4})(\d{0,4})$/);
+    if (match) {
+      const parts = [match[1], match[2], match[3]].filter(Boolean);
+      return parts.join('-');
+    }
+    return cleaned;
   };
 
-  // Mask Aadhar number for display
   const maskAadhar = (aadhar: string) => {
-    if (aadhar.length < 4) return aadhar;
-    const formatted = formatAadhar(aadhar);
-    return formatted.replace(/\d(?=\d{4})/g, 'x');
+    if (!aadhar) return '';
+    const parts = aadhar.split('-');
+    if (parts.length === 3) {
+      return `${parts[0]}-****-${parts[2]}`;
+    }
+    return aadhar;
   };
 
-  // Validate form fields
   const validateForm = () => {
     const newErrors: Partial<ProfileData> = {};
-
+    
     if (!profileData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
-
+    
     if (!profileData.mobileNumber.trim()) {
       newErrors.mobileNumber = 'Mobile number is required';
-    } else if (!/^\d{10}$/.test(profileData.mobileNumber)) {
+    } else if (!/^\d{10}$/.test(profileData.mobileNumber.replace(/\D/g, ''))) {
       newErrors.mobileNumber = 'Please enter a valid 10-digit mobile number';
     }
-
+    
     if (!profileData.upiId.trim()) {
       newErrors.upiId = 'UPI ID is required';
-    } else if (!/^[\w.-]+@[\w.-]+$/.test(profileData.upiId)) {
-      newErrors.upiId = 'Please enter a valid UPI ID';
     }
-
+    
     if (!profileData.aadharNumber.trim()) {
       newErrors.aadharNumber = 'Aadhar number is required';
-    } else if (!/^\d{12}$/.test(profileData.aadharNumber.replace(/\D/g, ''))) {
-      newErrors.aadharNumber = 'Please enter a valid 12-digit Aadhar number';
+    } else {
+      // Remove all non-digits and check if it's exactly 12 digits
+      const cleanedAadhar = profileData.aadharNumber.replace(/\D/g, '');
+      if (cleanedAadhar.length !== 12) {
+        newErrors.aadharNumber = 'Aadhar number must be exactly 12 digits (e.g., 1234-5678-9012)';
+      }
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle save changes
-  const handleSave = () => {
-    if (validateForm()) {
-      // Generate freelancer ID if profile is being completed for the first time
-      if (!profileData.freelancerId && profileData.email) {
-        const newFreelancerId = generateFreelancerId(profileData.email);
-        setProfileData(prev => ({ ...prev, freelancerId: newFreelancerId }));
-        setOriginalData({ ...profileData, freelancerId: newFreelancerId });
-      } else {
-        setOriginalData({ ...profileData });
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) {
+        throw new Error('User not found');
       }
+
+      console.log('Current user:', user);
+      console.log('Profile data to save:', profileData);
+
+      const profileUpdateData = {
+        full_name: profileData.fullName,
+        mobile_number: profileData.mobileNumber,
+        country_code: profileData.countryCode,
+        upi_id: profileData.upiId,
+        aadhar_number: profileData.aadharNumber,
+        profile_completed: true
+      };
+
+      console.log('Profile update data:', profileUpdateData);
+
+      const { data, error } = await updateFreelancerProfile(user.id, profileUpdateData);
+      
+      console.log('Update result:', { data, error });
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        alert(`Failed to save profile: ${error.message}`);
+        return;
+      }
+
+      // Update original data
+      setOriginalData({ ...profileData });
       setHasChanges(false);
       setIsEditing(false);
-      setLastUpdated(new Date());
       setIsNewUser(false);
-      // Here you would typically save to Supabase
-      console.log('Saving profile data:', profileData);
+      setLastUpdated(new Date());
+      
+      alert('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle cancel changes
   const handleCancel = () => {
     setProfileData({ ...originalData });
+    setErrors({});
     setHasChanges(false);
     setIsEditing(false);
-    setErrors({});
   };
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       await signOut();
@@ -445,7 +507,8 @@ const FreelancerDashboard: React.FC = () => {
                 value={isEditing ? formatAadhar(profileData.aadharNumber) : maskAadhar(profileData.aadharNumber)}
                 onChange={(e) => {
                   const numbers = e.target.value.replace(/\D/g, '');
-                  handleInputChange('aadharNumber', numbers);
+                  const formatted = formatAadhar(numbers);
+                  handleInputChange('aadharNumber', formatted);
                 }}
                 placeholder="xxxx-xxxx-xxxx"
                 disabled={!isEditing}
@@ -491,7 +554,7 @@ const FreelancerDashboard: React.FC = () => {
             </button>
             <button
               onClick={handleSave}
-              disabled={!hasChanges}
+              disabled={!hasChanges || isLoading}
               type="button"
               aria-label="Save profile changes"
               className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 ${
@@ -500,8 +563,17 @@ const FreelancerDashboard: React.FC = () => {
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
               }`}
             >
-              <Save className="h-4 w-4" aria-hidden="true" />
-              <span>Save Changes</span>
+              {isLoading ? (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" aria-hidden="true" />
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </div>
         )}

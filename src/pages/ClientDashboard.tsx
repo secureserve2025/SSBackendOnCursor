@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType } from '../lib/supabase';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -28,6 +28,7 @@ const ClientDashboard: React.FC = () => {
   const [isNewUser, setIsNewUser] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
@@ -94,21 +95,50 @@ const ClientDashboard: React.FC = () => {
       try {
         const { user } = await getCurrentUser();
         if (user) {
-          setProfileData(prev => ({
-            ...prev,
-            email: user.email || ''
-          }));
-          setOriginalData(prev => ({
-            ...prev,
-            email: user.email || ''
-          }));
+          // Get user type and profile
+          const { userType, profile } = await getUserType(user.id);
           
-          // Simulate checking if user has completed profile
-          const hasCompletedProfile = user.user_metadata?.profile_completed;
-          setIsNewUser(!hasCompletedProfile);
-          
-          if (hasCompletedProfile) {
-            setLastUpdated(new Date(user.updated_at || Date.now()));
+          if (userType === 'client' && profile) {
+            // Load existing profile data
+            setProfileData({
+              fullName: profile.full_name || '',
+              email: profile.email || user.email || '',
+              mobileNumber: profile.mobile_number || '',
+              countryCode: profile.country_code || '+91',
+              companyName: profile.company_name || '',
+              panTanNumber: profile.pan_tan_number || '',
+              upiId: profile.upi_id || '',
+              clientId: profile.client_id || ''
+            });
+            
+            setOriginalData({
+              fullName: profile.full_name || '',
+              email: profile.email || user.email || '',
+              mobileNumber: profile.mobile_number || '',
+              countryCode: profile.country_code || '+91',
+              companyName: profile.company_name || '',
+              panTanNumber: profile.pan_tan_number || '',
+              upiId: profile.upi_id || '',
+              clientId: profile.client_id || ''
+            });
+            
+            // Check if profile is complete
+            setIsNewUser(!profile.profile_completed);
+            
+            if (profile.profile_completed) {
+              setLastUpdated(new Date(profile.updated_at || Date.now()));
+            }
+          } else {
+            // New user or wrong user type
+            setProfileData(prev => ({
+              ...prev,
+              email: user.email || ''
+            }));
+            setOriginalData(prev => ({
+              ...prev,
+              email: user.email || ''
+            }));
+            setIsNewUser(true);
           }
         }
       } catch (error) {
@@ -128,111 +158,132 @@ const ClientDashboard: React.FC = () => {
 
   // Generate unique client ID based on email
   const generateClientId = (email: string) => {
-    // Create a hash from email for consistency
-    let hash = 0;
-    for (let i = 0; i < email.length; i++) {
-      const char = email.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    
-    // Convert to positive number and ensure 9 digits
-    const positiveHash = Math.abs(hash);
-    const nineDigitId = String(positiveHash).padStart(9, '0').slice(0, 9);
-    return `C${nineDigitId}`;
+    const timestamp = Date.now().toString().slice(-6);
+    const emailHash = email.split('@')[0].slice(0, 3).toUpperCase();
+    return `C${timestamp}${emailHash}`;
   };
 
-  // Validate individual fields
   const validateField = (field: keyof ProfileData, value: string): string => {
     switch (field) {
       case 'fullName':
         return value.trim().length < 2 ? 'Full name must be at least 2 characters long' : '';
       case 'mobileNumber':
-        const phoneRegex = /^\d{10}$/;
         if (!value.trim()) return 'Mobile number is required';
-        return !phoneRegex.test(value) ? 'Please enter a valid 10-digit mobile number' : '';
+        return !/^\d{10}$/.test(value.replace(/\D/g, '')) ? 'Please enter a valid 10-digit mobile number' : '';
       case 'companyName':
-        return value.trim().length < 2 ? 'Company/Organization name must be at least 2 characters long' : '';
+        return value.trim().length < 2 ? 'Company name must be at least 2 characters long' : '';
       case 'panTanNumber':
-        const panTanRegex = /^[A-Z0-9]{10}$/;
         if (!value.trim()) return 'PAN/TAN number is required';
+        const cleanedPan = value.replace(/\s/g, '').toUpperCase();
+        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanedPan)) {
+          return 'Please enter a valid PAN/TAN number (e.g., ABCDE1234F)';
+        }
+        return '';
       case 'upiId':
-        if (!value.trim()) return 'UPI ID is required';
-        return !/^[\w.-]+@[\w.-]+$/.test(value) ? 'Please enter a valid UPI ID' : '';
-        return !panTanRegex.test(value.toUpperCase()) ? 'PAN/TAN must be exactly 10 alphanumeric characters' : '';
+        return value.trim().length < 3 ? 'UPI ID must be at least 3 characters long' : '';
       default:
         return '';
     }
   };
 
-  // Handle input changes
   const handleInputChange = (field: keyof ProfileData, value: string) => {
-    // Format PAN/TAN to uppercase
-    if (field === 'panTanNumber') {
-      value = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
-    }
-    
     setProfileData(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
     
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+    
+    // Check for changes
+    const hasChanged = value !== originalData[field];
+    setHasChanges(hasChanged || Object.keys(profileData).some(key => 
+      key !== field && profileData[key as keyof ProfileData] !== originalData[key as keyof ProfileData]
+    ));
   };
 
-  // Handle input blur for validation
   const handleInputBlur = (field: keyof ProfileData, value: string) => {
     const error = validateField(field, value);
-    if (error) {
-      setErrors(prev => ({ ...prev, [field]: error }));
-    }
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  // Validate form fields
   const validateForm = () => {
     const newErrors: FormErrors = {
       fullName: validateField('fullName', profileData.fullName),
       mobileNumber: validateField('mobileNumber', profileData.mobileNumber),
       companyName: validateField('companyName', profileData.companyName),
-      panTanNumber: validateField('panTanNumber', profileData.panTanNumber)
+      panTanNumber: validateField('panTanNumber', profileData.panTanNumber),
+      upiId: validateField('upiId', profileData.upiId)
     };
-
+    
     setErrors(newErrors);
-    return Object.values(newErrors).every(error => error === '');
+    return !Object.values(newErrors).some(error => error !== '');
   };
 
-  // Handle save changes
-  const handleSave = () => {
-    if (validateForm()) {
-      // Generate client ID if profile is being completed for the first time
-      if (!profileData.clientId && profileData.email) {
-        const newClientId = generateClientId(profileData.email);
-        setProfileData(prev => ({ ...prev, clientId: newClientId }));
-        setOriginalData({ ...profileData, clientId: newClientId });
-      } else {
-        setOriginalData({ ...profileData });
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) {
+        throw new Error('User not found');
       }
+
+      console.log('Current user:', user);
+      console.log('Profile data to save:', profileData);
+
+      const profileUpdateData = {
+        full_name: profileData.fullName,
+        mobile_number: profileData.mobileNumber,
+        country_code: profileData.countryCode,
+        company_name: profileData.companyName,
+        pan_tan_number: profileData.panTanNumber.toUpperCase(),
+        upi_id: profileData.upiId,
+        profile_completed: true
+      };
+
+      console.log('Profile update data:', profileUpdateData);
+
+      const { data, error } = await updateClientProfile(user.id, profileUpdateData);
+      
+      console.log('Update result:', { data, error });
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        alert(`Failed to save profile: ${error.message}`);
+        return;
+      }
+
+      // Update original data
+      setOriginalData({ ...profileData });
       setHasChanges(false);
       setIsEditing(false);
-      setLastUpdated(new Date());
       setIsNewUser(false);
-      // Here you would typically save to Supabase
-      console.log('Saving profile data:', profileData);
+      setLastUpdated(new Date());
+      
+      alert('Profile saved successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle cancel changes
   const handleCancel = () => {
     setProfileData({ ...originalData });
-    setHasChanges(false);
-    setIsEditing(false);
     setErrors({
       fullName: '',
       mobileNumber: '',
       companyName: '',
-      panTanNumber: ''
+      panTanNumber: '',
+      upiId: ''
     });
+    setHasChanges(false);
+    setIsEditing(false);
   };
 
   const renderProfileContent = () => (
@@ -496,11 +547,6 @@ const ClientDashboard: React.FC = () => {
                 {errors.panTanNumber}
               </p>
             )}
-            {errors.panTanNumber && (
-              <p id="pan-tan-error" className="text-red-400 text-xs sm:text-sm mt-1" role="alert">
-                {errors.panTanNumber}
-              </p>
-            )}
           </div>
         </form>
           {/* UPI ID */}
@@ -550,17 +596,24 @@ const ClientDashboard: React.FC = () => {
             </button>
             <button
               onClick={handleSave}
-              disabled={!hasChanges}
+              disabled={!hasChanges || isLoading}
               type="button"
               aria-label="Save profile changes"
               className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 ${
-                hasChanges 
+                hasChanges && !isLoading 
                   ? 'bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white focus:ring-purple-400' 
                   : 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
               }`}
             >
-              <Save className="h-4 w-4" aria-hidden="true" />
-              <span>Save Changes</span>
+              {isLoading ? (
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <Save className="h-4 w-4" aria-hidden="true" />
+              )}
+              <span>{isLoading ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         )}

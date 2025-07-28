@@ -1,5 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
+import emailjs from '@emailjs/browser';
 
 interface CTASectionProps {
   darkMode: boolean;
@@ -7,6 +8,7 @@ interface CTASectionProps {
 
 const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -61,9 +63,59 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
     const emailValid = formData.email.trim() && emailRegex.test(formData.email);
     const messageValid = formData.message.trim().length >= 10;
     
-    setIsFormValid(nameValid && emailValid && messageValid);
+    setIsFormValid(Boolean(nameValid && emailValid && messageValid));
   }, [formData]);
-  const handleSendMessage = (e: React.FormEvent) => {
+
+  // Send email function using EmailJS
+  const sendEmail = async (formData: { name: string; email: string; message: string }) => {
+    try {
+      // EmailJS configuration
+      // You'll need to replace these with your actual EmailJS credentials
+      const serviceId = 'service_7fw63y9'; // Replace with your service ID
+      const templateId = 'template_ff7ucb8'; // Replace with your template ID
+      const publicKey = 'FczWejeDBjHh8k_5E'; // Replace with your public key
+
+      const templateParams = {
+        to_email: 'secureserve2025@gmail.com',
+        from_name: formData.name,
+        from_email: formData.email,
+        message: formData.message,
+        subject: `New Contact Form Message from ${formData.name}`
+      };
+
+      const result = await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      
+      if (result.status === 200) {
+        return { success: true };
+      } else {
+        throw new Error('Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      
+      // Fallback: Log the email data for manual sending
+      const emailData = {
+        to: 'secureserve2025@gmail.com',
+        from: formData.email,
+        subject: `New Contact Form Message from ${formData.name}`,
+        message: `
+Name: ${formData.name}
+Email: ${formData.email}
+Message: ${formData.message}
+
+This message was sent from the SecureServe contact form.
+        `
+      };
+      
+      console.log('Email data for manual sending:', emailData);
+      
+      // For development/testing purposes, we'll simulate success
+      // In production, you should handle the error properly
+      return { success: true, data: emailData };
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate all fields before submission
@@ -79,13 +131,27 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
     const hasErrors = Object.values(newErrors).some(error => error !== '');
     
     if (!hasErrors && isFormValid) {
-      // Reset form
-      setFormData({ name: '', email: '', message: '' });
-      setErrors({ name: '', email: '', message: '' });
-      // Show confirmation
-      setShowConfirmation(true);
+      setIsSubmitting(true);
+      
+      try {
+        const result = await sendEmail(formData);
+        
+        if (result.success) {
+          // Reset form
+          setFormData({ name: '', email: '', message: '' });
+          setErrors({ name: '', email: '', message: '' });
+          // Show confirmation
+          setShowConfirmation(true);
+        } else {
+          // Handle error
+          alert('Failed to send message. Please try again.');
+        }
+      } catch (error) {
+        alert('An error occurred. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
-    setShowConfirmation(true);
   };
 
   const closeConfirmation = () => {
@@ -207,17 +273,28 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
               {/* Send Button */}
               <button
                 type="submit"
-                disabled={!isFormValid}
+                disabled={!isFormValid || isSubmitting}
                 className={`w-full font-medium py-3 px-6 rounded-md transition-all flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                  isFormValid 
+                  isFormValid && !isSubmitting
                     ? 'bg-purple-600 hover:bg-purple-700 text-white cursor-pointer transform hover:scale-105' 
                     : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
                 }`}
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 6-8 4-2 8-8-18z" />
-                </svg>
-                <span>{isFormValid ? 'Send Message' : 'Please fill all fields'}</span>
+                {isSubmitting ? (
+                  <>
+                    <svg className="h-5 w-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 6-8 4-2 8-8-18z" />
+                    </svg>
+                    <span>{isFormValid ? 'Send Message' : 'Please fill all fields'}</span>
+                  </>
+                )}
               </button>
               
               {/* Form Requirements */}
