@@ -69,6 +69,16 @@ const FreelancerDashboard: React.FC = () => {
           const { userType, profile } = await getUserType(user.id);
           
           if (userType === 'freelancer' && profile) {
+            // Format Aadhar number for display (add dashes)
+            const formatAadharForDisplay = (aadhar: string) => {
+              if (!aadhar) return '';
+              const cleaned = aadhar.replace(/\D/g, '');
+              if (cleaned.length === 12) {
+                return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(8, 12)}`;
+              }
+              return aadhar;
+            };
+
             // Load existing profile data
             setProfileData({
               fullName: profile.full_name || '',
@@ -76,7 +86,7 @@ const FreelancerDashboard: React.FC = () => {
               mobileNumber: profile.mobile_number || '',
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
-              aadharNumber: profile.aadhar_number || '',
+              aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
               freelancerId: profile.freelancer_id || ''
             });
             
@@ -86,7 +96,7 @@ const FreelancerDashboard: React.FC = () => {
               mobileNumber: profile.mobile_number || '',
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
-              aadharNumber: profile.aadhar_number || '',
+              aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
               freelancerId: profile.freelancer_id || ''
             });
             
@@ -98,14 +108,14 @@ const FreelancerDashboard: React.FC = () => {
             }
           } else {
             // New user or wrong user type
-            setProfileData(prev => ({
-              ...prev,
-              email: user.email || ''
-            }));
-            setOriginalData(prev => ({
-              ...prev,
-              email: user.email || ''
-            }));
+          setProfileData(prev => ({
+            ...prev,
+            email: user.email || ''
+          }));
+          setOriginalData(prev => ({
+            ...prev,
+            email: user.email || ''
+          }));
             setIsNewUser(true);
           }
         }
@@ -138,7 +148,7 @@ const FreelancerDashboard: React.FC = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    
+
     // Check for changes
     const hasChanged = value !== originalData[field];
     setHasChanges(hasChanged || Object.keys(profileData).some(key => 
@@ -169,21 +179,27 @@ const FreelancerDashboard: React.FC = () => {
 
   const validateForm = () => {
     const newErrors: Partial<ProfileData> = {};
-    
+
     if (!profileData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
-    
+
+    if (!profileData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
     if (!profileData.mobileNumber.trim()) {
       newErrors.mobileNumber = 'Mobile number is required';
     } else if (!/^\d{10}$/.test(profileData.mobileNumber.replace(/\D/g, ''))) {
       newErrors.mobileNumber = 'Please enter a valid 10-digit mobile number';
     }
-    
+
     if (!profileData.upiId.trim()) {
       newErrors.upiId = 'UPI ID is required';
     }
-    
+
     if (!profileData.aadharNumber.trim()) {
       newErrors.aadharNumber = 'Aadhar number is required';
     } else {
@@ -193,7 +209,7 @@ const FreelancerDashboard: React.FC = () => {
         newErrors.aadharNumber = 'Aadhar number must be exactly 12 digits (e.g., 1234-5678-9012)';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -216,10 +232,11 @@ const FreelancerDashboard: React.FC = () => {
 
       const profileUpdateData = {
         full_name: profileData.fullName,
+        email: profileData.email || user.email || '', // Include email field
         mobile_number: profileData.mobileNumber,
         country_code: profileData.countryCode,
         upi_id: profileData.upiId,
-        aadhar_number: profileData.aadharNumber,
+        aadhar_number: profileData.aadharNumber.replace(/\D/g, ''), // Store only digits
         profile_completed: true
       };
 
@@ -236,7 +253,7 @@ const FreelancerDashboard: React.FC = () => {
       }
 
       // Update original data
-      setOriginalData({ ...profileData });
+        setOriginalData({ ...profileData });
       setHasChanges(false);
       setIsEditing(false);
       setIsNewUser(false);
@@ -570,8 +587,8 @@ const FreelancerDashboard: React.FC = () => {
                 </svg>
               ) : (
                 <>
-                  <Save className="h-4 w-4" aria-hidden="true" />
-                  <span>Save Changes</span>
+              <Save className="h-4 w-4" aria-hidden="true" />
+              <span>Save Changes</span>
                 </>
               )}
             </button>

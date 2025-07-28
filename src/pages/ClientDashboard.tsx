@@ -17,6 +17,7 @@ interface ProfileData {
 
 interface FormErrors {
   fullName: string;
+  email: string;
   mobileNumber: string;
   companyName: string;
   panTanNumber: string;
@@ -52,6 +53,7 @@ const ClientDashboard: React.FC = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({
     fullName: '',
+    email: '',
     mobileNumber: '',
     companyName: '',
     panTanNumber: '',
@@ -130,14 +132,14 @@ const ClientDashboard: React.FC = () => {
             }
           } else {
             // New user or wrong user type
-            setProfileData(prev => ({
-              ...prev,
-              email: user.email || ''
-            }));
-            setOriginalData(prev => ({
-              ...prev,
-              email: user.email || ''
-            }));
+          setProfileData(prev => ({
+            ...prev,
+            email: user.email || ''
+          }));
+          setOriginalData(prev => ({
+            ...prev,
+            email: user.email || ''
+          }));
             setIsNewUser(true);
           }
         }
@@ -167,6 +169,9 @@ const ClientDashboard: React.FC = () => {
     switch (field) {
       case 'fullName':
         return value.trim().length < 2 ? 'Full name must be at least 2 characters long' : '';
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Please enter a valid email address' : '';
       case 'mobileNumber':
         if (!value.trim()) return 'Mobile number is required';
         return !/^\d{10}$/.test(value.replace(/\D/g, '')) ? 'Please enter a valid 10-digit mobile number' : '';
@@ -175,8 +180,9 @@ const ClientDashboard: React.FC = () => {
       case 'panTanNumber':
         if (!value.trim()) return 'PAN/TAN number is required';
         const cleanedPan = value.replace(/\s/g, '').toUpperCase();
-        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanedPan)) {
-          return 'Please enter a valid PAN/TAN number (e.g., ABCDE1234F)';
+        // Accept any 10-character alphanumeric string for PAN/TAN
+        if (!/^[A-Z0-9]{10}$/.test(cleanedPan)) {
+          return 'Please enter a valid 10-character PAN/TAN number (e.g., ABCDE1234F)';
         }
         return '';
       case 'upiId':
@@ -193,7 +199,7 @@ const ClientDashboard: React.FC = () => {
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    
+
     // Check for changes
     const hasChanged = value !== originalData[field];
     setHasChanges(hasChanged || Object.keys(profileData).some(key => 
@@ -203,18 +209,19 @@ const ClientDashboard: React.FC = () => {
 
   const handleInputBlur = (field: keyof ProfileData, value: string) => {
     const error = validateField(field, value);
-    setErrors(prev => ({ ...prev, [field]: error }));
+      setErrors(prev => ({ ...prev, [field]: error }));
   };
 
   const validateForm = () => {
     const newErrors: FormErrors = {
       fullName: validateField('fullName', profileData.fullName),
+      email: validateField('email', profileData.email),
       mobileNumber: validateField('mobileNumber', profileData.mobileNumber),
       companyName: validateField('companyName', profileData.companyName),
       panTanNumber: validateField('panTanNumber', profileData.panTanNumber),
       upiId: validateField('upiId', profileData.upiId)
     };
-    
+
     setErrors(newErrors);
     return !Object.values(newErrors).some(error => error !== '');
   };
@@ -237,10 +244,11 @@ const ClientDashboard: React.FC = () => {
 
       const profileUpdateData = {
         full_name: profileData.fullName,
+        email: profileData.email || user.email || '', // Include email field
         mobile_number: profileData.mobileNumber,
         country_code: profileData.countryCode,
         company_name: profileData.companyName,
-        pan_tan_number: profileData.panTanNumber.toUpperCase(),
+        pan_tan_number: profileData.panTanNumber.replace(/\s/g, '').toUpperCase(), // Remove spaces and convert to uppercase
         upi_id: profileData.upiId,
         profile_completed: true
       };
@@ -258,7 +266,7 @@ const ClientDashboard: React.FC = () => {
       }
 
       // Update original data
-      setOriginalData({ ...profileData });
+        setOriginalData({ ...profileData });
       setHasChanges(false);
       setIsEditing(false);
       setIsNewUser(false);
@@ -277,6 +285,7 @@ const ClientDashboard: React.FC = () => {
     setProfileData({ ...originalData });
     setErrors({
       fullName: '',
+      email: '',
       mobileNumber: '',
       companyName: '',
       panTanNumber: '',
@@ -611,7 +620,7 @@ const ClientDashboard: React.FC = () => {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : (
-                <Save className="h-4 w-4" aria-hidden="true" />
+              <Save className="h-4 w-4" aria-hidden="true" />
               )}
               <span>{isLoading ? 'Saving...' : 'Save Changes'}</span>
             </button>

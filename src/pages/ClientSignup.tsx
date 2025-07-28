@@ -351,41 +351,41 @@ const ClientSignup: React.FC = () => {
 
               {/* Terms and Conditions */}
               <div>
-                <div className="flex items-start">
-                  <input
-                    type="checkbox"
-                    id="terms"
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="terms"
                     name="agreeToTerms"
                     checked={formData.agreeToTerms}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-600 rounded bg-gray-700 mt-1"
-                    required
-                    disabled={isLoading}
-                  />
-                  <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
-                    I agree to the{' '}
-                    <a 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowTermsModal(true);
-                      }}
-                      className="text-purple-400 hover:text-purple-300 font-medium"
-                    >
-                      Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowPrivacyModal(true);
-                      }}
-                      className="text-purple-400 hover:text-purple-300 font-medium"
-                    >
-                      Privacy Policy
-                    </a>
-                  </label>
+                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-600 rounded bg-gray-700 mt-1"
+                  required
+                  disabled={isLoading}
+                />
+                <label htmlFor="terms" className="ml-2 text-sm text-gray-300">
+                  I agree to the{' '}
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowTermsModal(true);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 font-medium"
+                  >
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPrivacyModal(true);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 font-medium"
+                  >
+                    Privacy Policy
+                  </a>
+                </label>
                 </div>
                 {errors.agreeToTerms && (
                   <p className="text-red-400 text-sm mt-1 flex items-center">

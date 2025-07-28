@@ -91,7 +91,7 @@ SSBackendOnCursor/
 - Supabase account
 
 ### **1. Clone and Install**
-```bash
+   ```bash
 cd SSBackendOnCursor
 npm install
 ```

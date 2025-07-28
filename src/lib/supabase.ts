@@ -74,7 +74,7 @@ export const getFreelancerProfile = async (userId: string) => {
       .from('freelancer_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
     
     if (error) {
       console.error('Error fetching freelancer profile:', error);
@@ -101,24 +101,58 @@ export const updateFreelancerProfile = async (userId: string, profileData: any) 
     console.log('Updating freelancer profile for user:', userId);
     console.log('Profile data:', profileData);
 
-    const { data, error } = await supabase
+    // First, check if profile exists
+    const { data: existingProfile, error: checkError } = await supabase
       .from('freelancer_profiles')
-      .update({
-        ...profileData,
-        profile_completed: true,
-        updated_at: new Date().toISOString()
-      })
+      .select('*')
       .eq('user_id', userId)
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('Error updating freelancer profile:', error);
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing profile:', checkError);
+      return { data: null, error: checkError };
+    }
+
+    let result;
+    if (existingProfile) {
+      // Profile exists, update it
+      console.log('Profile exists, updating...');
+      const { data, error } = await supabase
+        .from('freelancer_profiles')
+        .update({
+          ...profileData,
+          profile_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      result = { data, error };
     } else {
-      console.log('Profile updated successfully:', data);
+      // Profile doesn't exist, create it
+      console.log('Profile does not exist, creating new profile...');
+      const { data, error } = await supabase
+        .from('freelancer_profiles')
+        .insert({
+          user_id: userId,
+          freelancer_id: 'F' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0'),
+          ...profileData,
+          profile_completed: true
+        })
+        .select()
+        .single();
+      
+      result = { data, error };
     }
     
-    return { data, error }
+    if (result.error) {
+      console.error('Error updating/creating freelancer profile:', result.error);
+    } else {
+      console.log('Profile updated/created successfully:', result.data);
+    }
+    
+    return result;
   } catch (err) {
     console.error('Exception in updateFreelancerProfile:', err);
     return { data: null, error: { message: 'Failed to update profile data' } }
@@ -169,7 +203,7 @@ export const getClientProfile = async (userId: string) => {
       .from('client_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
     
     if (error) {
       console.error('Error fetching client profile:', error);
@@ -196,24 +230,58 @@ export const updateClientProfile = async (userId: string, profileData: any) => {
     console.log('Updating client profile for user:', userId);
     console.log('Profile data:', profileData);
 
-    const { data, error } = await supabase
+    // First, check if profile exists
+    const { data: existingProfile, error: checkError } = await supabase
       .from('client_profiles')
-      .update({
-        ...profileData,
-        profile_completed: true,
-        updated_at: new Date().toISOString()
-      })
+      .select('*')
       .eq('user_id', userId)
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('Error updating client profile:', error);
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing profile:', checkError);
+      return { data: null, error: checkError };
+    }
+
+    let result;
+    if (existingProfile) {
+      // Profile exists, update it
+      console.log('Profile exists, updating...');
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .update({
+          ...profileData,
+          profile_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      result = { data, error };
     } else {
-      console.log('Profile updated successfully:', data);
+      // Profile doesn't exist, create it
+      console.log('Profile does not exist, creating new profile...');
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .insert({
+          user_id: userId,
+          client_id: 'C' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0'),
+          ...profileData,
+          profile_completed: true
+        })
+        .select()
+        .single();
+      
+      result = { data, error };
     }
     
-    return { data, error }
+    if (result.error) {
+      console.error('Error updating/creating client profile:', result.error);
+    } else {
+      console.log('Profile updated/created successfully:', result.data);
+    }
+    
+    return result;
   } catch (err) {
     console.error('Exception in updateClientProfile:', err);
     return { data: null, error: { message: 'Failed to update profile data' } }
