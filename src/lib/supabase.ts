@@ -12,24 +12,75 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Auth helper functions
 export const signUp = async (email: string, password: string, userType: 'freelancer' | 'client') => {
-  // Check if we have valid Supabase credentials
-  if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-    return { 
-      data: null, 
-      error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-    }
-  }
-  
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        user_type: userType
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
       }
     }
-  })
-  return { data, error }
+
+    console.log('Attempting to sign up user:', { email, userType });
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key (first 20 chars):', supabaseAnonKey.substring(0, 20) + '...');
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          user_type: userType
+        }
+      }
+    });
+
+    if (error) {
+      console.error('Signup error:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        status: error.status,
+        name: error.name
+      });
+      return { data: null, error };
+    }
+
+    if (data.user) {
+      console.log('User created successfully:', data.user.id);
+      console.log('User metadata:', data.user.user_metadata);
+      
+      // Check if profile was created automatically
+      setTimeout(async () => {
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from(userType === 'freelancer' ? 'freelancer_profiles' : 'client_profiles')
+            .select('*')
+            .eq('user_id', data.user!.id)
+            .maybeSingle();
+          
+          if (profileError) {
+            console.error('Error checking profile creation:', profileError);
+          } else if (profile) {
+            console.log('Profile created automatically:', profile);
+          } else {
+            console.warn('No profile found after signup - trigger may have failed');
+          }
+        } catch (err) {
+          console.error('Exception checking profile:', err);
+        }
+      }, 2000); // Wait 2 seconds for trigger to execute
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in signUp:', err);
+    return { 
+      data: null, 
+      error: { message: 'Database error saving new user. Please try again.' } 
+    }
+  }
 }
 
 export const signIn = async (email: string, password: string) => {
@@ -299,57 +350,212 @@ export const createClientProfile = async (profileData: any) => {
 
 // Project Management Functions
 export const getProjects = async (userId: string, userType: 'freelancer' | 'client') => {
-  let query;
-  
-  if (userType === 'freelancer') {
-    query = supabase
-      .from('projects')
-      .select(`
-        *,
-        client_profiles!projects_client_id_fkey (
-          full_name,
-          company_name,
-          email
-        )
-      `)
-      .eq('freelancer_id', userId);
-  } else {
-    query = supabase
-      .from('projects')
-      .select(`
-        *,
-        freelancer_profiles!projects_freelancer_id_fkey (
-          full_name,
-          email
-        )
-      `)
-      .eq('client_id', userId);
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    let query;
+    
+    if (userType === 'freelancer') {
+      query = supabase
+        .from('projects')
+        .select(`
+          *,
+          client_profiles!projects_client_id_fkey (
+            full_name,
+            company_name,
+            email
+          )
+        `)
+        .eq('freelancer_id', userId);
+    } else {
+      query = supabase
+        .from('projects')
+        .select(`
+          *,
+          freelancer_profiles!projects_freelancer_id_fkey (
+            full_name,
+            email
+          )
+        `)
+        .eq('client_id', userId);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in getProjects:', err);
+    return { data: null, error: { message: 'Failed to fetch projects' } }
   }
-  
-  const { data, error } = await query.order('created_at', { ascending: false });
-  return { data, error };
 }
 
 export const createProject = async (projectData: any) => {
-  const { data, error } = await supabase
-    .from('projects')
-    .insert(projectData)
-    .select()
-    .single()
-  return { data, error }
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    console.log('Creating project with data:', projectData);
+
+    // Generate project ID using the database function
+    const { data: projectIdResult, error: projectIdError } = await supabase
+      .rpc('generate_project_id');
+
+    if (projectIdError) {
+      console.error('Error generating project ID:', projectIdError);
+      return { data: null, error: projectIdError };
+    }
+
+    const projectId = projectIdResult;
+
+    // Prepare project data with generated ID
+    const finalProjectData = {
+      ...projectData,
+      project_id: projectId,
+      project_status: 'Draft'
+    };
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(finalProjectData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating project:', error);
+    } else {
+      console.log('Project created successfully:', data);
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in createProject:', err);
+    return { data: null, error: { message: 'Failed to create project' } }
+  }
 }
 
 export const updateProject = async (projectId: string, projectData: any) => {
-  const { data, error } = await supabase
-    .from('projects')
-    .update({
-      ...projectData,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', projectId)
-    .select()
-    .single()
-  return { data, error }
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update({
+        ...projectData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating project:', error);
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in updateProject:', err);
+    return { data: null, error: { message: 'Failed to update project' } }
+  }
+}
+
+// Validate freelancer ID exists in database
+export const validateFreelancerId = async (freelancerId: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    console.log('Validating freelancer ID:', freelancerId);
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key (first 20 chars):', supabaseAnonKey.substring(0, 20) + '...');
+
+    // First, let's check if the table exists and get some basic info
+    console.log('Testing table access...');
+    const { data: tableInfo, error: tableError } = await supabase
+      .from('freelancer_profiles')
+      .select('freelancer_id')
+      .limit(1);
+
+    if (tableError) {
+      console.error('Error accessing freelancer_profiles table:', tableError);
+      console.error('Table error details:', {
+        code: tableError.code,
+        message: tableError.message,
+        details: tableError.details,
+        hint: tableError.hint
+      });
+      return { data: null, error: tableError };
+    }
+
+    console.log('Table access successful, checking for freelancer ID...');
+
+    // Now check for the specific freelancer ID
+    const { data, error } = await supabase
+      .from('freelancer_profiles')
+      .select('freelancer_id, full_name, email')
+      .eq('freelancer_id', freelancerId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error validating freelancer ID:', error);
+      console.error('Validation error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      return { data: null, error };
+    }
+
+    console.log('Freelancer validation result:', data);
+    
+    if (!data) {
+      console.log('No freelancer found with ID:', freelancerId);
+      
+      // Let's also check what freelancer IDs exist in the database
+      const { data: allFreelancers, error: listError } = await supabase
+        .from('freelancer_profiles')
+        .select('freelancer_id, full_name')
+        .limit(10);
+      
+      if (listError) {
+        console.error('Error listing freelancers:', listError);
+      } else {
+        console.log('Available freelancer IDs:', allFreelancers);
+      }
+      
+      return { data: null, error: { message: 'Freelancer ID not found' } };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in validateFreelancerId:', err);
+    return { data: null, error: { message: 'Failed to validate freelancer ID' } }
+  }
 }
 
 // Transaction Management Functions
@@ -435,4 +641,34 @@ export const isProfileComplete = async (userId: string) => {
   }
   
   return false;
+}
+
+// Get all freelancer IDs for testing
+export const getAllFreelancerIds = async () => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('freelancer_profiles')
+      .select('freelancer_id, full_name, email')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching freelancer IDs:', error);
+      return { data: null, error };
+    }
+
+    console.log('All freelancer IDs:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in getAllFreelancerIds:', err);
+    return { data: null, error: { message: 'Failed to fetch freelancer IDs' } }
+  }
 }

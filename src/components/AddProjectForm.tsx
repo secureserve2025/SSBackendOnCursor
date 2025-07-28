@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { validateFreelancerId, createProject, getAllFreelancerIds } from '../lib/supabase';
 
 interface FileUpload {
   id: string;
@@ -9,18 +10,19 @@ interface FileUpload {
 }
 
 interface FormData {
+  projectId: string;
   category: string;
   projectName: string;
-  description: string;
   freelancerId: string;
   completionDate: string;
+  projectRequirement: string;
   files: FileUpload[];
   deliverables: string[];
 }
 
 interface FormErrors {
   projectName: string;
-  description: string;
+  projectRequirement: string;
   freelancerId: string;
   completionDate: string;
   deliverables: string;
@@ -28,18 +30,19 @@ interface FormErrors {
 
 const AddProjectForm: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
+    projectId: '',
     category: 'Video Production',
     projectName: '',
-    description: '',
     freelancerId: '',
     completionDate: '',
+    projectRequirement: '',
     files: [],
-    deliverables: ['', '', '']
+    deliverables: ['', '', '', '']
   });
 
   const [errors, setErrors] = useState<FormErrors>({
     projectName: '',
-    description: '',
+    projectRequirement: '',
     freelancerId: '',
     completionDate: '',
     deliverables: ''
@@ -49,15 +52,17 @@ const AddProjectForm: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isValidatingFreelancer, setIsValidatingFreelancer] = useState(false);
+  const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
 
   const categories = [
     { value: 'Video Production', label: 'Video Production', enabled: true },
-    { value: 'Content', label: 'Content Writing', enabled: false },
-    { value: 'UI/UX Design', label: 'UI/UX Design', enabled: false },
-    { value: 'Gen AI', label: 'Gen AI Services', enabled: false }
+    { value: 'Content Writing', label: 'Content Writing (will be enabled soon)', enabled: false },
+    { value: 'UI/UX Design', label: 'UI/UX Design (will be enabled soon)', enabled: false },
+    { value: 'Gen AI Services', label: 'Gen AI Services (will be enabled soon)', enabled: false }
   ];
 
   const allowedFileTypes = [
@@ -68,7 +73,7 @@ const AddProjectForm: React.FC = () => {
     '.zip', '.rar', '.7z'
   ];
 
-  const maxFileSize = 100 * 1024 * 1024; // 100MB
+  const maxFileSize = 10 * 1024 * 1024; // 10MB per file
 
   // Get tomorrow's date in YYYY-MM-DD format
   const getTomorrowDate = () => {
@@ -82,8 +87,8 @@ const AddProjectForm: React.FC = () => {
     switch (name) {
       case 'projectName':
         return value.trim().length < 3 ? 'Project name must be at least 3 characters long' : '';
-      case 'description':
-        return value.trim().length < 50 ? 'Description must be at least 50 characters long' : '';
+      case 'projectRequirement':
+        return value.trim().length < 10 ? 'Project requirement must be at least 10 characters long' : '';
       case 'freelancerId':
         const freelancerIdRegex = /^F\d{9}$/;
         if (!value.trim()) return 'Freelancer ID is required';
@@ -134,6 +139,42 @@ const AddProjectForm: React.FC = () => {
     handleInputChange('freelancerId', formatted);
   };
 
+  // Validate freelancer ID exists in database
+  const validateFreelancerIdExists = async (freelancerId: string) => {
+    if (!freelancerId || freelancerId.length !== 10) return false;
+    
+    setIsValidatingFreelancer(true);
+    setFreelancerValidationStatus('validating');
+    try {
+      console.log('Validating freelancer ID in form:', freelancerId);
+      const { data, error } = await validateFreelancerId(freelancerId);
+      setIsValidatingFreelancer(false);
+      setFreelancerValidationStatus('idle'); // Reset status after validation
+      
+      console.log('Validation result:', { data, error });
+      
+      // Check if there's an error or no data returned
+      if (error || !data) {
+        console.log('Freelancer ID not found, setting error');
+        const errorMessage = error?.message || 'Freelancer ID not found in database';
+        setErrors(prev => ({ ...prev, freelancerId: errorMessage }));
+        setFreelancerValidationStatus('error');
+        return false;
+      }
+      
+      console.log('Freelancer ID validated successfully');
+      setErrors(prev => ({ ...prev, freelancerId: '' }));
+      setFreelancerValidationStatus('success');
+      return true;
+    } catch (err) {
+      console.error('Exception in validateFreelancerIdExists:', err);
+      setIsValidatingFreelancer(false);
+      setFreelancerValidationStatus('error');
+      setErrors(prev => ({ ...prev, freelancerId: 'Error validating freelancer ID' }));
+      return false;
+    }
+  };
+
   // File upload handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -179,7 +220,10 @@ const AddProjectForm: React.FC = () => {
       return allowedFileTypes.includes(extension) && file.size <= maxFileSize;
     });
 
-    validFiles.forEach(file => {
+    // Limit to maximum 2 files
+    const filesToAdd = validFiles.slice(0, 2 - formData.files.length);
+
+    filesToAdd.forEach(file => {
       const fileUpload: FileUpload = {
         id: Date.now() + Math.random().toString(),
         file,
@@ -233,7 +277,7 @@ const AddProjectForm: React.FC = () => {
   };
 
   const addDeliverable = () => {
-    if (formData.deliverables.length < 10) {
+    if (formData.deliverables.length < 15) {
       setFormData(prev => ({
         ...prev,
         deliverables: [...prev.deliverables, '']
@@ -273,7 +317,7 @@ const AddProjectForm: React.FC = () => {
   const validateForm = () => {
     const newErrors: FormErrors = {
       projectName: validateField('projectName', formData.projectName),
-      description: validateField('description', formData.description),
+      projectRequirement: validateField('projectRequirement', formData.projectRequirement),
       freelancerId: validateField('freelancerId', formData.freelancerId),
       completionDate: validateField('completionDate', formData.completionDate),
       deliverables: ''
@@ -317,13 +361,50 @@ const AddProjectForm: React.FC = () => {
 
     setIsSubmitting(true);
     
-    // Simulate final submission
-    setTimeout(() => {
-      console.log('Project created:', formData);
-      // Here you would typically send the data to your backend
+    try {
+      // Prepare project data for database
+      const projectData = {
+        client_id: 'C123456789', // This should come from current user context
+        freelancer_id: formData.freelancerId,
+        project_category: formData.category,
+        project_name: formData.projectName,
+        project_requirement: formData.projectRequirement,
+        desired_completion_date: formData.completionDate,
+        project_files: formData.files.map(f => ({
+          name: f.file.name,
+          size: f.file.size,
+          type: f.file.type
+        })),
+        deliverables: formData.deliverables.filter(d => d.trim() !== '')
+      };
+
+      const { data, error } = await createProject(projectData);
+      
+      if (error) {
+        console.error('Error creating project:', error);
+        alert('Failed to create project. Please try again.');
+      } else {
+        console.log('Project created successfully:', data);
+        alert(`Project created successfully! Project ID: ${data.project_id}`);
+        // Reset form or redirect
+        setFormData({
+          projectId: data.project_id, // Set projectId from the created project
+          category: 'Video Production',
+          projectName: '',
+          freelancerId: '',
+          completionDate: '',
+          projectRequirement: '',
+          files: [],
+          deliverables: ['', '', '', '']
+        });
+        setShowDeliverables(false);
+      }
+    } catch (err) {
+      console.error('Exception in project creation:', err);
+      alert('Failed to create project. Please try again.');
+    } finally {
       setIsSubmitting(false);
-      // Reset form or redirect
-    }, 2000);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -334,26 +415,88 @@ const AddProjectForm: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Temporary test function to check available freelancer IDs
+  const testFreelancerIds = async () => {
+    console.log('Testing freelancer IDs...');
+    
+    try {
+      const { data, error } = await getAllFreelancerIds();
+      
+      if (error) {
+        console.error('Error fetching freelancer IDs:', error);
+        alert(`Error fetching freelancer IDs: ${error.message}`);
+        return;
+      }
+      
+      console.log('Available freelancer IDs:', data);
+      
+      if (data && data.length > 0) {
+        const ids = data.map(f => f.freelancer_id).join(', ');
+        alert(`Found ${data.length} freelancer(s): ${ids}`);
+        
+        // Also test validation for the first ID
+        if (data.length > 0) {
+          const firstId = data[0].freelancer_id;
+          console.log('Testing validation for first ID:', firstId);
+          const validationResult = await validateFreelancerId(firstId);
+          console.log('Validation test result:', validationResult);
+        }
+      } else {
+        alert('No freelancer profiles found in database. Please create some freelancer profiles first.');
+      }
+    } catch (err) {
+      console.error('Exception in testFreelancerIds:', err);
+      alert('Error testing freelancer IDs. Check console for details.');
+    }
+  };
+
+  // Simple test function to validate a specific freelancer ID
+  const testSpecificFreelancerId = async () => {
+    const testId = 'F214000319'; // The ID you mentioned
+    console.log('Testing specific freelancer ID:', testId);
+    
+    try {
+      const { data, error } = await validateFreelancerId(testId);
+      
+      if (error) {
+        console.error('Validation error:', error);
+        alert(`Error validating ${testId}: ${error.message}`);
+        return;
+      }
+      
+      if (data) {
+        console.log('Validation successful:', data);
+        alert(`✅ Freelancer ID ${testId} is valid! Name: ${data.full_name}`);
+      } else {
+        console.log('No freelancer found with ID:', testId);
+        alert(`❌ Freelancer ID ${testId} not found in database`);
+      }
+    } catch (err) {
+      console.error('Exception in testSpecificFreelancerId:', err);
+      alert('Error testing freelancer ID. Check console for details.');
+    }
+  };
+
   if (showDeliverables) {
     return (
-      <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8 px-2 sm:px-0">
         {/* Deliverables Section */}
-        <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+        <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 xl:p-8 border border-gray-700">
+          <div className="mb-4 sm:mb-6 lg:mb-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
               Project Deliverables Checklist
             </h2>
-            <p className="text-sm sm:text-base text-gray-300">
+            <p className="text-xs sm:text-sm lg:text-base text-gray-300">
               Define what you expect to receive from the freelancer. Be specific and clear.
             </p>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-4 lg:space-y-6">
             {/* Deliverables List */}
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-2 sm:space-y-3 lg:space-y-4">
               {formData.deliverables.map((deliverable, index) => (
-                <div key={index} className="flex items-start space-x-3 sm:space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base">
+                <div key={index} className="flex items-start space-x-2 sm:space-x-3 lg:space-x-4">
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm lg:text-base">
                     {index + 1}
                   </div>
                   <div className="flex-1">
@@ -362,7 +505,7 @@ const AddProjectForm: React.FC = () => {
                       value={deliverable}
                       onChange={(e) => handleDeliverableChange(index, e.target.value)}
                       placeholder={`Deliverable ${index + 1} (e.g., High-quality 1080p video in MP4 format)`}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base transition-colors"
+                      className="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white placeholder-gray-400 text-xs sm:text-sm lg:text-base transition-colors"
                       aria-label={`Deliverable ${index + 1}`}
                     />
                   </div>
@@ -370,10 +513,10 @@ const AddProjectForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeDeliverable(index)}
-                      className="flex-shrink-0 p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
+                      className="flex-shrink-0 p-1 sm:p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
                       aria-label={`Remove deliverable ${index + 1}`}
                     >
-                      <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Minus className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
                     </button>
                   )}
                 </div>
@@ -381,27 +524,27 @@ const AddProjectForm: React.FC = () => {
             </div>
 
             {/* Add/Remove Controls */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between space-y-3 sm:space-y-0 sm:space-x-4 pt-4 border-t border-gray-700">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between space-y-2 sm:space-y-3 sm:space-y-0 sm:space-x-4 pt-3 sm:pt-4 border-t border-gray-700">
               <button
                 type="button"
                 onClick={addDeliverable}
-                disabled={formData.deliverables.length >= 10}
-                className={`flex items-center justify-center space-x-2 px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-sm sm:text-base ${
-                  formData.deliverables.length >= 10
+                disabled={formData.deliverables.length >= 15}
+                className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-xs sm:text-sm lg:text-base ${
+                  formData.deliverables.length >= 15
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
                     : 'bg-purple-600 hover:bg-purple-700 text-white focus:ring-purple-400'
                 }`}
                 aria-label="Add new deliverable"
               >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>Add Deliverable ({formData.deliverables.length}/10)</span>
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                <span>Add Deliverable ({formData.deliverables.length}/15)</span>
               </button>
 
               <button
                 type="button"
                 onClick={generateAIDeliverables}
                 disabled={isGeneratingAI}
-                className={`flex items-center justify-center space-x-2 px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-sm sm:text-base ${
+                className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-xs sm:text-sm lg:text-base ${
                   isGeneratingAI
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
                     : 'bg-cyan-600 hover:bg-cyan-700 text-white focus:ring-cyan-400'
@@ -409,9 +552,9 @@ const AddProjectForm: React.FC = () => {
                 aria-label="Generate deliverables using AI"
               >
                 {isGeneratingAI ? (
-                  <Loader className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                  <Loader className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 animate-spin" />
                 ) : (
-                  <Wand2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
                 )}
                 <span>{isGeneratingAI ? 'Generating...' : 'Generate via AI Assistant'}</span>
               </button>
@@ -419,19 +562,19 @@ const AddProjectForm: React.FC = () => {
 
             {/* Error Message */}
             {errors.deliverables && (
-              <div className="flex items-center space-x-2 text-red-400 text-sm sm:text-base">
-                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+              <div className="flex items-center space-x-2 text-red-400 text-xs sm:text-sm lg:text-base">
+                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
                 <span>{errors.deliverables}</span>
               </div>
             )}
 
             {/* Submit Button */}
-            <div className="pt-6 border-t border-gray-700">
+            <div className="pt-4 sm:pt-6 border-t border-gray-700">
               <button
                 type="button"
                 onClick={handleFinalSubmit}
                 disabled={isSubmitting}
-                className={`w-full flex items-center justify-center space-x-2 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-colors focus:outline-none focus:ring-2 ${
+                className={`w-full flex items-center justify-center space-x-2 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base lg:text-lg transition-colors focus:outline-none focus:ring-2 ${
                   isSubmitting
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
                     : 'bg-purple-600 hover:bg-purple-700 text-white focus:ring-purple-400'
@@ -440,12 +583,12 @@ const AddProjectForm: React.FC = () => {
               >
                 {isSubmitting ? (
                   <>
-                    <Loader className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                    <Loader className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 animate-spin" />
                     <span>Creating Project...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
                     <span>Create Project</span>
                   </>
                 )}
@@ -458,19 +601,58 @@ const AddProjectForm: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 px-2 sm:px-0">
       {/* Project Creation Form */}
-      <div className="bg-gray-800 rounded-2xl p-4 sm:p-6 lg:p-8 border border-gray-700">
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+      <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 xl:p-8 border border-gray-700">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
             Create New Project
           </h2>
-          <p className="text-sm sm:text-base text-gray-300">
+          <p className="text-xs sm:text-sm lg:text-base text-gray-300">
             Fill in the details below to start your new project with a freelancer.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8" noValidate>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 lg:space-y-8" noValidate>
+          {/* Project ID (Read-only) */}
+          <div>
+            <label htmlFor="project-id" className="block text-gray-300 text-sm font-semibold mb-2">
+              Project ID (Read-only)
+            </label>
+            <div className="relative">
+              <input
+                id="project-id"
+                name="projectId"
+                type="text"
+                value={formData.projectId || 'Will be auto generate'}
+                onChange={(e) => handleInputChange('projectId', e.target.value)}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none text-sm sm:text-base ${
+                  formData.projectId 
+                    ? 'border-gray-600 bg-gray-700 text-white' 
+                    : 'border-gray-500 bg-gray-800 text-gray-400 cursor-not-allowed'
+                }`}
+                readOnly
+                disabled={!formData.projectId}
+                style={{ 
+                  userSelect: formData.projectId ? 'text' : 'none',
+                  WebkitUserSelect: formData.projectId ? 'text' : 'none',
+                  MozUserSelect: formData.projectId ? 'text' : 'none',
+                  msUserSelect: formData.projectId ? 'text' : 'none'
+                }}
+              />
+              <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                <FileText className={`h-4 w-4 sm:h-5 sm:w-5 ${
+                  formData.projectId ? 'text-purple-400' : 'text-gray-500'
+                }`} />
+              </div>
+            </div>
+            {!formData.projectId && (
+              <p className="text-gray-500 text-xs sm:text-sm mt-1">
+                Project ID will be automatically generated after form submission
+              </p>
+            )}
+          </div>
+
           {/* Project Category */}
           <div>
             <label htmlFor="category" className="block text-gray-300 text-sm font-semibold mb-2">
@@ -505,7 +687,7 @@ const AddProjectForm: React.FC = () => {
           </div>
 
           {/* Project Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
             {/* Project Name */}
             <div>
               <label htmlFor="project-name" className="block text-gray-300 text-sm font-semibold mb-2">
@@ -521,16 +703,17 @@ const AddProjectForm: React.FC = () => {
                   onBlur={(e) => handleInputBlur('projectName', e.target.value)}
                   placeholder="Enter your project name"
                   required
+                  maxLength={20}
                   aria-invalid={errors.projectName ? 'true' : 'false'}
                   aria-describedby={errors.projectName ? 'project-name-error' : undefined}
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
+                  className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                     errors.projectName 
                       ? 'border-red-500 focus:border-red-400' 
                       : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
                   }`}
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                  <FileText className="h-5 w-5 text-purple-400" />
+                <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
                 </div>
               </div>
               {errors.projectName && (
@@ -553,20 +736,37 @@ const AddProjectForm: React.FC = () => {
                   type="text"
                   value={formData.freelancerId}
                   onChange={(e) => handleFreelancerIdChange(e.target.value)}
-                  onBlur={(e) => handleInputBlur('freelancerId', e.target.value)}
+                  onBlur={(e) => {
+                    handleInputBlur('freelancerId', e.target.value);
+                    if (e.target.value.length === 10) {
+                      validateFreelancerIdExists(e.target.value);
+                    }
+                  }}
                   placeholder="F123456789"
                   required
                   maxLength={10}
                   aria-invalid={errors.freelancerId ? 'true' : 'false'}
                   aria-describedby={`freelancer-id-help ${errors.freelancerId ? 'freelancer-id-error' : ''}`.trim()}
-                  className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
+                  className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
                     errors.freelancerId 
                       ? 'border-red-500 focus:border-red-400' 
+                      : freelancerValidationStatus === 'success'
+                      ? 'border-green-500 focus:border-green-400'
+                      : freelancerValidationStatus === 'error'
+                      ? 'border-red-500 focus:border-red-400'
                       : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
                   }`}
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                  <User className="h-5 w-5 text-purple-400" />
+                <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                  {isValidatingFreelancer ? (
+                    <Loader className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 animate-spin" />
+                  ) : freelancerValidationStatus === 'success' ? (
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
+                  ) : freelancerValidationStatus === 'error' ? (
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
+                  ) : (
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
+                  )}
                 </div>
               </div>
               <p id="freelancer-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
@@ -578,47 +778,66 @@ const AddProjectForm: React.FC = () => {
                   {errors.freelancerId}
                 </p>
               )}
+              
+              {/* Temporary test button - remove after testing */}
+              <button
+                type="button"
+                onClick={testFreelancerIds}
+                className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs mr-2"
+              >
+                Test: Check Available Freelancer IDs
+              </button>
+              
+              {/* Test specific freelancer ID */}
+              <button
+                type="button"
+                onClick={testSpecificFreelancerId}
+                className="mt-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+              >
+                Test: Validate F214000319
+              </button>
             </div>
           </div>
 
-          {/* Project Description */}
+          {/* Project Requirement */}
           <div>
-            <label htmlFor="description" className="block text-gray-300 text-sm font-semibold mb-2">
-              Project Requirement Description *
+            <label htmlFor="project-requirement" className="block text-gray-300 text-sm font-semibold mb-2">
+              Project Requirement *
             </label>
             <div className="relative">
               <textarea
-                id="description"
-                name="description"
-                rows={6}
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                onBlur={(e) => handleInputBlur('description', e.target.value)}
+                id="project-requirement"
+                name="projectRequirement"
+                rows={4}
+                value={formData.projectRequirement}
+                onChange={(e) => handleInputChange('projectRequirement', e.target.value)}
+                onBlur={(e) => handleInputBlur('projectRequirement', e.target.value)}
                 placeholder="Describe your project requirements in detail. Include style preferences, target audience, duration, specific elements needed, etc."
                 required
-                aria-invalid={errors.description ? 'true' : 'false'}
-                aria-describedby={`description-help ${errors.description ? 'description-error' : ''}`.trim()}
-                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base resize-none ${
-                  errors.description 
+                maxLength={200}
+                aria-invalid={errors.projectRequirement ? 'true' : 'false'}
+                aria-describedby={`project-requirement-help ${errors.projectRequirement ? 'project-requirement-error' : ''}`.trim()}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base resize-none ${
+                  errors.projectRequirement 
                     ? 'border-red-500 focus:border-red-400' 
                     : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
                 }`}
               />
             </div>
             <div className="flex items-center justify-between mt-1">
-              <p id="description-help" className="text-gray-400 text-xs sm:text-sm">
-                Minimum 50 characters required
+              <p id="project-requirement-help" className="text-gray-400 text-xs sm:text-sm">
+                Minimum 10 characters required (max 200)
               </p>
               <span className={`text-xs sm:text-sm ${
-                formData.description.length >= 50 ? 'text-green-400' : 'text-gray-400'
+                formData.projectRequirement.length >= 10 ? 'text-green-400' : 'text-gray-400'
               }`}>
-                {formData.description.length}/50
+                {formData.projectRequirement.length}/200
               </span>
             </div>
-            {errors.description && (
-              <p id="description-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">
+            {errors.projectRequirement && (
+              <p id="project-requirement-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">
                 <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.description}
+                {errors.projectRequirement}
               </p>
             )}
           </div>
@@ -629,25 +848,25 @@ const AddProjectForm: React.FC = () => {
               Desired Completion Date *
             </label>
             <div className="relative">
-              <input
-                id="completion-date"
-                name="completionDate"
-                type="date"
-                value={formData.completionDate}
-                onChange={(e) => handleInputChange('completionDate', e.target.value)}
-                onBlur={(e) => handleInputBlur('completionDate', e.target.value)}
-                min={getTomorrowDate()}
-                required
-                aria-invalid={errors.completionDate ? 'true' : 'false'}
-                aria-describedby={`completion-date-help ${errors.completionDate ? 'completion-date-error' : ''}`.trim()}
-                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white text-sm sm:text-base ${
-                  errors.completionDate 
-                    ? 'border-red-500 focus:border-red-400' 
-                    : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
-                }`}
-              />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <Calendar className="h-5 w-5 text-purple-400" />
+                              <input
+                  id="completion-date"
+                  name="completionDate"
+                  type="date"
+                  value={formData.completionDate}
+                  onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                  onBlur={(e) => handleInputBlur('completionDate', e.target.value)}
+                  min={getTomorrowDate()}
+                  required
+                  aria-invalid={errors.completionDate ? 'true' : 'false'}
+                  aria-describedby={`completion-date-help ${errors.completionDate ? 'completion-date-error' : ''}`.trim()}
+                  className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white text-sm sm:text-base ${
+                    errors.completionDate 
+                      ? 'border-red-500 focus:border-red-400' 
+                      : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                  }`}
+                />
+              <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
               </div>
             </div>
             <p id="completion-date-help" className="text-gray-400 text-xs sm:text-sm mt-1">
@@ -667,7 +886,7 @@ const AddProjectForm: React.FC = () => {
               Project Files (Optional)
             </label>
             <div
-              className={`relative border-2 border-dashed rounded-lg p-6 sm:p-8 transition-all duration-300 ${
+              className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 lg:p-8 transition-all duration-300 ${
                 isDragOver
                   ? 'border-purple-400 bg-purple-900/20'
                   : 'border-gray-600 hover:border-gray-500'
@@ -678,21 +897,21 @@ const AddProjectForm: React.FC = () => {
               onDrop={handleDrop}
             >
               <div className="text-center">
-                <Upload className={`mx-auto h-8 w-8 sm:h-12 sm:w-12 mb-4 transition-colors ${
+                <Upload className={`mx-auto h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 mb-3 sm:mb-4 transition-colors ${
                   isDragOver ? 'text-purple-400' : 'text-gray-400'
                 }`} />
-                <p className={`text-base sm:text-lg font-medium mb-2 transition-colors ${
+                <p className={`text-sm sm:text-base lg:text-lg font-medium mb-2 transition-colors ${
                   isDragOver ? 'text-purple-400' : 'text-gray-300'
                 }`}>
                   {isDragOver ? 'Drop files here' : 'Drag and drop files here'}
                 </p>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">
                   or
                 </p>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 sm:px-6 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm sm:text-base"
+                  className="px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs sm:text-sm lg:text-base"
                 >
                   Browse Files
                 </button>
@@ -706,38 +925,38 @@ const AddProjectForm: React.FC = () => {
                   aria-label="Select files to upload"
                 />
               </div>
-              <p className="text-xs sm:text-sm text-gray-400 mt-4 text-center">
-                Supported formats: PDF, DOC, DOCX, JPG, PNG, MP4, etc. Max size: 100MB per file
+              <p className="text-xs sm:text-sm text-gray-400 mt-3 sm:mt-4 text-center">
+                Supported formats: PDF, DOC, DOCX, JPG, PNG, MP4, etc. Max size: 10MB per file (max 2 files)
               </p>
             </div>
 
             {/* Uploaded Files List */}
             {formData.files.length > 0 && (
-              <div className="mt-4 space-y-3">
-                <h4 className="text-sm font-medium text-gray-300">Uploaded Files:</h4>
+              <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
+                <h4 className="text-xs sm:text-sm font-medium text-gray-300">Uploaded Files:</h4>
                 {formData.files.map((fileUpload) => (
-                  <div key={fileUpload.id} className="flex items-center space-x-3 p-3 bg-gray-700 rounded-lg">
+                  <div key={fileUpload.id} className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-700 rounded-lg">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-xs sm:text-sm font-medium text-white truncate">
                         {fileUpload.file.name}
                       </p>
                       <p className="text-xs text-gray-400">
                         {formatFileSize(fileUpload.file.size)}
                       </p>
                       {fileUpload.status === 'uploading' && (
-                        <div className="mt-2">
-                          <div className="w-full bg-gray-600 rounded-full h-2">
+                        <div className="mt-1 sm:mt-2">
+                          <div className="w-full bg-gray-600 rounded-full h-1 sm:h-2">
                             <div 
-                              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                              className="bg-purple-600 h-1 sm:h-2 rounded-full transition-all duration-300"
                               style={{ width: `${fileUpload.progress}%` }}
                             ></div>
                           </div>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                       {fileUpload.status === 'completed' && (
-                        <CheckCircle className="h-5 w-5 text-green-400" />
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                       )}
                       <button
                         type="button"
@@ -745,7 +964,7 @@ const AddProjectForm: React.FC = () => {
                         className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
                         aria-label={`Remove ${fileUpload.file.name}`}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
@@ -755,11 +974,11 @@ const AddProjectForm: React.FC = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="pt-6 border-t border-gray-700">
+          <div className="pt-4 sm:pt-6 border-t border-gray-700">
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full flex items-center justify-center space-x-2 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-colors focus:outline-none focus:ring-2 ${
+              className={`w-full flex items-center justify-center space-x-2 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base lg:text-lg transition-colors focus:outline-none focus:ring-2 ${
                 isSubmitting
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
                   : 'bg-purple-600 hover:bg-purple-700 text-white focus:ring-purple-400'
@@ -768,12 +987,12 @@ const AddProjectForm: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <Loader className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
+                  <Loader className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 animate-spin" />
                   <span>Processing...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
                   <span>Continue to Deliverables</span>
                 </>
               )}
