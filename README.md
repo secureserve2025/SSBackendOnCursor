@@ -11,7 +11,8 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Project Management**: Create, track, and manage projects with AI-powered deliverables
 - **Email Notifications**: Automated email notifications for project assignments using EmailJS
 - **Real-time Messaging**: Built-in communication system
-- **Transaction Tracking**: Monitor payments and project finances
+- **Escrow Transaction System**: Secure payment processing with auto-calculated fees
+- **Transaction Tracking**: Monitor payments and project finances with role-based access
 - **Responsive Design**: Modern UI with dark mode support
 - **Freelancer ID Validation**: Real-time validation of freelancer IDs in project creation
 
@@ -20,7 +21,8 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Project Workflow Management**: Track project status through multiple stages
 - **Freelancer Discovery**: Browse and select skilled professionals with ID validation
 - **Project Tracking**: Monitor project progress and deliverables
-- **Payment Management**: Secure payment processing
+- **Escrow Payment System**: Secure fund escrow with automatic project status updates
+- **Transaction Management**: Create and track escrow transactions with auto-calculated fees
 - **Communication**: Direct messaging with freelancers
 - **File Upload System**: Drag-and-drop file uploads with progress tracking
 - **Email Notifications**: Automatic email notifications to freelancers when projects are created
@@ -29,9 +31,12 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Profile Showcase**: Professional profile with skills and portfolio
 - **Project Bidding**: Apply for relevant projects
 - **Work Management**: Track active projects and deadlines
-- **Earnings Tracking**: Monitor income and payment history
+- **Earnings Tracking**: Monitor income and payment history with status-based filtering
+- **Transaction Monitoring**: View escrow transactions in read-only mode
 - **Client Communication**: Direct messaging with clients
 - **Email Notifications**: Receive email notifications for new project assignments
+- **Deliverables Management**: Review and agree to project deliverables with status updates
+- **Client Notifications**: Automatically notify clients when deliverables are signed off
 
 ## 🛠️ Technology Stack
 
@@ -50,9 +55,10 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Authentication**: Built-in user management with automatic profile creation
 
 ### **Email & Communication**
-- **EmailJS**: Automated email notifications for project assignments
+- **EmailJS**: Automated email notifications for project assignments and status updates
 - **Email Templates**: Professional HTML email templates with dynamic content
-- **Project Notifications**: Real-time email alerts to freelancers
+- **Project Notifications**: Real-time email alerts to freelancers when projects are created
+- **Deliverables Signed Off Notifications**: Email alerts to clients when freelancers agree to deliverables
 
 ### **Additional Tools**
 - **ESLint**: Code quality and consistency
@@ -107,6 +113,7 @@ SSBackendOnCursor/
 ├── quick_client_test.sql    # Client profile testing
 ├── diagnose_signup_issue.sql # Signup diagnostics
 ├── test_supabase_connection.sql # Connection testing
+├── setup_complete_database.sql # Complete database setup with transactions and messages
 ├── PROFILE_SETUP_GUIDE.md   # Profile system guide
 ├── PROFILE_SAVE_FIX.md      # Troubleshooting guide
 └── EMAILJS_SETUP.md         # Email setup guide
@@ -138,10 +145,11 @@ VITE_RESEND_API_KEY=your-resend-api-key
 ### **3. Database Setup**
 1. Go to your Supabase project dashboard
 2. Navigate to **SQL Editor**
-3. Run `comprehensive_supabase_fix.sql` for complete setup
-4. Run `projects_schema.sql` for project-related tables
-5. Run `update_projects_and_add_new_tables.sql` for workflow tables
-6. For specific issues, use targeted scripts:
+3. Run `setup_complete_database.sql` for complete database setup including transactions and messages
+4. For specific issues, use targeted scripts:
+   - `comprehensive_supabase_fix.sql` - Legacy complete setup
+   - `projects_schema.sql` - Project-related database schema
+   - `update_projects_and_add_new_tables.sql` - Project workflow tables
    - `fix_freelancer_validation.sql` - Freelancer ID validation
    - `fix_signup_triggers.sql` - Signup trigger fixes
    - `restore_freelancer_profile.sql` - Profile restoration
@@ -168,8 +176,8 @@ Visit `http://localhost:5173`
 - **`deliverables`**: Project deliverables with validation
 - **`work_products`**: Final work products from freelancers
 - **`verification_reports`**: Project verification and quality reports
-- **`transactions`**: Payment and financial records
-- **`messages`**: Communication between users
+- **`transactions`**: Escrow payment records with auto-calculated fees and status tracking
+- **`messages`**: Communication between users with auto-generated message IDs
 
 ### **Project Workflow System**
 - **Project Status Tracking**: 9-stage workflow from creation to completion
@@ -179,13 +187,25 @@ Visit `http://localhost:5173`
 - **Work Products**: Final deliverables tracking
 - **Verification Reports**: Quality assurance and verification
 
+### **Escrow Transaction System**
+- **Auto-generated Transaction IDs**: 10-digit incremental format (1000000001, 1000000002...)
+- **Automatic Fee Calculation**: 3.5% fee for both client and freelancer, 93% to freelancer
+- **Transaction Status Tracking**: Fund Secured → Successfully closed → Chargeback
+- **Role-based Access**: Clients create transactions, freelancers view only
+- **Project Status Automation**: Automatic update to "Production in Progress" on transaction creation
+- **Human-readable Display**: Project IDs and client names instead of UUIDs in transaction tables
+
 ### **Key Features**
 - **Automatic Profile Creation**: Triggers create profiles on signup with error handling
 - **Row Level Security**: Public read access for validation, user-specific write access
 - **System-generated IDs**: Unique identifiers (F123456789, C123456789, V1001)
+- **Auto-generated Transaction IDs**: 10-digit incremental IDs (1000000001, 1000000002...)
+- **Auto-generated Message IDs**: 3-digit incremental IDs (001, 002...)
 - **Audit Trail**: Created and updated timestamps
 - **Freelancer ID Validation**: Real-time validation with visual feedback
 - **Email Notifications**: Automated email alerts for project assignments
+- **Escrow Fee Calculation**: Automatic 3.5% fee calculation for both client and freelancer
+- **Role-based Transaction Access**: Clients can create transactions, freelancers can only view
 
 ## 🔐 Security Features
 
@@ -307,6 +327,10 @@ npm run build
 - `PROFILE_SAVE_FIX.md` - Troubleshooting guide
 - `EMAILJS_SETUP.md` - Email functionality setup
 
+### **Email Templates**
+- `src/emails/templates/projectNotification.html` - Project assignment notifications
+- `src/emails/templates/deliverablesSignedOffNotification.html` - Deliverables signed off notifications
+
 ### **Database Scripts**
 - `comprehensive_supabase_fix.sql` - Complete database setup
 - `projects_schema.sql` - Project-related database schema
@@ -364,6 +388,13 @@ npm run build
 - Verify all dependencies are installed
 
 ### **Recent Fixes Applied**
+- ✅ **Escrow Transaction System**: Complete transaction management with auto-calculated fees
+- ✅ **Role-based Transaction Access**: Clients can create transactions, freelancers can only view
+- ✅ **Auto-generated IDs**: Transaction IDs (10-digit) and Message IDs (3-digit) with triggers
+- ✅ **Project Status Automation**: Automatic project status update to "Production in Progress" on transaction creation
+- ✅ **Transaction Display Fixes**: Human-readable project IDs and client names instead of UUIDs
+- ✅ **Earnings Calculation**: Status-based filtering for freelancer earnings (only "Successfully closed" transactions)
+- ✅ **Database Schema Optimization**: Updated RLS policies for existing projects table structure
 - ✅ **Email Notification System**: Automated email alerts to freelancers for new projects
 - ✅ **Project Workflow Management**: 9-stage project status tracking system
 - ✅ **Enhanced Project Creation**: Advanced form with file uploads and AI deliverables

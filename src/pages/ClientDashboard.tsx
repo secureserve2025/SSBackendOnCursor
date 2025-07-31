@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions } from '../lib/supabase';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -67,6 +67,22 @@ const ClientDashboard: React.FC = () => {
   const [selectedVerificationReport, setSelectedVerificationReport] = useState<any>(null);
   const [showDeliverablesModal, setShowDeliverablesModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  
+  // New state for editable deliverables
+  const [editingDeliverables, setEditingDeliverables] = useState<string[]>([]);
+  const [isEditingDeliverables, setIsEditingDeliverables] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [savingDeliverables, setSavingDeliverables] = useState(false);
+
+  // New state for Fund Escrow functionality
+  const [showFundEscrowModal, setShowFundEscrowModal] = useState(false);
+  const [escrowProjects, setEscrowProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [escrowValue, setEscrowValue] = useState<string>('');
+  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -166,6 +182,13 @@ const ClientDashboard: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Load transactions when Transactions tab is active
+  useEffect(() => {
+    if (activeTab === 'transactions') {
+      loadTransactions();
+    }
+  }, [activeTab]);
+
   const loadProjects = async () => {
     setProjectsLoading(true);
     try {
@@ -185,9 +208,163 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
-  const handleDeliverablesClick = (deliverables: any[]) => {
+  const loadTransactions = async () => {
+    setTransactionsLoading(true);
+    try {
+      const { user } = await getCurrentUser();
+      if (user) {
+        const { data, error } = await getClientTransactions(user.id);
+        if (error) {
+          console.error('Error loading transactions:', error);
+        } else {
+          setTransactions(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading transactions:', error);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  };
+
+  const loadEscrowProjects = async () => {
+    try {
+      const { user } = await getCurrentUser();
+      if (user) {
+        const { data, error } = await getClientProjectsForEscrow(user.id);
+        if (error) {
+          console.error('Error loading escrow projects:', error);
+        } else {
+          setEscrowProjects(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Exception loading escrow projects:', error);
+    }
+  };
+
+  const handleFundEscrowClick = async () => {
+    await loadEscrowProjects();
+    setShowFundEscrowModal(true);
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    const project = escrowProjects.find(p => p.id === projectId);
+    setSelectedProject(project);
+  };
+
+  const handleTransfer = async () => {
+    if (!selectedProjectId || !escrowValue || parseFloat(escrowValue) <= 0) {
+      alert('Please select a project and enter a valid amount.');
+      return;
+    }
+
+    setIsCreatingTransaction(true);
+    try {
+      const { data, error } = await createEscrowTransaction({
+        project_id: selectedProjectId,
+        value: parseFloat(escrowValue)
+      });
+
+      if (error) {
+        console.error('Error creating transaction:', error);
+        alert('Failed to create transaction. Please try again.');
+      } else {
+        console.log('Transaction created successfully:', data);
+        alert('Transaction created successfully!');
+        setShowFundEscrowModal(false);
+        setSelectedProjectId('');
+        setSelectedProject(null);
+        setEscrowValue('');
+        await loadTransactions(); // Refresh transactions list
+      }
+    } catch (error) {
+      console.error('Exception creating transaction:', error);
+      alert('Failed to create transaction. Please try again.');
+    } finally {
+      setIsCreatingTransaction(false);
+    }
+  };
+
+  const handleDeliverablesClick = (deliverables: any[], projectStatus: string, projectId: string) => {
     setSelectedDeliverables(deliverables);
+    setEditingProjectId(projectId);
     setShowDeliverablesModal(true);
+    
+    // If project status is "Project Created", enable editing
+    if (projectStatus === 'Project Created') {
+      setIsEditingDeliverables(true);
+      setEditingDeliverables(deliverables.map((d: any) => d.deliverable_text));
+    } else {
+      setIsEditingDeliverables(false);
+      setEditingDeliverables([]);
+    }
+  };
+
+  const handleDeliverableEdit = (index: number, value: string) => {
+    const newDeliverables = [...editingDeliverables];
+    newDeliverables[index] = value;
+    setEditingDeliverables(newDeliverables);
+  };
+
+  const addDeliverable = () => {
+    setEditingDeliverables([...editingDeliverables, '']);
+  };
+
+  const removeDeliverable = (index: number) => {
+    const newDeliverables = editingDeliverables.filter((_, i) => i !== index);
+    setEditingDeliverables(newDeliverables);
+  };
+
+  const handleSaveDeliverables = async () => {
+    if (!editingProjectId) return;
+
+    // Filter out empty deliverables
+    const validDeliverables = editingDeliverables.filter(d => d.trim() !== '');
+    
+    // Check minimum 3 deliverables requirement
+    if (validDeliverables.length < 3) {
+      alert('Please add at least 3 deliverables before saving.');
+      return;
+    }
+
+    setSavingDeliverables(true);
+    try {
+      const { data, error } = await updateProjectDeliverables(editingProjectId, validDeliverables);
+      
+      if (error) {
+        console.error('Error saving deliverables:', error);
+        alert('Failed to save deliverables. Please try again.');
+        return;
+      }
+
+      // Update the projects list with new deliverables
+      setProjects(prevProjects => 
+        prevProjects.map(project => 
+          project.id === editingProjectId 
+            ? { ...project, deliverables: data || [] }
+            : project
+        )
+      );
+
+      // Update selected deliverables for display
+      setSelectedDeliverables(data || []);
+      
+      alert('Deliverables saved successfully!');
+      setIsEditingDeliverables(false);
+    } catch (error) {
+      console.error('Exception saving deliverables:', error);
+      alert('Failed to save deliverables. Please try again.');
+    } finally {
+      setSavingDeliverables(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingDeliverables(false);
+    setEditingDeliverables([]);
+    setEditingProjectId(null);
   };
 
   const handleWorkProductClick = (workProduct: any) => {
@@ -770,11 +947,20 @@ const ClientDashboard: React.FC = () => {
                     <div className="text-center">
                       {project.deliverables && project.deliverables.length > 0 ? (
                         <button
-                          onClick={() => handleDeliverablesClick(project.deliverables)}
+                          onClick={() => handleDeliverablesClick(project.deliverables, project.project_status_workflow, project.id)}
                           className="inline-flex items-center space-x-1 text-purple-400 hover:text-purple-300 transition-colors"
                         >
-                          <Eye className="h-4 w-4" />
-                          <span className="text-xs">View ({project.deliverables.length})</span>
+                          {project.project_status_workflow === 'Project Created' ? (
+                            <>
+                              <Edit3 className="h-4 w-4" />
+                              <span className="text-xs">Edit ({project.deliverables.length})</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4" />
+                              <span className="text-xs">View ({project.deliverables.length})</span>
+                            </>
+                          )}
                         </button>
                       ) : (
                         <span className="text-gray-500 text-xs">-</span>
@@ -821,23 +1007,99 @@ const ClientDashboard: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Deliverable Checklist</h3>
-                <button
-                  onClick={() => setShowDeliverablesModal(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex items-center space-x-2">
+                  {isEditingDeliverables && (
+                    <>
+                      <button
+                        onClick={handleSaveDeliverables}
+                        disabled={savingDeliverables || editingDeliverables.filter(d => d.trim() !== '').length < 3}
+                        className="inline-flex items-center space-x-1 px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-xs rounded transition-colors"
+                      >
+                        <Save className="h-3 w-3" />
+                        <span>{savingDeliverables ? 'Saving...' : 'Save'}</span>
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="inline-flex items-center space-x-1 px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                      >
+                        <X className="h-3 w-3" />
+                        <span>Cancel</span>
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDeliverablesModal(false);
+                      setIsEditingDeliverables(false);
+                      setEditingDeliverables([]);
+                      setEditingProjectId(null);
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-              <div className="space-y-3">
-                {selectedDeliverables.map((deliverable, index) => (
-                  <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
-                    <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                      {index + 1}
+              
+              {isEditingDeliverables ? (
+                // Edit mode
+                <div className="space-y-3">
+                  {editingDeliverables.map((deliverable, index) => (
+                    <div key={index} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={deliverable}
+                          onChange={(e) => handleDeliverableEdit(index, e.target.value)}
+                          className="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                          placeholder="Enter deliverable..."
+                          maxLength={200}
+                        />
+                        <button
+                          onClick={() => removeDeliverable(index)}
+                          className="text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
+                  ))}
+                  
+                  {editingDeliverables.length < 15 && (
+                    <button
+                      onClick={addDeliverable}
+                      className="w-full p-3 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-gray-300 hover:border-gray-500 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Add Deliverable</span>
+                    </button>
+                  )}
+                  
+                  <div className="text-xs text-gray-400 mt-2">
+                    {editingDeliverables.length}/15 deliverables (max 200 characters each)
                   </div>
-                ))}
-              </div>
+                  {editingDeliverables.filter(d => d.trim() !== '').length < 3 && (
+                    <div className="text-xs text-red-400 mt-2">
+                      ⚠️ Minimum 3 deliverables required
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // View mode
+                <div className="space-y-3">
+                  {selectedDeliverables.map((deliverable, index) => (
+                    <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
+                      <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                        {index + 1}
+                      </div>
+                      <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -895,9 +1157,15 @@ const ClientDashboard: React.FC = () => {
               View your payment history and project transactions
             </p>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
-            <CreditCard className="h-4 w-4" aria-hidden="true" />
-            <span>₹0 Total Spent</span>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleFundEscrowClick}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
+              aria-label="Fund Escrow"
+            >
+              <CreditCard className="h-4 w-4" aria-hidden="true" />
+              <span>Fund Escrow</span>
+            </button>
           </div>
         </div>
 
@@ -911,58 +1179,206 @@ const ClientDashboard: React.FC = () => {
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Freelancer ID</div>
                 <div className="text-right">Value (₹)</div>
-                <div className="text-center">Value Status</div>
+                <div className="text-center">Transaction Status</div>
               </div>
             </div>
 
-            {/* Table Body - Empty State */}
-            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
-              <div className="p-8 sm:p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
-                    <CreditCard className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+            {/* Table Body */}
+            {transactionsLoading ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">Loading transactions...</p>
+                </div>
+              </div>
+            ) : transactions.length > 0 ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                {transactions.map((transaction, index) => (
+                  <div key={transaction.transaction_id} className={`grid grid-cols-5 gap-4 p-4 text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
+                    <div className="text-left text-white">{transaction.projects?.project_id || 'N/A'}</div>
+                    <div className="text-left text-gray-300">{transaction.projects?.project_name || 'N/A'}</div>
+                    <div className="text-left text-gray-300">{transaction.projects?.freelancer_id || 'N/A'}</div>
+                    <div className="text-right text-white">₹{transaction.transaction_value?.toLocaleString() || '0'}</div>
+                    <div className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        transaction.transaction_status === 'Project under Manual Review' ? 'bg-yellow-100 text-yellow-800' :
+                        transaction.transaction_status === 'Fund Secured' ? 'bg-green-100 text-green-800' :
+                        transaction.transaction_status === 'Successfully closed' ? 'bg-blue-100 text-blue-800' :
+                        transaction.transaction_status === 'Chargeback' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {transaction.transaction_status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">
-                      No Transactions Yet
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
-                      Your payment history will appear here once you complete projects and make payments. 
-                      All transactions are secure and processed through our escrow system.
-                    </p>
-                  </div>
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setActiveTab('add-project')}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      aria-label="Create a new project"
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                      <span>Create Project</span>
-                    </button>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                      <CreditCard className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">
+                        No Transactions Yet
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                        Your payment history will appear here once you fund projects through escrow. 
+                        All transactions are secure and processed through our escrow system.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Transaction Summary */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-red-400">₹0</div>
+            <div className="text-2xl font-bold text-red-400">
+              ₹{transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0).toLocaleString()}
+            </div>
             <div className="text-sm text-gray-300">Total Spent</div>
           </div>
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-400">0</div>
+            <div className="text-2xl font-bold text-blue-400">{transactions.length}</div>
             <div className="text-sm text-gray-300">Projects Funded</div>
           </div>
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-purple-400">₹0</div>
+            <div className="text-2xl font-bold text-purple-400">
+              ₹{transactions.length > 0 ? (transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0) / transactions.length).toFixed(0) : '0'}
+            </div>
             <div className="text-sm text-gray-300">Average Project Cost</div>
           </div>
         </div>
       </div>
+
+      {/* Fund Escrow Modal */}
+      {showFundEscrowModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white">Fund Escrow</h3>
+              <button
+                onClick={() => setShowFundEscrowModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Project ID Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Project ID *
+                </label>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => handleProjectSelect(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  required
+                >
+                  <option value="">Select a project</option>
+                  {escrowProjects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.project_id} - {project.project_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Project Name (Read-only) */}
+              {selectedProject && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Project Name
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedProject.project_name}
+                    readOnly
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
+                  />
+                </div>
+              )}
+
+              {/* Freelancer ID (Read-only) */}
+              {selectedProject && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Freelancer ID
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedProject.freelancer_id}
+                    readOnly
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
+                  />
+                </div>
+              )}
+
+              {/* Freelancer Name (Read-only) */}
+              {selectedProject && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Freelancer Name
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedProject.freelancer_profiles?.full_name || 'N/A'}
+                    readOnly
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
+                  />
+                </div>
+              )}
+
+              {/* Value Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Value (₹) *
+                </label>
+                <input
+                  type="number"
+                  value={escrowValue}
+                  onChange={(e) => setEscrowValue(e.target.value)}
+                  placeholder="Enter amount (e.g., 5000.00)"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  required
+                />
+              </div>
+
+              {/* Transfer Button */}
+              <div className="pt-4">
+                <button
+                  onClick={handleTransfer}
+                  disabled={!selectedProjectId || !escrowValue || isCreatingTransaction}
+                  className={`w-full py-2 px-4 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                    !selectedProjectId || !escrowValue || isCreatingTransaction
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {isCreatingTransaction ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    'Transfer'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

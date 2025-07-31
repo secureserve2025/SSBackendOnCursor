@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType } from '../lib/supabase';
+import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions } from '../lib/supabase';
+import EmailService from '../emails/emailService';
 
 interface ProfileData {
   fullName: string;
@@ -40,6 +41,21 @@ const FreelancerDashboard: React.FC = () => {
     freelancerId: ''
   });
   const [errors, setErrors] = useState<Partial<ProfileData>>({});
+
+  // New state for projects
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [selectedDeliverables, setSelectedDeliverables] = useState<any[]>([]);
+  const [selectedVerificationReport, setSelectedVerificationReport] = useState<any>(null);
+  const [showDeliverablesModal, setShowDeliverablesModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [currentProjectStatus, setCurrentProjectStatus] = useState<string>('');
+  const [currentProjectId, setCurrentProjectId] = useState<string>('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  // New state for transactions
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -126,6 +142,148 @@ const FreelancerDashboard: React.FC = () => {
 
     loadUserData();
   }, []);
+
+  // Load projects for the freelancer
+  const loadProjects = async () => {
+    if (!profileData.freelancerId) return;
+    
+    setProjectsLoading(true);
+    try {
+      const { data, error } = await getFreelancerProjectsWithDetails(profileData.freelancerId);
+      if (error) {
+        console.error('Error loading projects:', error);
+        return;
+      }
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Exception loading projects:', error);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  // Load projects when freelancer ID is available
+  useEffect(() => {
+    if (profileData.freelancerId) {
+      loadProjects();
+    }
+  }, [profileData.freelancerId]);
+
+  // Load transactions when transactions tab is active
+  useEffect(() => {
+    if (activeTab === 'transactions' && profileData.freelancerId) {
+      loadTransactions();
+    }
+  }, [activeTab, profileData.freelancerId]);
+
+  // Load transactions for the freelancer
+  const loadTransactions = async () => {
+    if (!profileData.freelancerId) return;
+    
+    setTransactionsLoading(true);
+    try {
+      const { data, error } = await getFreelancerTransactions(profileData.freelancerId);
+      if (error) {
+        console.error('Error loading transactions:', error);
+        return;
+      }
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Exception loading transactions:', error);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  };
+
+  const handleDeliverablesClick = (deliverables: any[], projectStatus: string, projectId: string) => {
+    setSelectedDeliverables(deliverables);
+    setCurrentProjectStatus(projectStatus);
+    setCurrentProjectId(projectId);
+    setShowDeliverablesModal(true);
+  };
+
+  const handleWorkProductClick = (workProduct: any) => {
+    if (workProduct.file_url) {
+      window.open(workProduct.file_url, '_blank');
+    }
+  };
+
+  const handleVerificationReportClick = (report: any) => {
+    setSelectedVerificationReport(report);
+    setShowVerificationModal(true);
+  };
+
+  const handleAgreeToDeliverables = async () => {
+    if (!currentProjectId || currentProjectStatus !== 'Project Created') {
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    try {
+      // Find the current project to get all necessary data
+      const currentProject = projects.find(project => project.id === currentProjectId);
+      if (!currentProject) {
+        throw new Error('Project not found');
+      }
+
+      // Update project status
+      await updateProjectStatusWorkflow(currentProjectId, 'Checklist Signed off');
+      
+      // Update the local projects state to reflect the change
+      setProjects(prevProjects => 
+        prevProjects.map(project => 
+          project.id === currentProjectId 
+            ? { ...project, project_status_workflow: 'Checklist Signed off' }
+            : project
+        )
+      );
+
+      // Send email notification to client
+      try {
+        const emailService = EmailService.getInstance();
+        
+        // Format deliverables for email
+        const deliverablesList = currentProject.deliverables.map((deliverable: any) => 
+          deliverable.deliverable_text
+        );
+
+        const emailData = {
+          clientEmail: currentProject.client_profiles?.email || '',
+          clientName: currentProject.client_profiles?.full_name || '',
+          projectId: currentProject.project_id || currentProject.id,
+          projectName: currentProject.project_name,
+          freelancerId: currentProject.freelancer_id,
+          freelancerName: profileData.fullName,
+          projectRequirement: currentProject.project_requirement,
+          deliverables: deliverablesList,
+          completionDate: currentProject.desired_completion_date
+        };
+
+        console.log('📧 Sending deliverables signed off notification to client:', emailData);
+
+        const emailResult = await emailService.sendDeliverablesSignedOffNotification(emailData);
+        
+        if (emailResult.success) {
+          console.log('✅ Email notification sent successfully to client');
+        } else {
+          console.error('❌ Failed to send email notification:', emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending email notification:', emailError);
+        // Don't fail the entire operation if email fails
+      }
+
+      // Close the modal
+      setShowDeliverablesModal(false);
+      setCurrentProjectStatus('');
+      setCurrentProjectId('');
+    } catch (error) {
+      console.error('Error updating project status:', error);
+      alert('Failed to update project status. Please try again.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
@@ -611,7 +769,7 @@ const FreelancerDashboard: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             <Briefcase className="h-4 w-4" aria-hidden="true" />
-            <span>0 Total Projects</span>
+            <span>{projects.length} Total Projects</span>
           </div>
         </div>
 
@@ -624,68 +782,208 @@ const FreelancerDashboard: React.FC = () => {
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Client ID</div>
-                <div className="text-center">Status</div>
-                <div className="text-center">Deliverable List</div>
-                <div className="text-center">Work Product</div>
+                <div className="text-center">Project Status</div>
+                <div className="text-center">Deliverable Checklist</div>
+                <div className="text-center">Final Work</div>
                 <div className="text-center">Verification Report</div>
               </div>
             </div>
 
-            {/* Table Body - Empty State */}
-            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
-              <div className="p-8 sm:p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
-                    <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">
-                      No Projects Yet
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
-                      Your projects will appear here once clients start hiring you. 
-                      Make sure your profile is complete to attract more clients.
-                    </p>
-                  </div>
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setActiveTab('profile')}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                      aria-label="Complete your profile"
-                    >
-                      <User className="h-4 w-4" aria-hidden="true" />
-                      <span>Complete Profile</span>
-                    </button>
+            {/* Table Body */}
+            {projectsLoading ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">Loading projects...</p>
+                </div>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                      <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">
+                        No Projects Yet
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                        Your projects will appear here once clients start hiring you. 
+                        Make sure your profile is complete to attract more clients.
+                      </p>
+                    </div>
+                    <div className="pt-4">
+                      <button
+                        onClick={() => setActiveTab('profile')}
+                        className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        aria-label="Complete your profile"
+                      >
+                        <User className="h-4 w-4" aria-hidden="true" />
+                        <span>Complete Profile</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
+              </div>
+            ) : (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                {projects.map((project, index) => (
+                  <div key={project.id} className={`grid grid-cols-7 gap-4 p-4 text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
+                    <div className="text-left text-white font-medium">{project.project_id}</div>
+                    <div className="text-left text-white">{project.project_name}</div>
+                    <div className="text-left text-gray-300">{project.client_id}</div>
+                    <div className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        project.project_status_workflow === 'Successfully Closed' ? 'bg-green-500/20 text-green-400' :
+                        project.project_status_workflow === 'Production in Progress' ? 'bg-blue-500/20 text-blue-400' :
+                        project.project_status_workflow === 'Under Manual Revision' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {project.project_status_workflow}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      {project.deliverables && project.deliverables.length > 0 ? (
+                                                              <button
+                                        onClick={() => handleDeliverablesClick(project.deliverables, project.project_status_workflow, project.id)}
+                                        className="inline-flex items-center space-x-1 text-purple-400 hover:text-purple-300 transition-colors"
+                                      >
+                          <Eye className="h-4 w-4" />
+                          <span className="text-xs">View ({project.deliverables.length})</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      {project.work_products && project.work_products.length > 0 ? (
+                        <button
+                          onClick={() => handleWorkProductClick(project.work_products[0])}
+                          className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          <Play className="h-4 w-4" />
+                          <span className="text-xs">Play</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      {project.verification_reports && project.verification_reports.length > 0 ? (
+                        <button
+                          onClick={() => handleVerificationReportClick(project.verification_reports[0])}
+                          className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span className="text-xs">View</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Deliverables Modal */}
+      {showDeliverablesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Deliverable Checklist</h3>
+                <button
+                  onClick={() => setShowDeliverablesModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {selectedDeliverables.map((deliverable, index) => (
+                  <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
+                    <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Agree Button - Only show if project status is "Project Created" */}
+              {currentProjectStatus === 'Project Created' && (
+                <div className="mt-6 pt-4 border-t border-gray-600">
+                  <button
+                    onClick={handleAgreeToDeliverables}
+                    disabled={isUpdatingStatus}
+                    className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    {isUpdatingStatus ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Updating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Agree to Deliverables</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    By clicking "Agree", you confirm that you have reviewed and accepted these deliverables.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Report Modal */}
+      {showVerificationModal && selectedVerificationReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Verification Report</h3>
+                <button
+                  onClick={() => setShowVerificationModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-white font-medium mb-2">{selectedVerificationReport.report_title}</h4>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{selectedVerificationReport.report_content}</p>
+                  </div>
+                </div>
+                {selectedVerificationReport.verification_score && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 text-sm">Score:</span>
+                    <span className="text-white font-medium">{(selectedVerificationReport.verification_score * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+                {selectedVerificationReport.verification_notes && (
+                  <div>
+                    <span className="text-gray-400 text-sm">Notes:</span>
+                    <p className="text-gray-300 text-sm mt-1">{selectedVerificationReport.verification_notes}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Status Legend */}
-        <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-          <h4 className="text-sm font-semibold text-gray-300 mb-3">Project Status Legend:</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-gray-300">Complete</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-300">Active</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-gray-300">Manual Revision</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-gray-300">Approval Pending</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 
@@ -700,10 +998,6 @@ const FreelancerDashboard: React.FC = () => {
               View your payment history and completed transactions
             </p>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
-            <CreditCard className="h-4 w-4" aria-hidden="true" />
-            <span>₹0 Total Earned</span>
-          </div>
         </div>
 
         {/* Transactions Table */}
@@ -714,56 +1008,90 @@ const FreelancerDashboard: React.FC = () => {
               <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
-                <div className="text-left">Client ID</div>
+                <div className="text-left">Client Name</div>
                 <div className="text-right">Value (₹)</div>
-                <div className="text-center">Value Status</div>
+                <div className="text-center">Transaction Status</div>
               </div>
             </div>
 
-            {/* Table Body - Empty State */}
-            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
-              <div className="p-8 sm:p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
-                    <CreditCard className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+            {/* Table Body */}
+            {transactionsLoading ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">Loading transactions...</p>
+                </div>
+              </div>
+            ) : transactions.length > 0 ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                {transactions.map((transaction, index) => (
+                  <div key={transaction.transaction_id} className={`grid grid-cols-5 gap-4 p-4 text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
+                    <div className="text-left text-white">{transaction.projects?.project_id || 'N/A'}</div>
+                    <div className="text-left text-gray-300">{transaction.projects?.project_name || 'N/A'}</div>
+                    <div className="text-left text-gray-300">{transaction.projects?.client_profiles?.full_name || 'N/A'}</div>
+                    <div className="text-right text-white">₹{transaction.freelancer_amount?.toLocaleString() || '0'}</div>
+                    <div className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        transaction.transaction_status === 'Project Active' ? 'bg-blue-100 text-blue-800' :
+                        transaction.transaction_status === 'Fund Secured' ? 'bg-green-100 text-green-800' :
+                        transaction.transaction_status === 'Successfully closed' ? 'bg-purple-100 text-purple-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {transaction.transaction_status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">
-                      No Transactions Yet
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
-                      Your payment history will appear here once you complete projects and receive payments. 
-                      All transactions are secure and processed instantly.
-                    </p>
-                  </div>
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setActiveTab('projects')}
-                      className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                      aria-label="View your projects"
-                    >
-                      <Briefcase className="h-4 w-4" aria-hidden="true" />
-                      <span>View Projects</span>
-                    </button>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                      <CreditCard className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">
+                        No Transactions Yet
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                        Your payment history will appear here once you complete projects and receive payments. 
+                        All transactions are secure and processed instantly.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Transaction Summary */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-400">₹0</div>
+            <div className="text-2xl font-bold text-green-400">
+              ₹{transactions
+                .filter(t => t.transaction_status === 'Successfully closed')
+                .reduce((sum, t) => sum + (t.freelancer_amount || 0), 0)
+                .toLocaleString()}
+            </div>
             <div className="text-sm text-gray-300">Total Earned</div>
           </div>
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-400">0</div>
+            <div className="text-2xl font-bold text-blue-400">
+              {transactions.filter(t => t.transaction_status === 'Successfully closed').length}
+            </div>
             <div className="text-sm text-gray-300">Completed Projects</div>
           </div>
           <div className="bg-gray-700 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-purple-400">₹0</div>
+            <div className="text-2xl font-bold text-purple-400">
+              {(() => {
+                const completedTransactions = transactions.filter(t => t.transaction_status === 'Successfully closed');
+                return completedTransactions.length > 0 
+                  ? (completedTransactions.reduce((sum, t) => sum + (t.freelancer_amount || 0), 0) / completedTransactions.length).toFixed(0)
+                  : '0';
+              })()}
+            </div>
             <div className="text-sm text-gray-300">Average Project Value</div>
           </div>
         </div>

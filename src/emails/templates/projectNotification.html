@@ -1,125 +1,391 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Project Assignment</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>New Project Assignment - {{projectName}}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
+    /* Reset styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       line-height: 1.6;
       color: #333;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* Container */
+    .email-container {
       max-width: 600px;
       margin: 0 auto;
-      padding: 20px;
-      background-color: #f4f4f4;
-    }
-    .container {
       background-color: #ffffff;
-      padding: 30px;
-      border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
+    
+    /* Header */
     .header {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+      padding: 30px 20px;
       text-align: center;
-      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
     }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      opacity: 0.3;
+    }
+    
     .logo {
-      color: #8b5cf6;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
       margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
     }
-    .project-id {
-      background-color: #f3f4f6;
-      padding: 10px;
-      border-radius: 5px;
-      font-family: monospace;
+    
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Content */
+    .content {
+      padding: 30px 20px;
+    }
+    
+    /* Project ID Badge */
+    .project-id-badge {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border: 2px solid #8b5cf6;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+      position: relative;
+    }
+    
+    .project-id-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+    
+    .project-id-value {
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
       font-weight: bold;
       color: #8b5cf6;
-      margin: 15px 0;
     }
-    .details {
+    
+    /* Details Section */
+    .details-section {
       background-color: #f9fafb;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 20px 0;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      border-left: 4px solid #8b5cf6;
     }
+    
     .detail-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
-      padding: 5px 0;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
       border-bottom: 1px solid #e5e7eb;
     }
+    
+    .detail-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
     .detail-label {
       font-weight: 600;
       color: #374151;
+      font-size: 14px;
     }
+    
     .detail-value {
       color: #6b7280;
+      font-size: 14px;
+      text-align: right;
+      max-width: 60%;
     }
+    
+    /* Description Section */
+    .description-section {
+      margin: 25px 0;
+    }
+    
+    .description-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 10px;
+    }
+    
+    .description-content {
+      background-color: #f3f4f6;
+      padding: 15px;
+      border-radius: 8px;
+      color: #4b5563;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* Deliverables Section */
+    .deliverables-section {
+      margin: 25px 0;
+    }
+    
+    .deliverables-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 15px;
+    }
+    
+    .deliverables-list {
+      background-color: #f3f4f6;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #10b981;
+    }
+    
+    .deliverables-list ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .deliverables-list li {
+      margin-bottom: 8px;
+      color: #374151;
+    }
+    
+    /* CTA Button */
+    .cta-section {
+      text-align: center;
+      margin: 30px 0;
+    }
+    
     .cta-button {
       display: inline-block;
-      background-color: #8b5cf6;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
       color: white;
-      padding: 12px 24px;
+      padding: 15px 30px;
       text-decoration: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: 600;
-      margin: 20px 0;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+      transition: all 0.3s ease;
     }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+    }
+    
+    /* Footer */
     .footer {
+      background-color: #f9fafb;
+      padding: 25px 20px;
       text-align: center;
-      margin-top: 30px;
-      padding-top: 20px;
       border-top: 1px solid #e5e7eb;
+    }
+    
+    .footer p {
       color: #6b7280;
       font-size: 14px;
+      margin-bottom: 8px;
+    }
+    
+    .footer-links {
+      margin-top: 15px;
+    }
+    
+    .footer-links a {
+      color: #8b5cf6;
+      text-decoration: none;
+      margin: 0 10px;
+      font-size: 14px;
+    }
+    
+    /* Mobile Responsive */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        margin: 0;
+        width: 100%;
+      }
+      
+      .header {
+        padding: 20px 15px;
+      }
+      
+      .content {
+        padding: 20px 15px;
+      }
+      
+      .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+      }
+      
+      .detail-value {
+        text-align: left;
+        max-width: 100%;
+        margin-top: 5px;
+      }
+      
+      .cta-button {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .email-container {
+        background-color: #1f2937;
+      }
+      
+      .content {
+        color: #f9fafb;
+      }
+      
+      .details-section {
+        background-color: #374151;
+      }
+      
+      .description-content,
+      .deliverables-list {
+        background-color: #374151;
+        color: #d1d5db;
+      }
+      
+      .detail-label {
+        color: #f9fafb;
+      }
+      
+      .detail-value {
+        color: #d1d5db;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="email-container">
+    <!-- Header -->
     <div class="header">
       <div class="logo">SecureServe</div>
       <h1>🎉 New Project Assignment!</h1>
-      <p>Hello {{freelancerName}}, you have been assigned a new project!</p>
+      <p>Namaste {{freelancerName}}, you have been assigned a new project!</p>
     </div>
-
-    <div class="project-id">
-      Project ID: {{projectId}}
-    </div>
-
-    <div class="details">
-      <div class="detail-row">
-        <span class="detail-label">Project Name:</span>
-        <span class="detail-value">{{projectName}}</span>
+    
+    <!-- Content -->
+    <div class="content">
+      <!-- Project ID Badge -->
+      <div class="project-id-badge">
+        <div class="project-id-label">Project ID</div>
+        <div class="project-id-value">{{projectId}}</div>
       </div>
-      <div class="detail-row">
-        <span class="detail-label">Client:</span>
-        <span class="detail-value">{{clientName}}</span>
+      
+      <!-- Project Details -->
+      <div class="details-section">
+        <div class="detail-row">
+          <span class="detail-label">Project Name:</span>
+          <span class="detail-value">{{projectName}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Client ID:</span>
+          <span class="detail-value">{{clientId}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Client Name:</span>
+          <span class="detail-value">{{clientName}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Expected Completion:</span>
+          <span class="detail-value">{{completionDate}}</span>
+        </div>
       </div>
-      <div class="detail-row">
-        <span class="detail-label">Completion Date:</span>
-        <span class="detail-value">{{completionDate}}</span>
+      
+      <!-- Project Description -->
+      <div class="description-section">
+        <div class="description-title">Project Description</div>
+        <div class="description-content">
+          {{projectRequirement}}
+        </div>
+      </div>
+      
+      <!-- Deliverables -->
+      <div class="deliverables-section">
+        <div class="deliverables-title">Deliverables</div>
+        <div class="deliverables-list">
+          <ul>
+            {{#each deliverables}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Call to Action -->
+      <div class="cta-section">
+        <a href="https://secureserve.com/dashboard" class="cta-button">
+          View Project Details
+        </a>
       </div>
     </div>
-
-    <div>
-      <h3>Project Requirements:</h3>
-      <p>{{projectRequirement}}</p>
-    </div>
-
-    <div style="text-align: center;">
-      <a href="https://secureserve.com/dashboard" class="cta-button">
-        View Project Details
-      </a>
-    </div>
-
+    
+    <!-- Footer -->
     <div class="footer">
       <p>This is an automated notification from SecureServe.</p>
       <p>If you have any questions, please contact our support team.</p>
+      <div class="footer-links">
+        <a href="https://secureserve.com/support">Support</a>
+        <a href="https://secureserve.com/help">Help Center</a>
+        <a href="https://secureserve.com/contact">Contact Us</a>
+      </div>
     </div>
   </div>
 </body>
