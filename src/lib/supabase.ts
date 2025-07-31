@@ -1,11 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Debug environment variables
+console.log('Environment variables check:')
+console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
+console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
+console.log('VITE_SUPABASE_ANON_KEY length:', import.meta.env.VITE_SUPABASE_ANON_KEY?.length)
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder_key'
 
 // Only throw error if we're not in development mode
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
   console.warn('Missing Supabase environment variables. Using placeholder values for development.')
+  console.warn('Available env vars:', Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')))
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -395,7 +402,7 @@ export const getProjects = async (userId: string, userType: 'freelancer' | 'clie
   }
 }
 
-export const createProject = async (projectData: any) => {
+export const createProject = async (projectData: any, files?: File[], deliverables?: string[]) => {
   try {
     // Check if we have valid Supabase credentials
     if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
@@ -407,38 +414,117 @@ export const createProject = async (projectData: any) => {
     }
 
     console.log('Creating project with data:', projectData);
+    console.log('Files to upload:', files?.length || 0);
+    console.log('Deliverables to save:', deliverables?.length || 0);
 
-    // Generate project ID using the database function
-    const { data: projectIdResult, error: projectIdError } = await supabase
-      .rpc('generate_project_id');
-
-    if (projectIdError) {
-      console.error('Error generating project ID:', projectIdError);
-      return { data: null, error: projectIdError };
-    }
-
-    const projectId = projectIdResult;
-
-    // Prepare project data with generated ID
-    const finalProjectData = {
-      ...projectData,
-      project_id: projectId,
-      project_status: 'Draft'
-    };
-
-    const { data, error } = await supabase
+    // Start a transaction
+    const { data: project, error: projectError } = await supabase
       .from('projects')
-      .insert(finalProjectData)
+      .insert({
+        ...projectData,
+        project_status: 'Draft'
+      })
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating project:', error);
-    } else {
-      console.log('Project created successfully:', data);
+    if (projectError) {
+      console.error('Error creating project:', projectError);
+      return { data: null, error: projectError };
     }
 
-    return { data, error };
+    console.log('Project created successfully:', project);
+
+    // Upload files if provided
+    if (files && files.length > 0) {
+      const fileUploadPromises = files.map(async (file, index) => {
+        try {
+          // Validate file size (10MB max)
+          if (file.size > 10 * 1024 * 1024) {
+            throw new Error(`File ${file.name} exceeds 10MB limit`);
+          }
+
+          // Validate file type
+          const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+            'video/mp4'
+          ];
+          
+          if (!allowedTypes.includes(file.type)) {
+            throw new Error(`File type ${file.type} is not allowed`);
+          }
+
+          // Upload to Supabase Storage
+          const filePath = `${projectData.client_id}/${project.id}/${file.name}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('project-files')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            throw uploadError;
+          }
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('project-files')
+            .getPublicUrl(filePath);
+
+          // Save file metadata to database
+          const { error: fileError } = await supabase
+            .from('project_files')
+            .insert({
+              project_id: project.id,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              file_type: file.type,
+              storage_bucket: 'project-files'
+            });
+
+          if (fileError) {
+            console.error('Error saving file metadata:', fileError);
+            // Try to delete the uploaded file
+            await supabase.storage.from('project-files').remove([filePath]);
+            throw fileError;
+          }
+
+          return { success: true, file: file.name };
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          return { success: false, file: file.name, error };
+        }
+      });
+
+      const fileResults = await Promise.all(fileUploadPromises);
+      const failedFiles = fileResults.filter(result => !result.success);
+      
+      if (failedFiles.length > 0) {
+        console.warn('Some files failed to upload:', failedFiles);
+      }
+    }
+
+    // Save deliverables if provided
+    if (deliverables && deliverables.length > 0) {
+      const deliverableData = deliverables.map((text, index) => ({
+        project_id: project.id,
+        deliverable_text: text,
+        deliverable_order: index + 1
+      }));
+
+      const { error: deliverableError } = await supabase
+        .from('deliverables')
+        .insert(deliverableData);
+
+      if (deliverableError) {
+        console.error('Error saving deliverables:', deliverableError);
+      }
+    }
+
+    return { data: project, error: null };
   } catch (err) {
     console.error('Exception in createProject:', err);
     return { data: null, error: { message: 'Failed to create project' } }
@@ -474,6 +560,124 @@ export const updateProject = async (projectId: string, projectData: any) => {
   } catch (err) {
     console.error('Exception in updateProject:', err);
     return { data: null, error: { message: 'Failed to update project' } }
+  }
+}
+
+export const getProjectWithDetails = async (projectId: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    const { data, error } = await supabase
+      .rpc('get_project_with_details', { project_uuid: projectId });
+
+    if (error) {
+      console.error('Error fetching project details:', error);
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in getProjectWithDetails:', err);
+    return { data: null, error: { message: 'Failed to fetch project details' } }
+  }
+}
+
+export const getProjectFiles = async (projectId: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('project_files')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching project files:', error);
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in getProjectFiles:', err);
+    return { data: null, error: { message: 'Failed to fetch project files' } }
+  }
+}
+
+export const getProjectDeliverables = async (projectId: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('deliverables')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('deliverable_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching project deliverables:', error);
+    }
+
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in getProjectDeliverables:', err);
+    return { data: null, error: { message: 'Failed to fetch project deliverables' } }
+  }
+}
+
+export const deleteProjectFile = async (fileId: string, filePath: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    // Delete from Supabase Storage
+    const { error: storageError } = await supabase.storage
+      .from('project-files')
+      .remove([filePath]);
+
+    if (storageError) {
+      console.error('Error deleting file from storage:', storageError);
+    }
+
+    // Delete from database
+    const { error: dbError } = await supabase
+      .from('project_files')
+      .delete()
+      .eq('id', fileId);
+
+    if (dbError) {
+      console.error('Error deleting file from database:', dbError);
+    }
+
+    return { data: null, error: storageError || dbError };
+  } catch (err) {
+    console.error('Exception in deleteProjectFile:', err);
+    return { data: null, error: { message: 'Failed to delete project file' } }
   }
 }
 
@@ -672,3 +876,263 @@ export const getAllFreelancerIds = async () => {
     return { data: null, error: { message: 'Failed to fetch freelancer IDs' } }
   }
 }
+
+// Add new functions for project workflow management
+export const updateProjectStatusWorkflow = async (projectId: string, newStatus: string) => {
+  try {
+    const { data, error } = await supabase
+      .rpc('update_project_status_workflow', {
+        project_uuid: projectId,
+        new_status: newStatus
+      });
+
+    if (error) {
+      console.error('Error updating project status:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating project status workflow:', error);
+    throw error;
+  }
+};
+
+export const getProjectWithAllDetails = async (projectId: string) => {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_project_with_all_details', {
+        project_uuid: projectId
+      });
+
+    if (error) {
+      console.error('Error getting project with all details:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting project with all details:', error);
+    throw error;
+  }
+};
+
+// Work Products functions
+export const uploadWorkProduct = async (projectId: string, file: File, metadata: any) => {
+  try {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('User not authenticated');
+
+    const filePath = `${userId}/${projectId}/${file.name}`;
+    
+    // Upload file to storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('work-products')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading work product:', uploadError);
+      throw uploadError;
+    }
+
+    // Get file URL
+    const { data: urlData } = supabase.storage
+      .from('work-products')
+      .getPublicUrl(filePath);
+
+    // Save metadata to database
+    const { data: dbData, error: dbError } = await supabase
+      .from('work_products')
+      .insert({
+        project_id: projectId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        file_type: file.type,
+        video_duration: metadata.duration,
+        video_resolution: metadata.resolution,
+        video_format: metadata.format,
+        upload_status: 'Uploaded'
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Error saving work product metadata:', dbError);
+      throw dbError;
+    }
+
+    return { ...dbData, url: urlData.publicUrl };
+  } catch (error) {
+    console.error('Error uploading work product:', error);
+    throw error;
+  }
+};
+
+export const getWorkProducts = async (projectId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('work_products')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting work products:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting work products:', error);
+    throw error;
+  }
+};
+
+// Verification Reports functions
+export const createVerificationReport = async (projectId: string, reportData: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('verification_reports')
+      .insert({
+        project_id: projectId,
+        report_title: reportData.title,
+        report_content: reportData.content,
+        report_type: reportData.type || 'AI Verification',
+        verification_status: reportData.status || 'Pending',
+        verified_by: reportData.verifiedBy,
+        verification_score: reportData.score,
+        verification_notes: reportData.notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating verification report:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error creating verification report:', error);
+    throw error;
+  }
+};
+
+export const getVerificationReports = async (projectId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('verification_reports')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting verification reports:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting verification reports:', error);
+    throw error;
+  }
+};
+
+export const updateVerificationReport = async (reportId: string, updates: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('verification_reports')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating verification report:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error updating verification report:', error);
+    throw error;
+  }
+};
+
+export const getClientProjectsWithDetails = async (clientId: string) => {
+  try {
+    // Check if we have valid Supabase credentials
+    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+      console.error('Supabase not configured. Using placeholder values.');
+      return { 
+        data: null, 
+        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+      }
+    }
+
+    console.log('Fetching projects for client:', clientId);
+
+    // Get projects with freelancer info
+    const { data: projects, error: projectsError } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        freelancer_profiles!projects_freelancer_id_fkey (
+          full_name,
+          email
+        )
+      `)
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+
+    if (projectsError) {
+      console.error('Error fetching projects:', projectsError);
+      return { data: null, error: projectsError };
+    }
+
+    console.log('Projects fetched:', projects);
+
+    // For each project, get deliverables, work products, and verification reports
+    const projectsWithDetails = await Promise.all(
+      projects.map(async (project) => {
+        // Get deliverables
+        const { data: deliverables } = await supabase
+          .from('deliverables')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('deliverable_order', { ascending: true });
+
+        // Get work products
+        const { data: workProducts } = await supabase
+          .from('work_products')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: false });
+
+        // Get verification reports
+        const { data: verificationReports } = await supabase
+          .from('verification_reports')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: false });
+
+        return {
+          ...project,
+          deliverables: deliverables || [],
+          work_products: workProducts || [],
+          verification_reports: verificationReports || []
+        };
+      })
+    );
+
+    console.log('Projects with details:', projectsWithDetails);
+    return { data: projectsWithDetails, error: null };
+  } catch (err) {
+    console.error('Exception in getClientProjectsWithDetails:', err);
+    return { data: null, error: { message: 'Failed to fetch projects with details' } }
+  }
+};

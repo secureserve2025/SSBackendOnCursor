@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { validateFreelancerId, createProject, getAllFreelancerIds } from '../lib/supabase';
+import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile } from '../lib/supabase';
+import EmailService, { ProjectNotificationData } from '../emails/emailService';
 
 interface FileUpload {
   id: string;
@@ -54,6 +55,8 @@ const AddProjectForm: React.FC = () => {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isValidatingFreelancer, setIsValidatingFreelancer] = useState(false);
   const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentClientId, setCurrentClientId] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
@@ -74,6 +77,39 @@ const AddProjectForm: React.FC = () => {
   ];
 
   const maxFileSize = 10 * 1024 * 1024; // 10MB per file
+
+  // Load current user and client profile
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const { user, error } = await getCurrentUser();
+        if (error) {
+          console.error('Error getting current user:', error);
+          return;
+        }
+        
+        if (user) {
+          setCurrentUserId(user.id);
+          
+          // Get client profile
+          const { data: clientProfile, error: profileError } = await getClientProfile(user.id);
+          if (profileError) {
+            console.error('Error getting client profile:', profileError);
+            return;
+          }
+          
+          if (clientProfile) {
+            setCurrentClientId(clientProfile.client_id);
+            console.log('Loaded client ID:', clientProfile.client_id);
+          }
+        }
+      } catch (err) {
+        console.error('Exception loading current user:', err);
+      }
+    };
+
+    loadCurrentUser();
+  }, []);
 
   // Get tomorrow's date in YYYY-MM-DD format
   const getTomorrowDate = () => {
@@ -362,29 +398,47 @@ const AddProjectForm: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      // Check if we have the current client ID
+      if (!currentClientId) {
+        alert('Unable to get your client profile. Please complete your profile first.');
+        return;
+      }
+
       // Prepare project data for database
       const projectData = {
-        client_id: 'C123456789', // This should come from current user context
+        client_id: currentUserId, // Use the user ID, not client_id
         freelancer_id: formData.freelancerId,
         project_category: formData.category,
         project_name: formData.projectName,
         project_requirement: formData.projectRequirement,
-        desired_completion_date: formData.completionDate,
-        project_files: formData.files.map(f => ({
-          name: f.file.name,
-          size: f.file.size,
-          type: f.file.type
-        })),
-        deliverables: formData.deliverables.filter(d => d.trim() !== '')
+        desired_completion_date: formData.completionDate
       };
 
-      const { data, error } = await createProject(projectData);
+      // Extract files and deliverables
+      const files = formData.files.map(f => f.file);
+      const deliverables = formData.deliverables.filter(d => d.trim() !== '');
+
+      console.log('Submitting project with data:', projectData);
+      console.log('Files:', files);
+      console.log('Deliverables:', deliverables);
+
+      const { data, error } = await createProject(projectData, files, deliverables);
       
       if (error) {
         console.error('Error creating project:', error);
         alert('Failed to create project. Please try again.');
       } else {
         console.log('Project created successfully:', data);
+        
+        // Send email notification to freelancer
+        console.log('🔍 AddProjectForm: About to send email notification');
+        try {
+          await sendProjectNotificationEmail(data, projectData);
+        } catch (emailError) {
+          console.error('❌ Email notification failed:', emailError);
+          // Don't fail the project creation if email fails
+        }
+        
         alert(`Project created successfully! Project ID: ${data.project_id}`);
         // Reset form or redirect
         setFormData({
@@ -407,6 +461,72 @@ const AddProjectForm: React.FC = () => {
     }
   };
 
+  // Function to send email notification to freelancer
+  const sendProjectNotificationEmail = async (projectData: any, originalProjectData: any) => {
+    console.log('🔍 AddProjectForm: Starting sendProjectNotificationEmail');
+    try {
+      // Get freelancer details from the database
+      console.log('🔍 AddProjectForm: Fetching freelancer details for ID:', formData.freelancerId);
+      const { data: freelancerProfile, error: freelancerError } = await validateFreelancerId(formData.freelancerId);
+      
+      if (freelancerError || !freelancerProfile) {
+        console.error('❌ Could not fetch freelancer details for email:', freelancerError);
+        return;
+      }
+      
+      console.log('✅ AddProjectForm: Freelancer profile found:', freelancerProfile);
+
+      // Get client profile details
+      console.log('🔍 AddProjectForm: Fetching client profile for user ID:', currentUserId);
+      const { data: clientProfile, error: clientError } = await getClientProfile(currentUserId);
+      
+      if (clientError || !clientProfile) {
+        console.error('❌ Could not fetch client details for email:', clientError);
+        return;
+      }
+      
+      console.log('✅ AddProjectForm: Client profile found:', clientProfile);
+
+      // Filter out empty deliverables
+      const validDeliverables = formData.deliverables.filter(deliverable => deliverable.trim() !== '');
+      console.log('🔍 AddProjectForm: Valid deliverables:', validDeliverables);
+
+      // Check if freelancer email exists
+      if (!freelancerProfile.email) {
+        console.error('❌ Freelancer email is empty or undefined');
+        console.log('🔍 Freelancer profile:', freelancerProfile);
+        return;
+      }
+
+      const emailData: ProjectNotificationData = {
+        freelancerEmail: freelancerProfile.email,
+        freelancerName: freelancerProfile.full_name || 'Freelancer',
+        projectId: projectData.project_id,
+        projectName: originalProjectData.project_name,
+        clientId: currentUserId,
+        clientName: clientProfile.full_name || 'Client',
+        projectRequirement: originalProjectData.project_requirement,
+        deliverables: validDeliverables,
+        completionDate: originalProjectData.desired_completion_date
+      };
+      
+      console.log('🔍 AddProjectForm: Email data prepared:', emailData);
+      console.log('🔍 AddProjectForm: Freelancer email:', freelancerProfile.email);
+
+      const emailService = EmailService.getInstance();
+      console.log('🔍 AddProjectForm: Calling email service...');
+      const result = await emailService.sendProjectNotification(emailData);
+      
+      if (result.success) {
+        console.log('✅ Email notification sent successfully to freelancer');
+      } else {
+        console.error('❌ Failed to send email notification:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Exception in sendProjectNotificationEmail:', error);
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -415,67 +535,7 @@ const AddProjectForm: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Temporary test function to check available freelancer IDs
-  const testFreelancerIds = async () => {
-    console.log('Testing freelancer IDs...');
-    
-    try {
-      const { data, error } = await getAllFreelancerIds();
-      
-      if (error) {
-        console.error('Error fetching freelancer IDs:', error);
-        alert(`Error fetching freelancer IDs: ${error.message}`);
-        return;
-      }
-      
-      console.log('Available freelancer IDs:', data);
-      
-      if (data && data.length > 0) {
-        const ids = data.map(f => f.freelancer_id).join(', ');
-        alert(`Found ${data.length} freelancer(s): ${ids}`);
-        
-        // Also test validation for the first ID
-        if (data.length > 0) {
-          const firstId = data[0].freelancer_id;
-          console.log('Testing validation for first ID:', firstId);
-          const validationResult = await validateFreelancerId(firstId);
-          console.log('Validation test result:', validationResult);
-        }
-      } else {
-        alert('No freelancer profiles found in database. Please create some freelancer profiles first.');
-      }
-    } catch (err) {
-      console.error('Exception in testFreelancerIds:', err);
-      alert('Error testing freelancer IDs. Check console for details.');
-    }
-  };
 
-  // Simple test function to validate a specific freelancer ID
-  const testSpecificFreelancerId = async () => {
-    const testId = 'F214000319'; // The ID you mentioned
-    console.log('Testing specific freelancer ID:', testId);
-    
-    try {
-      const { data, error } = await validateFreelancerId(testId);
-      
-      if (error) {
-        console.error('Validation error:', error);
-        alert(`Error validating ${testId}: ${error.message}`);
-        return;
-      }
-      
-      if (data) {
-        console.log('Validation successful:', data);
-        alert(`✅ Freelancer ID ${testId} is valid! Name: ${data.full_name}`);
-      } else {
-        console.log('No freelancer found with ID:', testId);
-        alert(`❌ Freelancer ID ${testId} not found in database`);
-      }
-    } catch (err) {
-      console.error('Exception in testSpecificFreelancerId:', err);
-      alert('Error testing freelancer ID. Check console for details.');
-    }
-  };
 
   if (showDeliverables) {
     return (
@@ -779,23 +839,7 @@ const AddProjectForm: React.FC = () => {
                 </p>
               )}
               
-              {/* Temporary test button - remove after testing */}
-              <button
-                type="button"
-                onClick={testFreelancerIds}
-                className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs mr-2"
-              >
-                Test: Check Available Freelancer IDs
-              </button>
-              
-              {/* Test specific freelancer ID */}
-              <button
-                type="button"
-                onClick={testSpecificFreelancerId}
-                className="mt-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-              >
-                Test: Validate F214000319
-              </button>
+
             </div>
           </div>
 

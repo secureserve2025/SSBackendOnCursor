@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails } from '../lib/supabase';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -59,6 +59,14 @@ const ClientDashboard: React.FC = () => {
     panTanNumber: '',
     upiId: ''
   });
+
+  // New state for projects
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [selectedDeliverables, setSelectedDeliverables] = useState<any[]>([]);
+  const [selectedVerificationReport, setSelectedVerificationReport] = useState<any>(null);
+  const [showDeliverablesModal, setShowDeliverablesModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -150,6 +158,49 @@ const ClientDashboard: React.FC = () => {
 
     loadUserData();
   }, []);
+
+  // Load projects when My Projects tab is active
+  useEffect(() => {
+    if (activeTab === 'projects') {
+      loadProjects();
+    }
+  }, [activeTab]);
+
+  const loadProjects = async () => {
+    setProjectsLoading(true);
+    try {
+      const { user } = await getCurrentUser();
+      if (user) {
+        const { data, error } = await getClientProjectsWithDetails(user.id);
+        if (error) {
+          console.error('Error loading projects:', error);
+        } else {
+          setProjects(data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const handleDeliverablesClick = (deliverables: any[]) => {
+    setSelectedDeliverables(deliverables);
+    setShowDeliverablesModal(true);
+  };
+
+  const handleWorkProductClick = (workProduct: any) => {
+    if (workProduct && workProduct.file_path) {
+      // Open video in new tab
+      window.open(workProduct.file_path, '_blank');
+    }
+  };
+
+  const handleVerificationReportClick = (report: any) => {
+    setSelectedVerificationReport(report);
+    setShowVerificationModal(true);
+  };
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
@@ -650,19 +701,9 @@ const ClientDashboard: React.FC = () => {
               Manage and track your active and completed projects
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-400">
-              <Briefcase className="h-4 w-4" aria-hidden="true" />
-              <span>0 Total Projects</span>
-            </div>
-            <button
-              onClick={() => setActiveTab('add-project')}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-              aria-label="Add new project"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">New Project</span>
-            </button>
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <Briefcase className="h-4 w-4" aria-hidden="true" />
+            <span>{projects.length} Total Projects</span>
           </div>
         </div>
 
@@ -675,68 +716,171 @@ const ClientDashboard: React.FC = () => {
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Freelancer ID</div>
-                <div className="text-center">Status</div>
-                <div className="text-center">Deliverable List</div>
-                <div className="text-center">Work Product</div>
+                <div className="text-center">Project Status</div>
+                <div className="text-center">Deliverable Checklist</div>
+                <div className="text-center">Final Work</div>
                 <div className="text-center">Verification Report</div>
               </div>
             </div>
 
-            {/* Table Body - Empty State */}
-            <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
-              <div className="p-8 sm:p-12 text-center">
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
-                    <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">
-                      No Projects Yet
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-400 max-w-md">
-                      Start your first project by clicking the "New Project" button above. 
-                      Connect with talented freelancers and bring your ideas to life.
-                    </p>
-                  </div>
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setActiveTab('add-project')}
-                      className="inline-flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      aria-label="Create your first project"
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                      <span>Create First Project</span>
-                    </button>
+            {/* Table Body */}
+            {projectsLoading ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">Loading projects...</p>
+                </div>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                <div className="p-8 sm:p-12 text-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-700 rounded-full flex items-center justify-center">
+                      <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">
+                        No Projects Yet
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-400 max-w-md">
+                        Your projects will appear here once you create them. 
+                        Start by creating your first project.
+                      </p>
+                    </div>
                   </div>
                 </div>
+              </div>
+            ) : (
+              <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
+                {projects.map((project, index) => (
+                  <div key={project.id} className={`grid grid-cols-7 gap-4 p-4 text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
+                    <div className="text-left text-white font-medium">{project.project_id}</div>
+                    <div className="text-left text-white">{project.project_name}</div>
+                    <div className="text-left text-gray-300">{project.freelancer_id}</div>
+                    <div className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        project.project_status_workflow === 'Successfully Closed' ? 'bg-green-500/20 text-green-400' :
+                        project.project_status_workflow === 'Production in Progress' ? 'bg-blue-500/20 text-blue-400' :
+                        project.project_status_workflow === 'Under Manual Revision' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {project.project_status_workflow}
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      {project.deliverables && project.deliverables.length > 0 ? (
+                        <button
+                          onClick={() => handleDeliverablesClick(project.deliverables)}
+                          className="inline-flex items-center space-x-1 text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="text-xs">View ({project.deliverables.length})</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      {project.work_products && project.work_products.length > 0 ? (
+                        <button
+                          onClick={() => handleWorkProductClick(project.work_products[0])}
+                          className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          <Play className="h-4 w-4" />
+                          <span className="text-xs">Play</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      {project.verification_reports && project.verification_reports.length > 0 ? (
+                        <button
+                          onClick={() => handleVerificationReportClick(project.verification_reports[0])}
+                          className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span className="text-xs">View</span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-500 text-xs">-</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Deliverables Modal */}
+      {showDeliverablesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Deliverable Checklist</h3>
+                <button
+                  onClick={() => setShowDeliverablesModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {selectedDeliverables.map((deliverable, index) => (
+                  <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
+                    <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                      {index + 1}
+                    </div>
+                    <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Status Legend */}
-        <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-          <h4 className="text-sm font-semibold text-gray-300 mb-3">Project Status Legend:</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-gray-300">Complete</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-300">Active</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-gray-300">Manual Revision</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-gray-300">Approval Pending</span>
+      {/* Verification Report Modal */}
+      {showVerificationModal && selectedVerificationReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Verification Report</h3>
+                <button
+                  onClick={() => setShowVerificationModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-white font-medium mb-2">{selectedVerificationReport.report_title}</h4>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap">{selectedVerificationReport.report_content}</p>
+                  </div>
+                </div>
+                {selectedVerificationReport.verification_score && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 text-sm">Score:</span>
+                    <span className="text-white font-medium">{(selectedVerificationReport.verification_score * 100).toFixed(1)}%</span>
+                  </div>
+                )}
+                {selectedVerificationReport.verification_notes && (
+                  <div>
+                    <span className="text-gray-400 text-sm">Notes:</span>
+                    <p className="text-gray-300 text-sm mt-1">{selectedVerificationReport.verification_notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
