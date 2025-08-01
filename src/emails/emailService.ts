@@ -45,6 +45,12 @@ export interface DeliverablesSignedOffData {
   completionDate: string;
 }
 
+export interface ContactFormData {
+  name: string;
+  email: string;
+  message: string;
+}
+
 export class EmailService {
   private static instance: EmailService;
 
@@ -194,6 +200,60 @@ export class EmailService {
       }
     } catch (error) {
       console.error('❌ Exception in sendDeliverablesSignedOffNotification:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      };
+    }
+  }
+
+  async sendContactFormEmail(data: ContactFormData): Promise<{ success: boolean; error?: string }> {
+    console.log('🔍 EmailService: Starting sendContactFormEmail');
+    console.log('🔍 EmailService: Contact form data:', data);
+    
+    try {
+      console.log('🔍 EmailService: Calling EmailJS with contact form data...');
+      
+      // Validate that all required fields are present
+      if (!data.name || !data.email || !data.message) {
+        console.error('❌ Missing required contact form fields');
+        return { success: false, error: 'Missing required fields' };
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email)) {
+        console.error('❌ Invalid email format');
+        return { success: false, error: 'Invalid email format' };
+      }
+
+      const templateParams = {
+        to_email: 'secureserve2025@gmail.com',
+        from_name: data.name,
+        from_email: data.email,
+        message: data.message,
+        subject: `New Contact Form Message from ${data.name}`
+      };
+
+      console.log('🔍 EmailService: Template params for contact form:', templateParams);
+
+      const result = await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        'template_ff7ucb8', // Contact form template ID
+        templateParams,
+        EMAILJS_CONFIG.publicKey
+      );
+
+      if (result.status === 200) {
+        console.log('✅ Contact form email sent successfully via EmailJS');
+        console.log('📧 Email sent to SecureServe at: secureserve2025@gmail.com');
+        return { success: true };
+      } else {
+        console.error('❌ EmailJS returned non-200 status:', result.status);
+        return { success: false, error: 'EmailJS returned non-200 status' };
+      }
+    } catch (error) {
+      console.error('❌ Exception in sendContactFormEmail:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error occurred' 

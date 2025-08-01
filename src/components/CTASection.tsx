@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import emailjs from '@emailjs/browser';
+import EmailService from '../emails/emailService';
 
 interface CTASectionProps {
   darkMode: boolean;
@@ -66,52 +66,21 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
     setIsFormValid(Boolean(nameValid && emailValid && messageValid));
   }, [formData]);
 
-  // Send email function using EmailJS
+  // Send email function using centralized EmailService
   const sendEmail = async (formData: { name: string; email: string; message: string }) => {
     try {
-      // EmailJS configuration
-      // You'll need to replace these with your actual EmailJS credentials
-      const serviceId = 'service_7fw63y9'; // Replace with your service ID
-      const templateId = 'template_ff7ucb8'; // Replace with your template ID
-      const publicKey = 'FczWejeDBjHh8k_5E'; // Replace with your public key
-
-      const templateParams = {
-        to_email: 'secureserve2025@gmail.com',
-        from_name: formData.name,
-        from_email: formData.email,
-        message: formData.message,
-        subject: `New Contact Form Message from ${formData.name}`
-      };
-
-      const result = await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      const emailService = EmailService.getInstance();
+      const result = await emailService.sendContactFormEmail(formData);
       
-      if (result.status === 200) {
+      if (result.success) {
         return { success: true };
       } else {
-        throw new Error('Failed to send email');
+        console.error('Failed to send contact form email:', result.error);
+        return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      
-      // Fallback: Log the email data for manual sending
-      const emailData = {
-        to: 'secureserve2025@gmail.com',
-        from: formData.email,
-        subject: `New Contact Form Message from ${formData.name}`,
-        message: `
-Name: ${formData.name}
-Email: ${formData.email}
-Message: ${formData.message}
-
-This message was sent from the SecureServe contact form.
-        `
-      };
-      
-      console.log('Email data for manual sending:', emailData);
-      
-      // For development/testing purposes, we'll simulate success
-      // In production, you should handle the error properly
-      return { success: true, data: emailData };
+      console.error('Error sending contact form email:', error);
+      return { success: false, error: 'Unknown error occurred' };
     }
   };
 
@@ -143,8 +112,9 @@ This message was sent from the SecureServe contact form.
           // Show confirmation
           setShowConfirmation(true);
         } else {
-          // Handle error
-          alert('Failed to send message. Please try again.');
+          // Handle error with more specific message
+          const errorMessage = result.error || 'Failed to send message. Please try again.';
+          alert(`Failed to send message: ${errorMessage}`);
         }
       } catch (error) {
         alert('An error occurred. Please try again.');

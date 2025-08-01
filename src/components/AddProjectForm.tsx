@@ -417,6 +417,20 @@ const AddProjectForm: React.FC = () => {
       } else {
         console.log('Project created successfully:', data);
         setCreatedProjectId(data.id); // Store the project ID
+        
+        // Send email notification to freelancer when project is created
+        console.log('🔍 AddProjectForm: About to send project creation email notification');
+        try {
+          await sendProjectNotificationEmail({ project_id: data.id }, {
+            project_name: formData.projectName,
+            project_requirement: formData.projectRequirement,
+            desired_completion_date: formData.completionDate
+          });
+        } catch (emailError) {
+          console.error('❌ Project creation email notification failed:', emailError);
+          // Don't fail the project creation if email fails
+        }
+        
         setShowDeliverables(true);
         setIsSubmitting(false);
       }
@@ -453,19 +467,6 @@ const AddProjectForm: React.FC = () => {
         alert('Failed to add deliverables. Please try again.');
       } else {
         console.log('Deliverables added successfully:', data);
-        
-        // Send email notification to freelancer
-        console.log('🔍 AddProjectForm: About to send email notification');
-        try {
-          await sendProjectNotificationEmail({ project_id: createdProjectId }, {
-            project_name: formData.projectName,
-            project_requirement: formData.projectRequirement,
-            desired_completion_date: formData.completionDate
-          });
-        } catch (emailError) {
-          console.error('❌ Email notification failed:', emailError);
-          // Don't fail the deliverables creation if email fails
-        }
         
         alert(`Deliverables added successfully! Project ID: ${createdProjectId}`);
         // Reset form or redirect
