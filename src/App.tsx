@@ -13,6 +13,7 @@ import FreelancerSignup from './pages/FreelancerSignup';
 import ClientSignup from './pages/ClientSignup';
 import FreelancerDashboard from './pages/FreelancerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import { checkOpenAIConfiguration } from './lib/supabase';
 
 function App() {
   // Always use dark mode
@@ -21,6 +22,11 @@ function App() {
   // Set dark mode class on document
   useEffect(() => {
     document.documentElement.classList.add('dark');
+  }, []);
+
+  // Check OpenAI configuration on app load
+  useEffect(() => {
+    checkOpenAIConfiguration();
   }, []);
 
   return (

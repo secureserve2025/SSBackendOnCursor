@@ -1,13 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Debug environment variables
-console.log('Environment variables check:')
-console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
-console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
-console.log('VITE_SUPABASE_ANON_KEY length:', import.meta.env.VITE_SUPABASE_ANON_KEY?.length)
+// Debug environment variables (only in development)
+if (import.meta.env.DEV) {
+  console.log('Environment variables check:')
+  console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL)
+  console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
+  console.log('VITE_SUPABASE_ANON_KEY length:', import.meta.env.VITE_SUPABASE_ANON_KEY?.length)
+  console.log('VITE_OPENAI_API_KEY exists:', !!import.meta.env.VITE_OPENAI_API_KEY)
+  console.log('VITE_OPENAI_API_KEY length:', import.meta.env.VITE_OPENAI_API_KEY?.length)
+  console.log('VITE_OPENAI_API_KEY starts with sk-:', import.meta.env.VITE_OPENAI_API_KEY?.startsWith('sk-'))
+}
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder_key'
+const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY
 
 // Only throw error if we're not in development mode
 if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
@@ -16,6 +22,26 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Helper function to check OpenAI API key configuration
+export const checkOpenAIConfiguration = () => {
+  const isConfigured = !!openaiApiKey && openaiApiKey.startsWith('sk-') && openaiApiKey.length > 20;
+  
+  // Only show warnings in development
+  if (import.meta.env.DEV) {
+    if (!isConfigured) {
+      console.warn('OpenAI API key not properly configured:');
+      console.warn('- API key exists:', !!openaiApiKey);
+      console.warn('- API key starts with sk-:', openaiApiKey?.startsWith('sk-'));
+      console.warn('- API key length:', openaiApiKey?.length);
+      console.warn('Please add VITE_OPENAI_API_KEY=sk-your_actual_key to your .env file');
+    } else {
+      console.log('✅ OpenAI API key is properly configured');
+    }
+  }
+  
+  return isConfigured;
+}
 
 // Auth helper functions
 export const signUp = async (email: string, password: string, userType: 'freelancer' | 'client') => {

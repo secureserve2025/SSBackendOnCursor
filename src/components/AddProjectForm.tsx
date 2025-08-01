@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile } from '../lib/supabase';
+import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables } from '../lib/supabase';
 import EmailService, { ProjectNotificationData } from '../emails/emailService';
 
 interface FileUpload {
@@ -57,6 +57,7 @@ const AddProjectForm: React.FC = () => {
   const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentClientId, setCurrentClientId] = useState<string>('');
+  const [createdProjectId, setCreatedProjectId] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
@@ -383,20 +384,6 @@ const AddProjectForm: React.FC = () => {
 
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setShowDeliverables(true);
-      setIsSubmitting(false);
-    }, 1000);
-  };
-
-  const handleFinalSubmit = async () => {
-    if (!validateDeliverables()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    
     try {
       // Check if we have the current client ID
       if (!currentClientId) {
@@ -414,35 +401,76 @@ const AddProjectForm: React.FC = () => {
         desired_completion_date: formData.completionDate
       };
 
-      // Extract files and deliverables
+      // Extract files (no deliverables yet)
       const files = formData.files.map(f => f.file);
-      const deliverables = formData.deliverables.filter(d => d.trim() !== '');
 
-      console.log('Submitting project with data:', projectData);
+      console.log('Creating project with data:', projectData);
       console.log('Files:', files);
-      console.log('Deliverables:', deliverables);
 
-      const { data, error } = await createProject(projectData, files, deliverables);
+      const { data, error } = await createProject(projectData, files, []); // Empty deliverables array
       
       if (error) {
         console.error('Error creating project:', error);
         alert('Failed to create project. Please try again.');
+        setIsSubmitting(false);
+        return;
       } else {
         console.log('Project created successfully:', data);
+        setCreatedProjectId(data.id); // Store the project ID
+        setShowDeliverables(true);
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      console.error('Exception in project creation:', err);
+      alert('Failed to create project. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!validateDeliverables()) {
+      return;
+    }
+
+    if (!createdProjectId) {
+      alert('Project ID not found. Please try again.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Extract deliverables
+      const deliverables = formData.deliverables.filter(d => d.trim() !== '');
+
+      console.log('Adding deliverables to project:', createdProjectId);
+      console.log('Deliverables:', deliverables);
+
+      const { data, error } = await updateProjectDeliverables(createdProjectId, deliverables);
+      
+      if (error) {
+        console.error('Error adding deliverables:', error);
+        alert('Failed to add deliverables. Please try again.');
+      } else {
+        console.log('Deliverables added successfully:', data);
         
         // Send email notification to freelancer
         console.log('🔍 AddProjectForm: About to send email notification');
         try {
-          await sendProjectNotificationEmail(data, projectData);
+          await sendProjectNotificationEmail({ project_id: createdProjectId }, {
+            project_name: formData.projectName,
+            project_requirement: formData.projectRequirement,
+            desired_completion_date: formData.completionDate
+          });
         } catch (emailError) {
           console.error('❌ Email notification failed:', emailError);
-          // Don't fail the project creation if email fails
+          // Don't fail the deliverables creation if email fails
         }
         
-        alert(`Project created successfully! Project ID: ${data.project_id}`);
+        alert(`Deliverables added successfully! Project ID: ${createdProjectId}`);
         // Reset form or redirect
         setFormData({
-          projectId: data.project_id, // Set projectId from the created project
+          projectId: '',
           category: 'Video Production',
           projectName: '',
           freelancerId: '',
@@ -451,11 +479,12 @@ const AddProjectForm: React.FC = () => {
           files: [],
           deliverables: ['', '', '', '']
         });
+        setCreatedProjectId('');
         setShowDeliverables(false);
       }
     } catch (err) {
-      console.error('Exception in project creation:', err);
-      alert('Failed to create project. Please try again.');
+      console.error('Exception in adding deliverables:', err);
+      alert('Failed to add deliverables. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -616,7 +645,7 @@ const AddProjectForm: React.FC = () => {
                 ) : (
                   <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
                 )}
-                <span>{isGeneratingAI ? 'Generating...' : 'Generate via AI Assistant'}</span>
+                <span>{isGeneratingAI ? 'Generating...' : 'Generate Deliverables with AI'}</span>
               </button>
             </div>
 
@@ -644,12 +673,12 @@ const AddProjectForm: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 animate-spin" />
-                    <span>Creating Project...</span>
+                    <span>Adding Deliverables...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
-                    <span>Create Project</span>
+                    <span>Add Deliverable Checklist</span>
                   </>
                 )}
               </button>
@@ -1037,7 +1066,7 @@ const AddProjectForm: React.FC = () => {
               ) : (
                 <>
                   <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
-                  <span>Continue to Deliverables</span>
+                  <span>Save and Continue to Deliverables</span>
                 </>
               )}
             </button>

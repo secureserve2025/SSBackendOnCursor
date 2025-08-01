@@ -1,0 +1,16 @@
+{
+  "name": "SecureServe Platform",
+  "short_name": "SecureServe",
+  "description": "Secure freelancing platform with escrow protection",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+} 

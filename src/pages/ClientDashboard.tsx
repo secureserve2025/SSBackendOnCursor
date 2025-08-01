@@ -295,7 +295,12 @@ const ClientDashboard: React.FC = () => {
     // If project status is "Project Created", enable editing
     if (projectStatus === 'Project Created') {
       setIsEditingDeliverables(true);
-      setEditingDeliverables(deliverables.map((d: any) => d.deliverable_text));
+      // If no deliverables exist, initialize with 3 empty rows
+      if (!deliverables || deliverables.length === 0) {
+        setEditingDeliverables(['', '', '']);
+      } else {
+        setEditingDeliverables(deliverables.map((d: any) => d.deliverable_text));
+      }
     } else {
       setIsEditingDeliverables(false);
       setEditingDeliverables([]);
@@ -945,26 +950,32 @@ const ClientDashboard: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-center">
-                      {project.deliverables && project.deliverables.length > 0 ? (
-                        <button
-                          onClick={() => handleDeliverablesClick(project.deliverables, project.project_status_workflow, project.id)}
-                          className="inline-flex items-center space-x-1 text-purple-400 hover:text-purple-300 transition-colors"
-                        >
-                          {project.project_status_workflow === 'Project Created' ? (
-                            <>
-                              <Edit3 className="h-4 w-4" />
-                              <span className="text-xs">Edit ({project.deliverables.length})</span>
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4" />
-                              <span className="text-xs">View ({project.deliverables.length})</span>
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-gray-500 text-xs">-</span>
-                      )}
+                      <button
+                        onClick={() => handleDeliverablesClick(project.deliverables || [], project.project_status_workflow, project.id)}
+                        className="inline-flex items-center space-x-1 text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        {project.project_status_workflow === 'Project Created' ? (
+                          <>
+                            <Edit3 className="h-4 w-4" />
+                            <span className="text-xs">
+                              {project.deliverables && project.deliverables.length > 0 
+                                ? `Edit (${project.deliverables.length})` 
+                                : 'Add Deliverables'
+                              }
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4" />
+                            <span className="text-xs">
+                              {project.deliverables && project.deliverables.length > 0 
+                                ? `View (${project.deliverables.length})` 
+                                : 'No Deliverables'
+                              }
+                            </span>
+                          </>
+                        )}
+                      </button>
                     </div>
                     <div className="text-center">
                       {project.work_products && project.work_products.length > 0 ? (
@@ -1090,14 +1101,24 @@ const ClientDashboard: React.FC = () => {
               ) : (
                 // View mode
                 <div className="space-y-3">
-                  {selectedDeliverables.map((deliverable, index) => (
-                    <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
-                      <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                        {index + 1}
+                  {selectedDeliverables && selectedDeliverables.length > 0 ? (
+                    selectedDeliverables.map((deliverable, index) => (
+                      <div key={deliverable.id} className="flex items-start space-x-3 p-3 bg-gray-700 rounded-lg">
+                        <div className="flex-shrink-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                          {index + 1}
+                        </div>
+                        <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
                       </div>
-                      <p className="text-gray-300 text-sm">{deliverable.deliverable_text}</p>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <FileText className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-400 text-sm">No deliverables have been added yet.</p>
+                      <p className="text-gray-500 text-xs mt-1">Deliverables will appear here once they are added.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
