@@ -278,6 +278,7 @@ const ClientDashboard: React.FC = () => {
         setSelectedProject(null);
         setEscrowValue('');
         await loadTransactions(); // Refresh transactions list
+        await loadEscrowProjects(); // Refresh escrow projects list to remove funded project
       }
     } catch (error) {
       console.error('Exception creating transaction:', error);

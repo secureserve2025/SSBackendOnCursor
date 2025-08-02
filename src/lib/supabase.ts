@@ -1182,6 +1182,7 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
       .select(`
         *,
         client_profiles!projects_client_id_fkey (
+          client_id,
           full_name,
           email,
           company_name
@@ -1223,6 +1224,8 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
 
         return {
           ...project,
+          // Replace the client_id UUID with the 10-character client ID
+          client_id: project.client_profiles?.client_id || project.client_id,
           deliverables: deliverables || [],
           work_products: workProducts || [],
           verification_reports: verificationReports || []
@@ -1285,11 +1288,12 @@ export const updateProjectDeliverables = async (projectId: string, deliverables:
   }
 };
 
-// Get projects with "Checklist Signed off" status for a specific client
+// Get projects with "Checklist Signed off" status for a specific client that haven't been funded yet
 export const getClientProjectsForEscrow = async (clientId: string) => {
   try {
     console.log('Fetching projects for escrow funding for client:', clientId);
 
+    // First, get all projects with "Checklist Signed off" status
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .select(`
@@ -1316,8 +1320,27 @@ export const getClientProjectsForEscrow = async (clientId: string) => {
       return { data: null, error: projectsError };
     }
 
-    console.log('Projects for escrow funding:', projects);
-    return { data: projects, error: null };
+    // Filter out projects that already have transactions
+    const projectsWithoutTransactions = [];
+    for (const project of projects) {
+      const { data: transactions, error: transactionError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('project_id', project.id);
+
+      if (transactionError) {
+        console.error('Error checking transactions for project:', project.id, transactionError);
+        continue;
+      }
+
+      // Only include projects that have no transactions
+      if (!transactions || transactions.length === 0) {
+        projectsWithoutTransactions.push(project);
+      }
+    }
+
+    console.log('Projects for escrow funding (excluding already funded):', projectsWithoutTransactions);
+    return { data: projectsWithoutTransactions, error: null };
   } catch (err) {
     console.error('Exception in getClientProjectsForEscrow:', err);
     return { data: null, error: { message: 'Failed to fetch projects for escrow funding' } }
@@ -1379,10 +1402,10 @@ export const createEscrowTransaction = async (transactionData: {
 
     console.log('Transaction created successfully:', data);
 
-    // Update project status to "Production in Progress"
+    // Update project status to "Fund Secured"
     const { error: projectUpdateError } = await supabase
       .from('projects')
-      .update({ project_status_workflow: 'Production in Progress' })
+      .update({ project_status_workflow: 'Fund Secured' })
       .eq('id', transactionData.project_id);
 
     if (projectUpdateError) {
@@ -1390,7 +1413,7 @@ export const createEscrowTransaction = async (transactionData: {
       // Don't fail the transaction creation if project status update fails
       console.warn('Transaction created but project status update failed');
     } else {
-      console.log('Project status updated to "Production in Progress"');
+      console.log('Project status updated to "Fund Secured"');
     }
 
     return { data, error: null };

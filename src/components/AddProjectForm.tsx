@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables } from '../lib/supabase';
 import EmailService, { ProjectNotificationData } from '../emails/emailService';
+import AIDeliverableChat from './AIDeliverableChat';
 
 interface FileUpload {
   id: string;
@@ -52,12 +53,15 @@ const AddProjectForm: React.FC = () => {
   const [showDeliverables, setShowDeliverables] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isValidatingFreelancer, setIsValidatingFreelancer] = useState(false);
   const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentClientId, setCurrentClientId] = useState<string>('');
   const [createdProjectId, setCreatedProjectId] = useState<string>('');
+  
+  // AI Chat state
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [aiSuccessMessage, setAiSuccessMessage] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
@@ -330,26 +334,64 @@ const AddProjectForm: React.FC = () => {
   };
 
   const generateAIDeliverables = async () => {
-    setIsGeneratingAI(true);
+    // Validate that we have the required project data
+    if (!formData.projectName || !formData.projectRequirement || !formData.freelancerId || !formData.completionDate) {
+      alert('Please complete all required project fields before generating AI deliverables.');
+      return;
+    }
+
+    // Check if project has been created (we need the project ID)
+    if (!createdProjectId) {
+      alert('Please create the project first before generating AI deliverables.');
+      return;
+    }
+
+    // Open the AI chat modal
+    setIsAIChatOpen(true);
+  };
+
+  // Handle AI-generated deliverables
+  const handleAIDeliverablesGenerated = (aiDeliverables: string[]) => {
+    // Filter out empty deliverables from current form
+    const existingDeliverables = formData.deliverables.filter(d => d.trim() !== '');
     
-    // TODO: Add your AI Agent functionality here
-    // This function is ready for your AI implementation
-    // You can access form data like:
-    // - formData.projectName
-    // - formData.projectRequirement
-    // - formData.category
-    // - formData.completionDate
+    // Merge existing deliverables with AI-generated ones
+    let mergedDeliverables: string[];
     
-    console.log('🤖 AI Agent: Generate deliverables called');
-    console.log('🤖 AI Agent: Project name:', formData.projectName);
-    console.log('🤖 AI Agent: Project requirement:', formData.projectRequirement);
-    console.log('🤖 AI Agent: Category:', formData.category);
+    if (aiDeliverables.length > 15) {
+      // If AI generates more than 15, replace all with AI deliverables
+      mergedDeliverables = aiDeliverables.slice(0, 15);
+    } else {
+      // Merge existing with AI deliverables, ensuring we don't exceed 15
+      const totalCount = existingDeliverables.length + aiDeliverables.length;
+      if (totalCount <= 15) {
+        mergedDeliverables = [...existingDeliverables, ...aiDeliverables];
+      } else {
+        // If we exceed 15, prioritize AI deliverables
+        const aiCount = Math.min(aiDeliverables.length, 15);
+        const existingCount = 15 - aiCount;
+        mergedDeliverables = [
+          ...existingDeliverables.slice(0, existingCount),
+          ...aiDeliverables.slice(0, aiCount)
+        ];
+      }
+    }
+
+    // Update form data with merged deliverables
+    setFormData(prev => ({
+      ...prev,
+      deliverables: mergedDeliverables
+    }));
+
+    // Show success message
+    setAiSuccessMessage(`Successfully added ${aiDeliverables.length} AI-generated deliverables!`);
     
-    // Placeholder - replace with your AI logic
+    // Clear success message after 5 seconds
     setTimeout(() => {
-      console.log('🤖 AI Agent: Ready for your implementation');
-      setIsGeneratingAI(false);
-    }, 1000);
+      setAiSuccessMessage('');
+    }, 5000);
+
+    console.log('AI Deliverables merged:', mergedDeliverables);
   };
 
   // Form validation
@@ -635,22 +677,21 @@ const AddProjectForm: React.FC = () => {
               <button
                 type="button"
                 onClick={generateAIDeliverables}
-                disabled={isGeneratingAI}
-                className={`flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-xs sm:text-sm lg:text-base ${
-                  isGeneratingAI
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed focus:ring-gray-400'
-                    : 'bg-cyan-600 hover:bg-cyan-700 text-white focus:ring-cyan-400'
-                }`}
+                className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 text-xs sm:text-sm lg:text-base bg-cyan-600 hover:bg-cyan-700 text-white focus:ring-cyan-400"
                 aria-label="Generate deliverables using AI"
               >
-                {isGeneratingAI ? (
-                  <Loader className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 animate-spin" />
-                ) : (
-                  <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-                )}
-                <span>{isGeneratingAI ? 'Generating...' : 'Generate Deliverables with AI'}</span>
+                <Wand2 className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                <span>Generate Deliverables with AI</span>
               </button>
             </div>
+
+            {/* Success Message */}
+            {aiSuccessMessage && (
+              <div className="flex items-center space-x-2 text-green-400 text-xs sm:text-sm lg:text-base">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                <span>{aiSuccessMessage}</span>
+              </div>
+            )}
 
             {/* Error Message */}
             {errors.deliverables && (
@@ -688,6 +729,22 @@ const AddProjectForm: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* AI Chat Modal */}
+        <AIDeliverableChat
+          isOpen={isAIChatOpen}
+          onClose={() => setIsAIChatOpen(false)}
+          projectData={{
+            id: createdProjectId,
+            name: formData.projectName,
+            requirements: formData.projectRequirement,
+            files: formData.files.map(f => f.file),
+            deliverables: formData.deliverables.filter(d => d.trim() !== ''),
+            freelancer_id: formData.freelancerId,
+            completion_date: formData.completionDate
+          }}
+          onDeliverablesGenerated={handleAIDeliverablesGenerated}
+        />
       </div>
     );
   }
