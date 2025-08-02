@@ -11,7 +11,7 @@ dotenv.config();
 // Load environment variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jwdpzqaptvzfgqylecsj.supabase.co';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3ZHB6cWFwdHZ6ZmdxeWxlY3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2NTIxNzEsImV4cCI6MjA2OTIyODE3MX0.PSnunWHSZaWFhVWNSTI7o49fFyR0CFcgUZRkCAXDsE0';
-const openaiApiKey = process.env.VITE_OPENAI_API_KEY || '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';
+const openaiApiKey = process.env.VITE_OPENAI_API_KEY;
 
 console.log('🤖 AI System Simple Test Script');
 console.log('================================\n');
