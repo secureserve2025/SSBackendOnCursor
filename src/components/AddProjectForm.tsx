@@ -332,22 +332,24 @@ const AddProjectForm: React.FC = () => {
   const generateAIDeliverables = async () => {
     setIsGeneratingAI(true);
     
-    // Simulate AI generation
+    // TODO: Add your AI Agent functionality here
+    // This function is ready for your AI implementation
+    // You can access form data like:
+    // - formData.projectName
+    // - formData.projectRequirement
+    // - formData.category
+    // - formData.completionDate
+    
+    console.log('🤖 AI Agent: Generate deliverables called');
+    console.log('🤖 AI Agent: Project name:', formData.projectName);
+    console.log('🤖 AI Agent: Project requirement:', formData.projectRequirement);
+    console.log('🤖 AI Agent: Category:', formData.category);
+    
+    // Placeholder - replace with your AI logic
     setTimeout(() => {
-      const aiDeliverables = [
-        'High-quality 1080p video in MP4 format',
-        'Professional color grading and audio mixing',
-        'Custom intro/outro with brand elements',
-        'Subtitles/captions in English',
-        'Raw footage and project files',
-        'Social media optimized versions (16:9, 1:1, 9:16)',
-        'Thumbnail designs (3 variations)',
-        'Video SEO optimization (title, description, tags)'
-      ];
-      
-      setFormData(prev => ({ ...prev, deliverables: aiDeliverables }));
+      console.log('🤖 AI Agent: Ready for your implementation');
       setIsGeneratingAI(false);
-    }, 2000);
+    }, 1000);
   };
 
   // Form validation
