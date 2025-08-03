@@ -9,8 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config();
 
 // Load environment variables
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jwdpzqaptvzfgqylecsj.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3ZHB6cWFwdHZ6ZmdxeWxlY3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2NTIxNzEsImV4cCI6MjA2OTIyODE3MX0.PSnunWHSZaWFhVWNSTI7o49fFyR0CFcgUZRkCAXDsE0';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 const openaiApiKey = process.env.VITE_OPENAI_API_KEY;
 
 console.log('🤖 AI System Simple Test Script');

@@ -130,12 +130,23 @@ const AIDeliverableChat = ({
           }
         } catch (directError) {
           console.error('Direct AI call error:', directError);
-          setError({
-            message: 'AI service is temporarily unavailable. Please try again later.',
-            type: ERROR_TYPES.AI_SERVICE,
-            retryable: true,
-            originalError: directError.message
-          });
+          
+          // Check if it's a configuration error
+          if (directError.message?.includes('api key') || directError.message?.includes('configuration') || directError.message?.includes('not configured')) {
+            setError({
+              message: 'OpenAI API key is not configured. Please add VITE_OPENAI_API_KEY to your .env file.',
+              type: ERROR_TYPES.AI_SERVICE,
+              retryable: false,
+              originalError: directError.message
+            });
+          } else {
+            setError({
+              message: 'AI service is temporarily unavailable. Please try again later.',
+              type: ERROR_TYPES.AI_SERVICE,
+              retryable: true,
+              originalError: directError.message
+            });
+          }
         }
       } else {
         setError({
@@ -222,12 +233,23 @@ const AIDeliverableChat = ({
           }
         } catch (directError) {
           console.error('Direct AI call error for message:', directError);
-          setError({
-            message: 'AI service is temporarily unavailable. Please try again later.',
-            type: ERROR_TYPES.AI_SERVICE,
-            retryable: true,
-            originalError: directError.message
-          });
+          
+          // Check if it's a configuration error
+          if (directError.message?.includes('api key') || directError.message?.includes('configuration') || directError.message?.includes('not configured')) {
+            setError({
+              message: 'OpenAI API key is not configured. Please add VITE_OPENAI_API_KEY to your .env file.',
+              type: ERROR_TYPES.AI_SERVICE,
+              retryable: false,
+              originalError: directError.message
+            });
+          } else {
+            setError({
+              message: 'AI service is temporarily unavailable. Please try again later.',
+              type: ERROR_TYPES.AI_SERVICE,
+              retryable: true,
+              originalError: directError.message
+            });
+          }
         }
       } else {
         setError({
@@ -488,23 +510,23 @@ const AIDeliverableChat = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl w-full max-w-2xl h-[80vh] flex flex-col">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col backdrop-blur-sm">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <div className="flex items-center justify-between p-6 border-b border-cyan-500/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">AI Video Specialist</h2>
-              <p className="text-sm text-gray-400">Expert video production guidance</p>
+              <h2 className="text-xl font-bold text-white">AI Video Specialist</h2>
+              <p className="text-sm text-cyan-300">Expert video production guidance</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 transition-colors"
+            className="text-gray-400 hover:text-cyan-300 transition-colors p-2 rounded-full hover:bg-gray-700/50"
             disabled={loadingState}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,152 +536,162 @@ const AIDeliverableChat = ({
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-900/50 to-gray-800/50">
           {messages.map((message, index) => (
             <div
               key={index}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-                             <div
-                 className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                   message.role === 'user'
-                     ? 'bg-blue-500 text-white'
-                     : 'bg-gray-800 text-gray-100 border border-gray-700'
-                 }`}
-               >
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-lg ${
+                  message.role === 'user'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border border-blue-400/30'
+                    : 'bg-gradient-to-r from-gray-800 to-gray-700 text-gray-100 border border-cyan-500/30'
+                }`}
+              >
                 <div className="whitespace-pre-wrap">{message.content}</div>
-                                 <div
-                   className={`text-xs mt-1 ${
-                     message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-                   }`}
-                 >
+                <div
+                  className={`text-xs mt-2 ${
+                    message.role === 'user' ? 'text-blue-100' : 'text-cyan-300'
+                  }`}
+                >
                   {formatTimestamp(message.timestamp)}
                 </div>
               </div>
             </div>
           ))}
 
-                     {loadingState && (
-             <div className="flex justify-start">
-               <div className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2">
-                 <div className="flex items-center space-x-2">
-                   <div className="flex space-x-1">
-                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                   </div>
-                   <span className="text-sm text-gray-300">{getLoadingMessage()}</span>
-                 </div>
-               </div>
-             </div>
-           )}
+          {loadingState && (
+            <div className="flex justify-start">
+              <div className="bg-gradient-to-r from-gray-800 to-gray-700 border border-cyan-500/30 rounded-2xl px-4 py-3 shadow-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span className="text-sm text-cyan-300">{getLoadingMessage()}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-                     {error && (
-             <div className="flex justify-start">
-               <div className="bg-red-900 border border-red-700 rounded-lg px-4 py-2 max-w-[80%]">
-                 <div className="text-red-200 text-sm">
-                   <div className="font-medium mb-1">Error:</div>
-                   <div className="mb-2">{error.message}</div>
-                   
-                   {/* Retry button */}
-                   {error.retryable && retryCount < 2 && (
-                     <button
-                       onClick={handleRetry}
-                       className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors mr-2"
-                     >
-                       Retry
-                     </button>
-                   )}
-                   
-                   {/* Dismiss button */}
-                   <button
-                     onClick={() => setError(null)}
-                     className="text-red-300 hover:text-red-100 underline text-xs"
-                   >
-                     Dismiss
-                   </button>
-                 </div>
-               </div>
-             </div>
-           )}
+          {error && (
+            <div className="flex justify-start">
+              <div className="bg-gradient-to-r from-red-900/80 to-red-800/80 border border-red-500/50 rounded-2xl px-4 py-3 max-w-[80%] shadow-lg">
+                <div className="text-red-200 text-sm">
+                  <div className="font-medium mb-2 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Error
+                  </div>
+                  <div className="mb-3">{error.message}</div>
+                  
+                  {/* Retry button */}
+                  {error.retryable && retryCount < 2 && (
+                    <button
+                      onClick={handleRetry}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors mr-3 shadow-md"
+                    >
+                      Retry
+                    </button>
+                  )}
+                  
+                  {/* Dismiss button */}
+                  <button
+                    onClick={() => setError(null)}
+                    className="text-red-300 hover:text-red-100 underline text-sm"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-                     {/* Fallback options */}
-           {shouldShowFallbackOptions() && (
-             <div className="flex justify-start">
-               <div className="bg-yellow-900 border border-yellow-700 rounded-lg px-4 py-3 max-w-[80%]">
-                 <div className="text-yellow-200 text-sm">
-                   <div className="font-medium mb-2">Having trouble with AI? Try these options:</div>
-                   <div className="space-y-2">
-                     <button
-                       onClick={handleStartOver}
-                       className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline"
-                     >
-                       • Start over with a fresh conversation
-                     </button>
-                     <button
-                       onClick={handleManualEntry}
-                       className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline"
-                     >
-                       • Enter deliverables manually
-                     </button>
-                   </div>
-                 </div>
-               </div>
-             </div>
-           )}
+          {/* Fallback options */}
+          {shouldShowFallbackOptions() && (
+            <div className="flex justify-start">
+              <div className="bg-gradient-to-r from-yellow-900/80 to-orange-800/80 border border-yellow-500/50 rounded-2xl px-4 py-4 max-w-[80%] shadow-lg">
+                <div className="text-yellow-200 text-sm">
+                  <div className="font-medium mb-3 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Having trouble with AI? Try these options:
+                  </div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleStartOver}
+                      className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline hover:bg-yellow-800/30 p-2 rounded-lg transition-colors"
+                    >
+                      🔄 Start over with a fresh conversation
+                    </button>
+                    <button
+                      onClick={handleManualEntry}
+                      className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline hover:bg-yellow-800/30 p-2 rounded-lg transition-colors"
+                    >
+                      ✏️ Enter deliverables manually
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div ref={messagesEndRef} />
         </div>
 
-                 {/* Bottom Section - Different based on state */}
-         <div className="border-t border-gray-700 p-4">
+        {/* Bottom Section - Different based on state */}
+        <div className="border-t border-cyan-500/30 p-6 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
           {currentState === STATES.CHATTING && (
-            <div className="space-y-3">
-              <div className="flex space-x-2">
-                                 <input
-                   ref={inputRef}
-                   type="text"
-                   value={userInput}
-                   onChange={(e) => setUserInput(e.target.value)}
-                   onKeyPress={handleKeyPress}
-                   placeholder="Ask about your video project requirements..."
-                   className="flex-1 border border-gray-600 bg-gray-800 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
-                   disabled={loadingState}
-                 />
+            <div className="space-y-4">
+              <div className="flex space-x-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask about your video project requirements..."
+                  className="flex-1 border border-cyan-500/30 bg-gray-800/80 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent placeholder-gray-400 shadow-lg backdrop-blur-sm"
+                  disabled={loadingState}
+                />
                 <button
                   onClick={() => sendMessage(userInput)}
                   disabled={!userInput.trim() || loadingState}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   Send
                 </button>
               </div>
               
-                             {/* Helpful tips */}
-               <div className="text-xs text-gray-400">
-                 💡 Tip: Ask about video length, style, or specific requirements to get better deliverables
-               </div>
+              {/* Helpful tips */}
+              <div className="text-xs text-cyan-300 bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-3">
+                💡 Tip: Ask about video length, style, or specific requirements to get better deliverables
+              </div>
             </div>
           )}
 
-                     {currentState === STATES.READY_TO_GENERATE && (
-             <div className="space-y-3">
-               <div className="text-center text-gray-300 mb-4">
-                 <div className="font-medium mb-1">Ready to generate deliverables!</div>
-                 <div className="text-sm">The AI specialist has gathered enough information to create your project deliverables.</div>
-               </div>
-              <div className="flex space-x-3">
+          {currentState === STATES.READY_TO_GENERATE && (
+            <div className="space-y-4">
+              <div className="text-center text-gray-300 mb-4 bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-xl p-4">
+                <div className="font-bold text-lg mb-2 text-green-300">Ready to generate deliverables!</div>
+                <div className="text-sm">The AI specialist has gathered enough information to create your project deliverables.</div>
+              </div>
+              <div className="flex space-x-4">
                 <button
                   onClick={generateDeliverables}
                   disabled={loadingState}
-                  className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   {loadingState === LOADING_STATES.GENERATING ? 'Generating...' : 'Yes, Generate Deliverables'}
                 </button>
                 <button
                   onClick={handleContinueChatting}
                   disabled={loadingState}
-                  className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl hover:from-gray-600 hover:to-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   Continue Chatting
                 </button>
@@ -667,34 +699,39 @@ const AIDeliverableChat = ({
             </div>
           )}
 
-                     {currentState === STATES.REVIEWING_DELIVERABLES && (
-             <div className="space-y-4">
-               <div className="bg-blue-900 border border-blue-700 rounded-lg p-4">
-                 <h3 className="font-semibold text-blue-200 mb-2">Generated Deliverables</h3>
-                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                   {generatedDeliverables.map((deliverable, index) => (
-                     <div key={index} className="flex items-start space-x-2">
-                       <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium mt-0.5 flex-shrink-0">
-                         {index + 1}
-                       </div>
-                       <div className="flex-1 text-blue-100 text-sm">{deliverable}</div>
-                     </div>
-                   ))}
-                 </div>
-               </div>
+          {currentState === STATES.REVIEWING_DELIVERABLES && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border border-blue-500/30 rounded-xl p-4 shadow-lg">
+                <h3 className="font-bold text-blue-200 mb-3 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Generated Deliverables
+                </h3>
+                <div className="space-y-3 max-h-40 overflow-y-auto">
+                  {generatedDeliverables.map((deliverable, index) => (
+                    <div key={index} className="flex items-start space-x-3 bg-blue-800/30 rounded-lg p-3 border border-blue-500/20">
+                      <div className="w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 shadow-md">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 text-blue-100 text-sm">{deliverable}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               
-              <div className="flex space-x-3">
+              <div className="flex space-x-4">
                 <button
                   onClick={acceptDeliverables}
                   disabled={loadingState}
-                  className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   {loadingState === LOADING_STATES.ACCEPTING ? 'Accepting...' : 'Accept These Deliverables'}
                 </button>
                 <button
                   onClick={handleRequestChanges}
                   disabled={loadingState}
-                  className="flex-1 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   Request Changes
                 </button>

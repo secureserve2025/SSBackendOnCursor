@@ -11,8 +11,8 @@ if (import.meta.env.DEV) {
   console.log('VITE_OPENAI_API_KEY starts with sk-:', import.meta.env.VITE_OPENAI_API_KEY?.startsWith('sk-'))
 }
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder_key'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY
 
 // Only throw error if we're not in development mode
@@ -46,9 +46,9 @@ export const checkOpenAIConfiguration = () => {
 // Auth helper functions
 export const signUp = async (email: string, password: string, userType: 'freelancer' | 'client') => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
+    // Check if we have valid Supabase credentials from environment variables
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.error('Supabase not configured. Environment variables missing.');
       return { 
         data: null, 
         error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
@@ -117,8 +117,8 @@ export const signUp = async (email: string, password: string, userType: 'freelan
 }
 
 export const signIn = async (email: string, password: string) => {
-  // Check if we have valid Supabase credentials
-  if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
+  // Check if we have valid Supabase credentials from environment variables
+  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
     return { 
       data: null, 
       error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
@@ -145,14 +145,6 @@ export const getCurrentUser = async () => {
 // Freelancer Profile Management Functions
 export const getFreelancerProfile = async (userId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
 
     const { data, error } = await supabase
       .from('freelancer_profiles')
@@ -173,14 +165,6 @@ export const getFreelancerProfile = async (userId: string) => {
 
 export const updateFreelancerProfile = async (userId: string, profileData: any) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
 
     console.log('Updating freelancer profile for user:', userId);
     console.log('Profile data:', profileData);
@@ -245,15 +229,6 @@ export const updateFreelancerProfile = async (userId: string, profileData: any) 
 
 export const createFreelancerProfile = async (profileData: any) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('freelancer_profiles')
       .insert(profileData)
@@ -274,15 +249,6 @@ export const createFreelancerProfile = async (profileData: any) => {
 // Client Profile Management Functions
 export const getClientProfile = async (userId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('client_profiles')
       .select('*')
@@ -302,15 +268,6 @@ export const getClientProfile = async (userId: string) => {
 
 export const updateClientProfile = async (userId: string, profileData: any) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     console.log('Updating client profile for user:', userId);
     console.log('Profile data:', profileData);
 
@@ -384,15 +341,6 @@ export const createClientProfile = async (profileData: any) => {
 // Project Management Functions
 export const getProjects = async (userId: string, userType: 'freelancer' | 'client') => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     let query;
     
     if (userType === 'freelancer') {
@@ -430,15 +378,6 @@ export const getProjects = async (userId: string, userType: 'freelancer' | 'clie
 
 export const createProject = async (projectData: any, files?: File[], deliverables?: string[]) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     console.log('Creating project with data:', projectData);
     console.log('Files to upload:', files?.length || 0);
     console.log('Deliverables to save:', deliverables?.length || 0);
@@ -559,15 +498,6 @@ export const createProject = async (projectData: any, files?: File[], deliverabl
 
 export const updateProject = async (projectId: string, projectData: any) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('projects')
       .update({
@@ -591,15 +521,6 @@ export const updateProject = async (projectId: string, projectData: any) => {
 
 export const getProjectWithDetails = async (projectId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .rpc('get_project_with_details', { project_uuid: projectId });
 
@@ -616,15 +537,6 @@ export const getProjectWithDetails = async (projectId: string) => {
 
 export const getProjectFiles = async (projectId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('project_files')
       .select('*')
@@ -644,15 +556,6 @@ export const getProjectFiles = async (projectId: string) => {
 
 export const getProjectDeliverables = async (projectId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('deliverables')
       .select('*')
@@ -672,15 +575,6 @@ export const getProjectDeliverables = async (projectId: string) => {
 
 export const deleteProjectFile = async (fileId: string, filePath: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     // Delete from Supabase Storage
     const { error: storageError } = await supabase.storage
       .from('project-files')
@@ -710,15 +604,6 @@ export const deleteProjectFile = async (fileId: string, filePath: string) => {
 // Validate freelancer ID exists in database
 export const validateFreelancerId = async (freelancerId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     console.log('Validating freelancer ID:', freelancerId);
     console.log('Supabase URL:', supabaseUrl);
     console.log('Supabase Key (first 20 chars):', supabaseAnonKey.substring(0, 20) + '...');
@@ -876,15 +761,6 @@ export const isProfileComplete = async (userId: string) => {
 // Get all freelancer IDs for testing
 export const getAllFreelancerIds = async () => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     const { data, error } = await supabase
       .from('freelancer_profiles')
       .select('freelancer_id, full_name, email')
@@ -1091,15 +967,6 @@ export const updateVerificationReport = async (reportId: string, updates: any) =
 
 export const getClientProjectsWithDetails = async (clientId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     console.log('Fetching projects for client:', clientId);
 
     // Get projects with freelancer info
@@ -1165,15 +1032,6 @@ export const getClientProjectsWithDetails = async (clientId: string) => {
 
 export const getFreelancerProjectsWithDetails = async (freelancerId: string) => {
   try {
-    // Check if we have valid Supabase credentials
-    if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder_key') {
-      console.error('Supabase not configured. Using placeholder values.');
-      return { 
-        data: null, 
-        error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
-      }
-    }
-
     console.log('Fetching projects for freelancer:', freelancerId);
 
     // Get projects with client info
