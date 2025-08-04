@@ -403,9 +403,9 @@ export const createProject = async (projectData: any, files?: File[], deliverabl
     if (files && files.length > 0) {
       const fileUploadPromises = files.map(async (file, index) => {
         try {
-          // Validate file size (10MB max)
-          if (file.size > 10 * 1024 * 1024) {
-            throw new Error(`File ${file.name} exceeds 10MB limit`);
+          // Validate file size (5MB max)
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error(`File ${file.name} exceeds 5MB limit`);
           }
 
           // Validate file type
@@ -782,6 +782,8 @@ export const getAllFreelancerIds = async () => {
 // Add new functions for project workflow management
 export const updateProjectStatusWorkflow = async (projectId: string, newStatus: string) => {
   try {
+    console.log('Calling update_project_status_workflow with:', { projectId, newStatus });
+    
     const { data, error } = await supabase
       .rpc('update_project_status_workflow', {
         project_uuid: projectId,
@@ -789,10 +791,11 @@ export const updateProjectStatusWorkflow = async (projectId: string, newStatus: 
       });
 
     if (error) {
-      console.error('Error updating project status:', error);
-      throw error;
+      console.error('Supabase RPC error updating project status:', error);
+      throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
     }
 
+    console.log('Project status update successful:', data);
     return data;
   } catch (error) {
     console.error('Error updating project status workflow:', error);
@@ -1034,7 +1037,7 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
   try {
     console.log('Fetching projects for freelancer:', freelancerId);
 
-    // Get projects with client info
+    // Get projects with client info - only show projects that have been sent to freelancer
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .select(`
@@ -1047,6 +1050,7 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
         )
       `)
       .eq('freelancer_id', freelancerId)
+      .eq('sent_to_freelancer', true)
       .order('created_at', { ascending: false });
 
     if (projectsError) {
@@ -1242,7 +1246,7 @@ export const createEscrowTransaction = async (transactionData: {
       .insert({
         project_id: transactionData.project_id,
         transaction_value: transactionData.value,
-        transaction_status: 'Fund Secured'
+        transaction_status: 'Project Created'
       })
       .select()
       .single();
@@ -1260,10 +1264,10 @@ export const createEscrowTransaction = async (transactionData: {
 
     console.log('Transaction created successfully:', data);
 
-    // Update project status to "Fund Secured"
+    // Update project status to "Project Created" (transaction created but project still in initial state)
     const { error: projectUpdateError } = await supabase
       .from('projects')
-      .update({ project_status_workflow: 'Fund Secured' })
+      .update({ project_status_workflow: 'Project Created' })
       .eq('id', transactionData.project_id);
 
     if (projectUpdateError) {
@@ -1271,7 +1275,7 @@ export const createEscrowTransaction = async (transactionData: {
       // Don't fail the transaction creation if project status update fails
       console.warn('Transaction created but project status update failed');
     } else {
-      console.log('Project status updated to "Fund Secured"');
+      console.log('Project status updated to "Project Created"');
     }
 
     return { data, error: null };
@@ -1352,5 +1356,192 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
   } catch (err) {
     console.error('Exception in getFreelancerTransactions:', err);
     return { data: null, error: { message: 'Failed to fetch freelancer transactions' } }
+  }
+};
+
+// Update transaction value and recalculate fees
+export const updateTransaction = async (transactionId: string, transactionData: any) => {
+  try {
+    console.log('Updating transaction:', transactionId, transactionData);
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .update({
+        ...transactionData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('transaction_id', transactionId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating transaction:', error);
+      return { data: null, error };
+    }
+
+    console.log('Transaction updated successfully:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in updateTransaction:', err);
+    return { data: null, error: { message: 'Failed to update transaction' } }
+  }
+};
+
+// Delete project and all related records
+export const deleteProject = async (projectId: string) => {
+  try {
+    console.log('Deleting project and all related records:', projectId);
+
+    // Start a transaction to ensure all related records are deleted
+    const { data, error } = await supabase.rpc('delete_project_cascade', {
+      project_uuid: projectId
+    });
+
+    if (error) {
+      console.error('Error deleting project:', error);
+      return { data: null, error };
+    }
+
+    console.log('Project deleted successfully');
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in deleteProject:', err);
+    return { data: null, error: { message: 'Failed to delete project' } }
+  }
+};
+
+// Send checklist to freelancer
+export const sendChecklistToFreelancer = async (projectId: string) => {
+  try {
+    console.log('Sending checklist to freelancer for project:', projectId);
+
+    const { data, error } = await supabase.rpc('send_checklist_to_freelancer', {
+      project_uuid: projectId
+    });
+
+    if (error) {
+      console.error('Error sending checklist to freelancer:', error);
+      return { data: null, error };
+    }
+
+    console.log('Checklist sent to freelancer response:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in sendChecklistToFreelancer:', err);
+    return { data: null, error: { message: 'Failed to send checklist to freelancer' } }
+  }
+};
+
+// Get project status history
+export const getProjectStatusHistory = async (projectId: string) => {
+  try {
+    console.log('Fetching status history for project:', projectId);
+
+    const { data, error } = await supabase.rpc('get_project_status_history', {
+      project_uuid: projectId
+    });
+
+    if (error) {
+      console.error('Error fetching project status history:', error);
+      return { data: null, error };
+    }
+
+    console.log('Project status history:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in getProjectStatusHistory:', err);
+    return { data: null, error: { message: 'Failed to fetch project status history' } }
+  }
+};
+
+// Get project status summary
+export const getProjectStatusSummary = async (projectId: string) => {
+  try {
+    console.log('Fetching status summary for project:', projectId);
+
+    const { data, error } = await supabase.rpc('get_project_status_summary', {
+      project_uuid: projectId
+    });
+
+    if (error) {
+      console.error('Error fetching project status summary:', error);
+      return { data: null, error };
+    }
+
+    console.log('Project status summary:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in getProjectStatusSummary:', err);
+    return { data: null, error: { message: 'Failed to fetch project status summary' } }
+  }
+};
+
+// Manually log a project status change
+export const logProjectStatusChange = async (
+  projectId: string, 
+  newStatus: string, 
+  userId?: string, 
+  userType: 'client' | 'freelancer' | 'system' = 'system',
+  reason?: string
+) => {
+  try {
+    console.log('Logging status change for project:', projectId, 'to:', newStatus);
+
+    const { data, error } = await supabase.rpc('manual_log_project_status_change', {
+      project_uuid: projectId,
+      new_status: newStatus,
+      user_id: userId || null,
+      user_type: userType,
+      reason: reason || null
+    });
+
+    if (error) {
+      console.error('Error logging project status change:', error);
+      return { data: null, error };
+    }
+
+    console.log('Status change logged successfully:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in logProjectStatusChange:', err);
+    return { data: null, error: { message: 'Failed to log project status change' } }
+  }
+};
+
+// Update project status with history tracking
+export const updateProjectStatusWithHistory = async (
+  projectId: string,
+  newStatus: string,
+  userId?: string,
+  userType: 'client' | 'freelancer' | 'system' = 'system',
+  reason?: string
+) => {
+  try {
+    console.log('Updating project status with history tracking:', projectId, 'to:', newStatus);
+
+    // First, update the project with user tracking info
+    const { data: updateData, error: updateError } = await supabase
+      .from('projects')
+      .update({
+        project_status_workflow: newStatus,
+        updated_by_user_id: userId || null,
+        updated_by_user_type: userType,
+        status_change_reason: reason || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating project status:', updateError);
+      return { data: null, error: updateError };
+    }
+
+    console.log('Project status updated successfully:', updateData);
+    return { data: updateData, error: null };
+  } catch (err) {
+    console.error('Exception in updateProjectStatusWithHistory:', err);
+    return { data: null, error: { message: 'Failed to update project status' } }
   }
 };

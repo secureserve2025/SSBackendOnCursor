@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer } from '../lib/supabase';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -83,6 +83,24 @@ const ClientDashboard: React.FC = () => {
   const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+
+  // Project modification modal state
+  const [showProjectModifyModal, setShowProjectModifyModal] = useState(false);
+  const [selectedProjectForModify, setSelectedProjectForModify] = useState<any>(null);
+  const [modifyFreelancerId, setModifyFreelancerId] = useState<string>('');
+  const [modifyProjectValue, setModifyProjectValue] = useState<string>('');
+  const [isModifying, setIsModifying] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [availableFreelancerIds, setAvailableFreelancerIds] = useState<string[]>([]);
+  const [modifyErrors, setModifyErrors] = useState<{freelancerId: string; projectValue: string}>({
+    freelancerId: '',
+    projectValue: ''
+  });
+
+  // Checklist sending state
+  const [currentProjectStatus, setCurrentProjectStatus] = useState<string>('');
+  const [isSendingChecklist, setIsSendingChecklist] = useState(false);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -291,9 +309,10 @@ const ClientDashboard: React.FC = () => {
   const handleDeliverablesClick = (deliverables: any[], projectStatus: string, projectId: string) => {
     setSelectedDeliverables(deliverables);
     setEditingProjectId(projectId);
+    setCurrentProjectStatus(projectStatus);
     setShowDeliverablesModal(true);
     
-    // If project status is "Project Created", enable editing
+    // Only enable editing for "Project Created" status (not "Freelancer OK Checklist")
     if (projectStatus === 'Project Created') {
       setIsEditingDeliverables(true);
       // If no deliverables exist, initialize with 3 empty rows
@@ -383,6 +402,185 @@ const ClientDashboard: React.FC = () => {
   const handleVerificationReportClick = (report: any) => {
     setSelectedVerificationReport(report);
     setShowVerificationModal(true);
+  };
+
+  // Project modification functions
+  const handleProjectClick = async (project: any) => {
+    if (project.project_status_workflow === 'Project Created' || project.project_status_workflow === 'Freelancer OK Checklist') {
+      setSelectedProjectForModify(project);
+      setModifyFreelancerId(project.freelancer_id || '');
+      setModifyProjectValue(project.transaction_value || '');
+      setShowDeleteConfirm(false);
+      setModifyErrors({ freelancerId: '', projectValue: '' });
+      
+      // Load available freelancer IDs only for "Project Created" status
+      if (project.project_status_workflow === 'Project Created') {
+        try {
+          const { data: freelancerIds } = await getAllFreelancerIds();
+          if (freelancerIds) {
+            setAvailableFreelancerIds(freelancerIds);
+          }
+        } catch (error) {
+          console.error('Error loading freelancer IDs:', error);
+        }
+      }
+      
+      setShowProjectModifyModal(true);
+    }
+  };
+
+  const handleModifyClick = () => {
+    setIsModifying(true);
+  };
+
+  const handleModifySave = async () => {
+    if (!selectedProjectForModify) return;
+
+    // Validate inputs
+    const errors = { freelancerId: '', projectValue: '' };
+    let hasErrors = false;
+
+    if (!modifyFreelancerId.trim()) {
+      errors.freelancerId = 'Freelancer ID is required';
+      hasErrors = true;
+    }
+
+    if (!modifyProjectValue.trim()) {
+      errors.projectValue = 'Project Value is required';
+      hasErrors = true;
+    } else {
+      const value = parseFloat(modifyProjectValue);
+      if (isNaN(value) || value < 100) {
+        errors.projectValue = 'Project Value must be at least ₹100';
+        hasErrors = true;
+      }
+    }
+
+    if (hasErrors) {
+      setModifyErrors(errors);
+      return;
+    }
+
+    try {
+      // Update project
+      const { error: projectError } = await updateProject(selectedProjectForModify.id, {
+        freelancer_id: modifyFreelancerId
+      });
+
+      if (projectError) {
+        console.error('Error updating project:', projectError);
+        alert('Failed to update project');
+        return;
+      }
+
+      // Find and update the associated transaction
+      const projectTransaction = transactions.find(t => t.project_id === selectedProjectForModify.id);
+      if (projectTransaction) {
+        const newValue = parseFloat(modifyProjectValue);
+        const { error: transactionError } = await updateTransaction(projectTransaction.transaction_id, {
+          transaction_value: newValue
+        });
+
+        if (transactionError) {
+          console.error('Error updating transaction:', transactionError);
+          alert('Project updated but transaction update failed');
+          return;
+        }
+      }
+
+      // Reload projects and transactions
+      await loadProjects();
+      await loadTransactions();
+      
+      setShowProjectModifyModal(false);
+      setSelectedProjectForModify(null);
+      setIsModifying(false);
+      alert('Project updated successfully!');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      alert('Failed to update project');
+    }
+  };
+
+  const handleModifyCancel = () => {
+    setIsModifying(false);
+    setModifyErrors({ freelancerId: '', projectValue: '' });
+    if (selectedProjectForModify) {
+      setModifyFreelancerId(selectedProjectForModify.freelancer_id || '');
+      setModifyProjectValue(selectedProjectForModify.transaction_value || '');
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!selectedProjectForModify) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await deleteProject(selectedProjectForModify.id);
+      
+      if (error) {
+        console.error('Error deleting project:', error);
+        alert('Failed to delete project');
+        return;
+      }
+
+      // Reload projects and transactions
+      await loadProjects();
+      await loadTransactions();
+      
+      setShowProjectModifyModal(false);
+      setSelectedProjectForModify(null);
+      setShowDeleteConfirm(false);
+      setIsDeleting(false);
+      alert('Project deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project');
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSendChecklistToFreelancer = async () => {
+    if (!editingProjectId) return;
+
+    setIsSendingChecklist(true);
+    try {
+      const { data, error } = await sendChecklistToFreelancer(editingProjectId);
+      
+      if (error) {
+        console.error('Error sending checklist to freelancer:', error);
+        alert('Failed to send checklist to freelancer. Please try again.');
+        return;
+      }
+
+      // Handle the JSON response from the updated function
+      if (data && data.success) {
+        if (data.already_sent) {
+          alert('Project is already visible to freelancer. No changes needed.');
+        } else {
+          alert('Checklist sent to freelancer successfully! The freelancer will now be able to see this project.');
+        }
+      } else {
+        alert(data?.message || 'Failed to send checklist to freelancer. Please try again.');
+        return;
+      }
+      
+      // Close the modal
+      setShowDeliverablesModal(false);
+      setIsEditingDeliverables(false);
+      setEditingDeliverables([]);
+      setEditingProjectId(null);
+      setCurrentProjectStatus('');
+    } catch (error) {
+      console.error('Exception sending checklist to freelancer:', error);
+      alert('Failed to send checklist to freelancer. Please try again.');
+    } finally {
+      setIsSendingChecklist(false);
+    }
   };
 
   // Calculate profile completion percentage
@@ -937,7 +1135,19 @@ const ClientDashboard: React.FC = () => {
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {projects.map((project, index) => (
                   <div key={project.id} className={`grid grid-cols-7 gap-4 p-4 text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
-                    <div className="text-left text-white font-medium">{project.project_id}</div>
+                    <div className="text-left">
+                      {project.project_status_workflow === 'Project Created' || project.project_status_workflow === 'Freelancer OK\'d Checklist' ? (
+                        <button
+                          onClick={() => handleProjectClick(project)}
+                          className="text-white font-medium hover:text-purple-400 transition-colors cursor-pointer underline"
+                          title={project.project_status_workflow === 'Project Created' ? "Click to modify project details" : "Click to view project details (deletion only)"}
+                        >
+                          {project.project_id}
+                        </button>
+                      ) : (
+                        <span className="text-white font-medium">{project.project_id}</span>
+                      )}
+                    </div>
                     <div className="text-left text-white">{project.project_name}</div>
                     <div className="text-left text-gray-300">{project.freelancer_id}</div>
                     <div className="text-center">
@@ -1122,6 +1332,38 @@ const ClientDashboard: React.FC = () => {
                   )}
                 </div>
               )}
+
+
+              
+
+              
+                              {/* Send Checklist to Freelancer Button - Show for "Project Created" or "Freelancer OK Checklist" status and not in editing mode */}
+              {currentProjectStatus === 'Project Created' && (
+                <div className="mt-6 pt-4 border-t border-gray-600">
+                  <div className="text-center">
+                    <p className="text-gray-300 text-sm mb-3">
+                      Ready to send the Checklist to Freelancer? Click here
+                    </p>
+                    <button
+                      onClick={handleSendChecklistToFreelancer}
+                      disabled={isSendingChecklist}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    >
+                      {isSendingChecklist ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Send Checklist to Freelancer</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1165,6 +1407,191 @@ const ClientDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Project Modification Modal */}
+      {showProjectModifyModal && selectedProjectForModify && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  {selectedProjectForModify.project_status_workflow === 'Freelancer OK Checklist' ? 'Project Details' : 'Modify Project'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowProjectModifyModal(false);
+                    setSelectedProjectForModify(null);
+                    setIsModifying(false);
+                    setShowDeleteConfirm(false);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Project ID (read-only) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Project ID
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedProjectForModify.project_id}
+                    disabled
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Freelancer ID */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Freelancer ID
+                  </label>
+                  {isModifying && selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' ? (
+                    <select
+                      value={modifyFreelancerId}
+                      onChange={(e) => setModifyFreelancerId(e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="">Select Freelancer ID</option>
+                      {availableFreelancerIds.map((id) => (
+                        <option key={id} value={id}>{id}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={modifyFreelancerId}
+                      disabled
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+                    />
+                  )}
+                  {modifyErrors.freelancerId && (
+                    <p className="text-red-400 text-xs mt-1">{modifyErrors.freelancerId}</p>
+                  )}
+                </div>
+
+                {/* Project Value */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Project Value (₹)
+                  </label>
+                  {isModifying && selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' ? (
+                    <input
+                      type="number"
+                      value={modifyProjectValue}
+                      onChange={(e) => setModifyProjectValue(e.target.value)}
+                      min="100"
+                      step="0.01"
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                      placeholder="Enter project value"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={`₹${modifyProjectValue}`}
+                      disabled
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+                    />
+                  )}
+                  {modifyErrors.projectValue && (
+                    <p className="text-red-400 text-xs mt-1">{modifyErrors.projectValue}</p>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                {selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' && (
+                  <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                    {!isModifying ? (
+                      <>
+                        <button
+                          onClick={handleModifyClick}
+                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          <span>Modify</span>
+                        </button>
+                        <button
+                          onClick={handleModifySave}
+                          disabled
+                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-gray-400 text-sm rounded cursor-not-allowed"
+                        >
+                          <Save className="h-4 w-4" />
+                          <span>Save</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleModifyCancel}
+                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                          <span>Cancel</span>
+                        </button>
+                        <button
+                          onClick={handleModifySave}
+                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                        >
+                          <Save className="h-4 w-4" />
+                          <span>Save</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Info message for Freelancer OK Checklist projects */}
+                {selectedProjectForModify.project_status_workflow === 'Freelancer OK Checklist' && (
+                  <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mt-4">
+                    <p className="text-blue-300 text-sm">
+                      This project has been approved by the freelancer. You can only delete the project at this stage.
+                    </p>
+                  </div>
+                )}
+
+                {/* Delete Section */}
+                <div className="border-t border-gray-600 pt-4 mt-4">
+                  <p className="text-sm text-gray-400 mb-3">
+                    Would you like to delete the project? Click 'Yes' if you do.
+                  </p>
+                  
+                  {!showDeleteConfirm ? (
+                    <button
+                      onClick={handleDeleteConfirm}
+                      className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                    >
+                      <span>Yes</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-red-400">
+                        Are you sure? This action cannot be undone.
+                      </p>
+                      <button
+                        onClick={handleDeleteProject}
+                        disabled={isDeleting}
+                        className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Deleting...</span>
+                          </>
+                        ) : (
+                          <span>Delete Project</span>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -1181,12 +1608,13 @@ const ClientDashboard: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={handleFundEscrowClick}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 focus:bg-green-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400"
-              aria-label="Fund Escrow"
+              disabled
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-600 text-gray-400 rounded-lg font-medium cursor-not-allowed opacity-50"
+              aria-label="Fund Escrow (Disabled)"
+              title="Fund Escrow is now automatically handled when creating projects"
             >
               <CreditCard className="h-4 w-4" aria-hidden="true" />
-              <span>Fund Escrow</span>
+              <span>Fund Escrow (Disabled)</span>
             </button>
           </div>
         </div>
@@ -1522,7 +1950,7 @@ const ClientDashboard: React.FC = () => {
                 Browse Files
               </button>
               <p className="text-xs text-gray-400 mt-4">
-                Supported: PDF, DOC, DOCX, JPG, PNG, MP4, ZIP, etc. Max 10MB per file
+                Supported: PDF, DOC, DOCX. Max 5MB per file
               </p>
             </div>
           </div>
@@ -1588,7 +2016,7 @@ const ClientDashboard: React.FC = () => {
       { value: 'Gen AI', label: 'Gen AI', enabled: false }
     ];
     
-    const acceptedFileTypes = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mov,.avi,.mkv,.txt,.zip,.rar';
+    const acceptedFileTypes = '.pdf,.doc,.docx';
     
     // Get tomorrow's date for minimum date validation
     const getTomorrowDate = () => {
@@ -1737,7 +2165,7 @@ const ClientDashboard: React.FC = () => {
         'Clear audio with noise reduction',
         'Smooth transitions and cuts',
         'Brand-consistent graphics and titles',
-        'Optimized file format (MP4/MOV)',
+        'Optimized file format (PDF/DOC/DOCX)',
         'Delivery within specified duration',
         'Source files and project backup'
       ];

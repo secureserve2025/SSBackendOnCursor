@@ -214,7 +214,8 @@ const FreelancerDashboard: React.FC = () => {
   };
 
   const handleAgreeToDeliverables = async () => {
-    if (!currentProjectId || currentProjectStatus !== 'Project Created') {
+    if (!currentProjectId || (currentProjectStatus !== 'Project Created' && currentProjectStatus !== 'Checklist Signed off')) {
+      console.log('Invalid project state:', { currentProjectId, currentProjectStatus });
       return;
     }
 
@@ -226,8 +227,16 @@ const FreelancerDashboard: React.FC = () => {
         throw new Error('Project not found');
       }
 
-      // Update project status
-      await updateProjectStatusWorkflow(currentProjectId, 'Checklist Signed off');
+      console.log('Attempting to update project status:', {
+        projectId: currentProjectId,
+        currentStatus: currentProjectStatus,
+        newStatus: 'Checklist Signed off',
+        project: currentProject
+      });
+
+      // Update project status to "Checklist Signed off"
+      const result = await updateProjectStatusWorkflow(currentProjectId, 'Checklist Signed off');
+      console.log('Update result:', result);
       
       // Update the local projects state to reflect the change
       setProjects(prevProjects => 
@@ -259,7 +268,7 @@ const FreelancerDashboard: React.FC = () => {
           completionDate: currentProject.desired_completion_date
         };
 
-        console.log('📧 Sending deliverables signed off notification to client:', emailData);
+        console.log('📧 Sending freelancer OK\'d checklist notification to client:', emailData);
 
         const emailResult = await emailService.sendDeliverablesSignedOffNotification(emailData);
         
@@ -279,7 +288,12 @@ const FreelancerDashboard: React.FC = () => {
       setCurrentProjectId('');
     } catch (error) {
       console.error('Error updating project status:', error);
-      alert('Failed to update project status. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      alert(`Failed to update project status: ${error.message || 'Unknown error'}. Please try again.`);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -817,10 +831,10 @@ const FreelancerDashboard: React.FC = () => {
                       <button
                         onClick={() => setActiveTab('profile')}
                         className="inline-flex items-center space-x-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 focus:bg-cyan-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                        aria-label="Complete your profile"
+                        aria-label="Visit your profile"
                       >
                         <User className="h-4 w-4" aria-hidden="true" />
-                        <span>Complete Profile</span>
+                        <span>Visit your Profile</span>
                       </button>
                     </div>
                   </div>
@@ -916,8 +930,8 @@ const FreelancerDashboard: React.FC = () => {
                 ))}
               </div>
 
-              {/* Agree Button - Only show if project status is "Project Created" */}
-              {currentProjectStatus === 'Project Created' && (
+              {/* Agree Button - Show if project status is "Project Created" or "Checklist Signed off" */}
+              {(currentProjectStatus === 'Project Created' || currentProjectStatus === 'Checklist Signed off') && (
                 <div className="mt-6 pt-4 border-t border-gray-600">
                   <button
                     onClick={handleAgreeToDeliverables}
@@ -932,12 +946,12 @@ const FreelancerDashboard: React.FC = () => {
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4" />
-                        <span>Agree to Deliverables</span>
+                        <span>OK Checklist</span>
                       </>
                     )}
                   </button>
                   <p className="text-xs text-gray-400 mt-2 text-center">
-                    By clicking "Agree", you confirm that you have reviewed and accepted these deliverables.
+                    By clicking "OK Checklist", you confirm that you have reviewed and accepted these deliverables.
                   </p>
                 </div>
               )}
@@ -1200,7 +1214,7 @@ const FreelancerDashboard: React.FC = () => {
                 Browse Files
               </button>
               <p className="text-xs text-gray-400 mt-4">
-                Supported: PDF, DOC, DOCX, JPG, PNG, MP4, ZIP, etc. Max 10MB per file
+                Supported: PDF, DOC, DOCX. Max 5MB per file
               </p>
             </div>
           </div>

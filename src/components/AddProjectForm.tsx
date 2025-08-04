@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
-import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables } from '../lib/supabase';
+import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables, createEscrowTransaction } from '../lib/supabase';
 import EmailService, { ProjectNotificationData } from '../emails/emailService';
 import AIDeliverableChat from './AIDeliverableChat';
 
@@ -18,6 +18,7 @@ interface FormData {
   freelancerId: string;
   completionDate: string;
   projectRequirement: string;
+  projectValue: string;
   files: FileUpload[];
   deliverables: string[];
 }
@@ -27,6 +28,7 @@ interface FormErrors {
   projectRequirement: string;
   freelancerId: string;
   completionDate: string;
+  projectValue: string;
   deliverables: string;
 }
 
@@ -38,6 +40,7 @@ const AddProjectForm: React.FC = () => {
     freelancerId: '',
     completionDate: '',
     projectRequirement: '',
+    projectValue: '',
     files: [],
     deliverables: ['', '', '', '']
   });
@@ -47,6 +50,7 @@ const AddProjectForm: React.FC = () => {
     projectRequirement: '',
     freelancerId: '',
     completionDate: '',
+    projectValue: '',
     deliverables: ''
   });
 
@@ -74,14 +78,10 @@ const AddProjectForm: React.FC = () => {
   ];
 
   const allowedFileTypes = [
-    '.pdf', '.doc', '.docx', '.txt', '.rtf',
-    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp',
-    '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm',
-    '.mp3', '.wav', '.aac', '.flac',
-    '.zip', '.rar', '.7z'
+    '.pdf', '.doc', '.docx'
   ];
 
-  const maxFileSize = 10 * 1024 * 1024; // 10MB per file
+  const maxFileSize = 5 * 1024 * 1024; // 5MB per file
 
   // Load current user and client profile
   useEffect(() => {
@@ -141,6 +141,12 @@ const AddProjectForm: React.FC = () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(0, 0, 0, 0);
         return selectedDate < tomorrow ? 'Completion date must be at least tomorrow' : '';
+      case 'projectValue':
+        if (!value) return 'Project value is required';
+        const numValue = parseFloat(value);
+        if (isNaN(numValue) || numValue <= 0) return 'Project value must be a positive number';
+        if (numValue < 100) return 'Project value must be at least ₹100';
+        return '';
       default:
         return '';
     }
@@ -261,8 +267,8 @@ const AddProjectForm: React.FC = () => {
       return allowedFileTypes.includes(extension) && file.size <= maxFileSize;
     });
 
-    // Limit to maximum 2 files
-    const filesToAdd = validFiles.slice(0, 2 - formData.files.length);
+    // Limit to maximum 1 file
+    const filesToAdd = validFiles.slice(0, 1 - formData.files.length);
 
     filesToAdd.forEach(file => {
       const fileUpload: FileUpload = {
@@ -401,6 +407,7 @@ const AddProjectForm: React.FC = () => {
       projectRequirement: validateField('projectRequirement', formData.projectRequirement),
       freelancerId: validateField('freelancerId', formData.freelancerId),
       completionDate: validateField('completionDate', formData.completionDate),
+      projectValue: validateField('projectValue', formData.projectValue),
       deliverables: ''
     };
 
@@ -462,6 +469,25 @@ const AddProjectForm: React.FC = () => {
         console.log('Project created successfully:', data);
         setCreatedProjectId(data.id); // Store the project ID
         
+        // Create transaction with project value
+        console.log('🔍 AddProjectForm: Creating transaction with project value:', formData.projectValue);
+        try {
+          const { data: transactionData, error: transactionError } = await createEscrowTransaction({
+            project_id: data.id,
+            value: parseFloat(formData.projectValue)
+          });
+          
+          if (transactionError) {
+            console.error('❌ Transaction creation failed:', transactionError);
+            alert('Project created but transaction creation failed. Please contact support.');
+          } else {
+            console.log('✅ Transaction created successfully:', transactionData);
+          }
+        } catch (transactionErr) {
+          console.error('❌ Exception in transaction creation:', transactionErr);
+          alert('Project created but transaction creation failed. Please contact support.');
+        }
+        
         // Send email notification to freelancer when project is created
         console.log('🔍 AddProjectForm: About to send project creation email notification');
         try {
@@ -521,6 +547,7 @@ const AddProjectForm: React.FC = () => {
           freelancerId: '',
           completionDate: '',
           projectRequirement: '',
+          projectValue: '',
           files: [],
           deliverables: ['', '', '', '']
         });
@@ -638,7 +665,7 @@ const AddProjectForm: React.FC = () => {
                       type="text"
                       value={deliverable}
                       onChange={(e) => handleDeliverableChange(index, e.target.value)}
-                      placeholder={`Deliverable ${index + 1} (e.g., High-quality 1080p video in MP4 format)`}
+                      placeholder={`Deliverable ${index + 1} (e.g., Detailed project specification document in PDF format)`}
                       className="w-full px-2 sm:px-3 lg:px-4 py-2 sm:py-3 border-2 border-gray-600 rounded-lg focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50 bg-gray-700 text-white placeholder-gray-400 text-xs sm:text-sm lg:text-base transition-colors"
                       aria-label={`Deliverable ${index + 1}`}
                     />
@@ -773,7 +800,7 @@ const AddProjectForm: React.FC = () => {
                 id="project-id"
                 name="projectId"
                 type="text"
-                value={formData.projectId || 'Will be auto generate'}
+                value={formData.projectId || 'Will be auto-generated'}
                 onChange={(e) => handleInputChange('projectId', e.target.value)}
                 className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none text-sm sm:text-base ${
                   formData.projectId 
@@ -975,6 +1002,46 @@ const AddProjectForm: React.FC = () => {
             )}
           </div>
 
+          {/* Project Value */}
+          <div>
+            <label htmlFor="project-value" className="block text-gray-300 text-sm font-semibold mb-2">
+              Project Value (₹) *
+            </label>
+            <div className="relative">
+              <input
+                id="project-value"
+                name="projectValue"
+                type="number"
+                value={formData.projectValue}
+                onChange={(e) => handleInputChange('projectValue', e.target.value)}
+                onBlur={(e) => handleInputBlur('projectValue', e.target.value)}
+                placeholder="Enter project value in INR"
+                min="1"
+                step="0.01"
+                required
+                aria-invalid={errors.projectValue ? 'true' : 'false'}
+                aria-describedby={`project-value-help ${errors.projectValue ? 'project-value-error' : ''}`.trim()}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
+                  errors.projectValue 
+                    ? 'border-red-500 focus:border-red-400' 
+                    : 'border-gray-600 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50'
+                }`}
+              />
+              <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                <span className="text-purple-400 text-sm">₹</span>
+              </div>
+            </div>
+            <p id="project-value-help" className="text-gray-400 text-xs sm:text-sm mt-1">
+              Enter the total project value in Indian Rupees (INR)
+            </p>
+            {errors.projectValue && (
+              <p id="project-value-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                {errors.projectValue}
+              </p>
+            )}
+          </div>
+
           {/* Completion Date */}
           <div>
             <label htmlFor="completion-date" className="block text-gray-300 text-sm font-semibold mb-2">
@@ -1051,15 +1118,14 @@ const AddProjectForm: React.FC = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  multiple
                   accept={allowedFileTypes.join(',')}
                   onChange={handleFileSelect}
                   className="hidden"
-                  aria-label="Select files to upload"
+                  aria-label="Select file to upload"
                 />
               </div>
               <p className="text-xs sm:text-sm text-gray-400 mt-3 sm:mt-4 text-center">
-                Supported formats: PDF, DOC, DOCX, JPG, PNG, MP4, etc. Max size: 10MB per file (max 2 files)
+                Supported formats: PDF, DOC, DOCX. Max size: 5MB per file (max 1 file)
               </p>
             </div>
 

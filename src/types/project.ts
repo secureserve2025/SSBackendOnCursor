@@ -68,17 +68,14 @@ export interface ProjectSummary {
 
 // File upload configuration
 export const FILE_UPLOAD_CONFIG = {
-  maxFiles: 2,
-  maxFileSize: 10 * 1024 * 1024, // 10MB in bytes
+  maxFiles: 1,
+  maxFileSize: 5 * 1024 * 1024, // 5MB in bytes
   allowedTypes: [
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png',
-    'video/mp4'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ],
-  allowedExtensions: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.mp4']
+  allowedExtensions: ['.pdf', '.doc', '.docx']
 } as const;
 
 // Project validation rules
@@ -117,8 +114,10 @@ export const PROJECT_CATEGORY_OPTIONS = [
 // Project Workflow Status
 export const PROJECT_WORKFLOW_STATUS = {
   PROJECT_CREATED: 'Project Created',
+  CHECKLIST_SENT_TO_FREELANCER: 'Checklist Sent to Freelancer',
   ASSIGNED_TO_FREELANCER: 'Assigned to Freelancer',
   CHECKLIST_SIGNED_OFF: 'Checklist Signed off',
+  FREELANCER_OKD_CHECKLIST: 'Freelancer OK\'d Checklist',
   FUND_SECURED: 'Fund Secured',
   PRODUCTION_IN_PROGRESS: 'Production in Progress',
   AI_VERIFIED: 'AI Verified',

@@ -19,7 +19,7 @@ const EmailTest: React.FC = () => {
         clientName: 'Test Client',
         projectRequirement: 'This is a test project requirement to verify the email template works correctly with all the required fields including project description, deliverables, and completion date.',
         deliverables: [
-          'High-quality 1080p video in MP4 format',
+          'Detailed project specification document in PDF format',
           'Project files and source materials',
           'Final edited version with client feedback incorporated',
           'Project documentation and usage instructions'
