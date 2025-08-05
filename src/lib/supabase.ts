@@ -828,12 +828,26 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('User not authenticated');
 
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      throw new Error('File must be a video file');
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new Error('File size must be less than 10MB');
+    }
+
     const filePath = `${userId}/${projectId}/${file.name}`;
     
     // Upload file to storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('work-products')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false // Don't overwrite existing files
+      });
 
     if (uploadError) {
       console.error('Error uploading work product:', uploadError);
@@ -845,6 +859,9 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
       .from('work-products')
       .getPublicUrl(filePath);
 
+    // Extract video format from filename
+    const videoFormat = file.name.split('.').pop()?.toUpperCase() || 'MP4';
+
     // Save metadata to database
     const { data: dbData, error: dbError } = await supabase
       .from('work_products')
@@ -854,9 +871,9 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
         file_path: filePath,
         file_size: file.size,
         file_type: file.type,
-        video_duration: metadata.duration,
-        video_resolution: metadata.resolution,
-        video_format: metadata.format,
+        video_duration: metadata.duration || 0,
+        video_resolution: metadata.resolution || 'Unknown',
+        video_format: videoFormat,
         upload_status: 'Uploaded'
       })
       .select()
@@ -864,7 +881,21 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
 
     if (dbError) {
       console.error('Error saving work product metadata:', dbError);
+      // If database insert fails, try to delete the uploaded file
+      try {
+        await supabase.storage.from('work-products').remove([filePath]);
+      } catch (deleteError) {
+        console.error('Error deleting uploaded file after database failure:', deleteError);
+      }
       throw dbError;
+    }
+
+    // Update project status to indicate work has been uploaded
+    try {
+      await updateProjectStatusWorkflow(projectId, 'AI Verified');
+    } catch (statusError) {
+      console.warn('Failed to update project status after upload:', statusError);
+      // Don't fail the upload if status update fails
     }
 
     return { ...dbData, url: urlData.publicUrl };
@@ -1451,11 +1482,18 @@ export const getClientTransactions = async (clientId: string) => {
     // Now filter out the ones we don't want
     const filteredTransactions = allTransactions?.filter(transaction => {
       const projectStatus = transaction.projects?.project_status_workflow;
-      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus);
+      const transactionStatus = transaction.transaction_status;
+      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus, 'Transaction status:', transactionStatus);
       
-      return projectStatus && 
+      // Filter out transactions with unwanted project statuses
+      const validProjectStatus = projectStatus && 
              projectStatus !== 'Project Created' && 
              projectStatus !== 'Assigned to Freelancer';
+      
+      // Also filter out transactions with "Project Created" transaction status
+      const validTransactionStatus = transactionStatus !== 'Project Created';
+      
+      return validProjectStatus && validTransactionStatus;
     }) || [];
 
     console.log('Filtered transactions:', filteredTransactions);
@@ -1533,12 +1571,19 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
     // Now filter out the ones we don't want
     const filteredTransactions = allTransactions?.filter(transaction => {
       const projectStatus = transaction.projects?.project_status_workflow;
-      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus);
+      const transactionStatus = transaction.transaction_status;
+      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus, 'Transaction status:', transactionStatus);
       
-      return projectStatus && 
+      // Filter out transactions with unwanted project statuses
+      const validProjectStatus = projectStatus && 
              projectStatus !== 'Project Created' && 
              projectStatus !== 'Assigned to Freelancer' &&
              projectStatus !== 'Checklist Signed off';
+      
+      // Also filter out transactions with "Project Created" transaction status
+      const validTransactionStatus = transactionStatus !== 'Project Created';
+      
+      return validProjectStatus && validTransactionStatus;
     }) || [];
 
     console.log('Filtered freelancer transactions:', filteredTransactions);

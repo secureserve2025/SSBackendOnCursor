@@ -1689,13 +1689,13 @@ const ClientDashboard: React.FC = () => {
                     <div className="text-left text-gray-300">{transaction.projects?.freelancer_id || 'N/A'}</div>
                     <div className="text-right text-white">₹{transaction.transaction_value?.toLocaleString() || '0'}</div>
                     <div className="text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        transaction.transaction_status === 'Project under Manual Review' ? 'bg-yellow-100 text-yellow-800' :
-                        transaction.transaction_status === 'Fund Secured' ? 'bg-green-100 text-green-800' :
-                        transaction.transaction_status === 'Successfully closed' ? 'bg-blue-100 text-blue-800' :
-                        transaction.transaction_status === 'Chargeback' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`${
+                        transaction.transaction_status === 'Project under Manual Review' ? 'text-yellow-400' :
+                        transaction.transaction_status === 'Fund Secured' ? 'text-green-400' :
+                        transaction.transaction_status === 'Successfully closed' ? 'text-blue-400' :
+                        transaction.transaction_status === 'Chargeback' ? 'text-red-400' :
+                        'text-gray-400'
+                      } font-medium`}>
                         {transaction.transaction_status}
                       </span>
                     </div>

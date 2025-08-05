@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText, Upload as UploadIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions } from '../lib/supabase';
+import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions, uploadWorkProduct } from '../lib/supabase';
 import EmailService from '../emails/emailService';
 
 interface ProfileData {
@@ -56,6 +56,18 @@ const FreelancerDashboard: React.FC = () => {
   // New state for transactions
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+  
+  // Action Needed modal state
+  const [showActionNeededModal, setShowActionNeededModal] = useState(false);
+  const [selectedTransactionForAction, setSelectedTransactionForAction] = useState<any>(null);
+  const [isUpdatingToProduction, setIsUpdatingToProduction] = useState(false);
+  
+  // Final Work Upload modal state
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedProjectForUpload, setSelectedProjectForUpload] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -74,6 +86,8 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
     { id: 'messages', label: 'Messages', icon: MessageSquare }
   ];
+
+
 
   // Load user data on component mount
   useEffect(() => {
@@ -300,6 +314,180 @@ const FreelancerDashboard: React.FC = () => {
     } finally {
       setIsUpdatingStatus(false);
     }
+  };
+
+  // Action Needed functions
+  const handleActionNeededClick = (transaction: any) => {
+    console.log('Action Needed clicked - Transaction object:', transaction);
+    console.log('Project data:', transaction.projects);
+    setSelectedTransactionForAction(transaction);
+    setShowActionNeededModal(true);
+  };
+
+  const handleConfirmProduction = async () => {
+    if (!selectedTransactionForAction) return;
+    
+    setIsUpdatingToProduction(true);
+    try {
+      console.log('Selected transaction for action:', selectedTransactionForAction);
+      console.log('Transaction project_id:', selectedTransactionForAction.project_id);
+      console.log('Project object:', selectedTransactionForAction.projects);
+      
+      const projectId = selectedTransactionForAction.project_id;
+      if (!projectId) {
+        alert('Error: Project ID not found. Please try again.');
+        return;
+      }
+      
+      console.log('Updating project to Production in Progress:', projectId);
+      console.log('Project ID type:', typeof projectId);
+      console.log('Project ID length:', projectId.length);
+      
+      // Update project status to "Production in Progress"
+      const { data, error } = await updateProjectStatusWorkflow(
+        projectId,
+        'Production in Progress'
+      );
+
+      if (error) {
+        console.error('Error updating project status:', error);
+        alert(`Failed to update project status: ${error.message || 'Unknown error'}`);
+        return;
+      }
+
+      console.log('Project status updated successfully:', data);
+      alert('Project status updated to "Production in Progress". You can now proceed with final product creation.');
+      
+      // Close the modal first
+      setShowActionNeededModal(false);
+      setSelectedTransactionForAction(null);
+      
+      // Reload transactions and projects to reflect the status change
+      // This will make the "Action Needed" button disappear since project status is no longer "Fund Secured"
+      await loadTransactions();
+      await loadProjects();
+    } catch (error) {
+      console.error('Error updating project status:', error);
+      alert(`Failed to update project status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdatingToProduction(false);
+    }
+  };
+
+  const handleCloseActionModal = () => {
+    setShowActionNeededModal(false);
+    setSelectedTransactionForAction(null);
+  };
+
+  // Final Work Upload functions
+  const handleUploadClick = (project: any) => {
+    // Check if project already has work products
+    if (project.work_products && project.work_products.length > 0) {
+      const confirmReplace = window.confirm(
+        `This project already has ${project.work_products.length} uploaded work product(s).\n\nDo you want to upload a new file? This will add to the existing uploads.`
+      );
+      if (!confirmReplace) return;
+    }
+    
+    setSelectedProjectForUpload(project);
+    setShowUploadModal(true);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB. Please select a smaller file.');
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Check if it's a video file
+      if (!file.type.startsWith('video/')) {
+        alert('Please select a video file (MP4, AVI, MOV, etc.).');
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Check for supported video formats
+      const supportedFormats = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'];
+      if (!supportedFormats.includes(file.type.toLowerCase())) {
+        alert('Please select a supported video format (MP4, AVI, MOV, WMV, FLV, WebM).');
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      
+      console.log('Selected file:', file.name, 'Size:', (file.size / (1024 * 1024)).toFixed(2), 'MB', 'Type:', file.type);
+      setUploadedFile(file);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadedFile || !selectedProjectForUpload) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      console.log('Uploading final work for project:', selectedProjectForUpload.id);
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + Math.random() * 10;
+        });
+      }, 200);
+      
+      // Upload the file using the existing uploadWorkProduct function
+      const { data, error } = await uploadWorkProduct(
+        selectedProjectForUpload.id,
+        uploadedFile,
+        {
+          duration: 0, // Will be extracted from video metadata
+          resolution: 'Unknown',
+          format: uploadedFile.name.split('.').pop()?.toUpperCase() || 'MP4'
+        }
+      );
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (error) {
+        console.error('Error uploading final work:', error);
+        alert(`Failed to upload final work: ${error.message || 'Unknown error'}`);
+        return;
+      }
+
+      console.log('Final work uploaded successfully:', data);
+      
+      // Show success message with more details
+      alert(`Final work uploaded successfully!\n\nFile: ${uploadedFile.name}\nSize: ${(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB\n\nThe client will be able to view your uploaded work.`);
+      
+      // Reload projects to show the uploaded work
+      await loadProjects();
+      
+      // Close the modal and reset state
+      setShowUploadModal(false);
+      setSelectedProjectForUpload(null);
+      setUploadedFile(null);
+      setUploadProgress(0);
+    } catch (error) {
+      console.error('Error uploading final work:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to upload final work:\n\n${errorMessage}\n\nPlease try again or contact support if the problem persists.`);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleCloseUploadModal = () => {
+    setShowUploadModal(false);
+    setSelectedProjectForUpload(null);
+    setUploadedFile(null);
+    setUploadProgress(0);
   };
 
   // Calculate profile completion percentage
@@ -875,12 +1063,25 @@ const FreelancerDashboard: React.FC = () => {
                     </div>
                     <div className="text-center">
                       {project.work_products && project.work_products.length > 0 ? (
+                        <div className="flex flex-col items-center space-y-1">
+                          <button
+                            onClick={() => handleWorkProductClick(project.work_products[0])}
+                            className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <Play className="h-4 w-4" />
+                            <span className="text-xs">Play</span>
+                          </button>
+                          <span className="text-gray-400 text-xs">
+                            {project.work_products.length} file(s)
+                          </span>
+                        </div>
+                      ) : project.project_status_workflow === 'Production in Progress' ? (
                         <button
-                          onClick={() => handleWorkProductClick(project.work_products[0])}
-                          className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
+                          onClick={() => handleUploadClick(project)}
+                          className="inline-flex items-center space-x-1 text-cyan-400 hover:text-cyan-300 transition-colors"
                         >
-                          <Play className="h-4 w-4" />
-                          <span className="text-xs">Play</span>
+                          <UploadIcon className="h-4 w-4" />
+                          <span className="text-xs">Upload</span>
                         </button>
                       ) : (
                         <span className="text-gray-500 text-xs">-</span>
@@ -1001,6 +1202,8 @@ const FreelancerDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 
@@ -1022,12 +1225,13 @@ const FreelancerDashboard: React.FC = () => {
           <div className="min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
-                <div className="text-left">Project Name</div>
-                <div className="text-left">Client Name</div>
+                <div className="text-left hidden sm:block">Project Name</div>
+                <div className="text-left hidden lg:block">Client Name</div>
                 <div className="text-right">Value (₹)</div>
-                <div className="text-center">Transaction Status</div>
+                <div className="text-center">Status</div>
+                <div className="text-center">Action</div>
               </div>
             </div>
 
@@ -1042,23 +1246,33 @@ const FreelancerDashboard: React.FC = () => {
             ) : transactions.length > 0 ? (
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {transactions.map((transaction, index) => (
-                  <div key={transaction.transaction_id} className={`grid grid-cols-5 gap-4 p-4 text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
-                    <div className="text-left text-white">{transaction.projects?.project_id || 'N/A'}</div>
-                    <div className="text-left text-gray-300">{transaction.projects?.project_name || 'N/A'}</div>
-                    <div className="text-left text-gray-300">{transaction.projects?.client_profiles?.full_name || 'N/A'}</div>
-                    <div className="text-right text-white">₹{transaction.freelancer_amount?.toLocaleString() || '0'}</div>
-                    <div className="text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        transaction.transaction_status === 'Project Active' ? 'bg-blue-100 text-blue-800' :
-                        transaction.transaction_status === 'Fund Secured' ? 'bg-green-100 text-green-800' :
-                        transaction.transaction_status === 'Successfully closed' ? 'bg-purple-100 text-purple-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.transaction_status}
-                      </span>
+                    <div key={transaction.transaction_id} className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
+                      <div className="text-left text-white truncate">{transaction.projects?.project_id || 'N/A'}</div>
+                      <div className="text-left text-gray-300 truncate hidden sm:block">{transaction.projects?.project_name || 'N/A'}</div>
+                      <div className="text-left text-gray-300 truncate hidden lg:block">{transaction.projects?.client_profiles?.full_name || 'N/A'}</div>
+                      <div className="text-right text-white">₹{transaction.freelancer_amount?.toLocaleString() || '0'}</div>
+                      <div className="text-center">
+                        <span className={`${
+                          transaction.transaction_status === 'Project Active' ? 'text-blue-400' :
+                          transaction.transaction_status === 'Fund Secured' ? 'text-green-400' :
+                          transaction.transaction_status === 'Successfully closed' ? 'text-purple-400' :
+                          'text-red-400'
+                        } font-medium`}>
+                          {transaction.transaction_status}
+                        </span>
+                      </div>
+                      <div className="text-center">
+                        {transaction.projects?.project_status_workflow === 'Fund Secured' && (
+                          <button
+                            onClick={() => handleActionNeededClick(transaction)}
+                            className="px-2 sm:px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-gray-800"
+                          >
+                            Action Needed
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             ) : (
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
@@ -1342,6 +1556,182 @@ const FreelancerDashboard: React.FC = () => {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* Action Needed Modal */}
+      {showActionNeededModal && selectedTransactionForAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-gray-800 rounded-lg max-w-sm sm:max-w-md w-full mx-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-white">Action Required</h3>
+                <button
+                  onClick={handleCloseActionModal}
+                  className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-cyan-500/20 border border-cyan-500/30 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 bg-cyan-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-900" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-cyan-300 text-xs sm:text-sm font-medium mb-1">
+                        Escrow funds are secured. Proceed with final product creation.
+                      </p>
+                      <p className="text-cyan-200 text-xs">
+                        Project: {selectedTransactionForAction.projects?.project_name || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 sm:pt-4">
+                  <button
+                    onClick={handleConfirmProduction}
+                    disabled={isUpdatingToProduction}
+                    className="w-full inline-flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-gray-800"
+                  >
+                    {isUpdatingToProduction ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span className="text-sm">Updating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm">Click here to Confirm</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    This will update the project status to "Production in Progress"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Work Upload Modal */}
+      {showUploadModal && selectedProjectForUpload && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-gray-800 rounded-lg max-w-sm sm:max-w-md w-full mx-4">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-white">Upload Final Work</h3>
+                <button
+                  onClick={handleCloseUploadModal}
+                  className="text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <UploadIcon className="h-3 w-3 sm:h-4 sm:w-4 text-blue-900" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-blue-300 text-xs sm:text-sm font-medium mb-1">
+                        Upload your final video work for client review
+                      </p>
+                      <p className="text-blue-200 text-xs">
+                        Project: {selectedProjectForUpload.project_name || 'N/A'}
+                      </p>
+                      <p className="text-blue-200 text-xs">
+                        Project ID: {selectedProjectForUpload.project_id || 'N/A'}
+                      </p>
+                      <p className="text-blue-200 text-xs mt-1">
+                        File size limit: 10MB | Supported formats: MP4, AVI, MOV, WMV, FLV, WebM
+                      </p>
+                      <p className="text-blue-200 text-xs mt-1">
+                        This will be saved to work_products storage with proper project mapping
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="video-upload" className="block text-sm font-medium text-gray-300 mb-2">
+                      Select Video File
+                    </label>
+                    <input
+                      type="file"
+                      id="video-upload"
+                      accept="video/*"
+                      onChange={handleFileSelect}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400"
+                    />
+                  </div>
+
+                  {uploadedFile && (
+                    <div className="bg-gray-700 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <UploadIcon className="h-4 w-4 text-green-400" />
+                        <span className="text-green-400 text-sm font-medium">
+                          {uploadedFile.name}
+                        </span>
+                      </div>
+                      <div className="text-gray-400 text-xs mt-2 space-y-1">
+                        <p>Size: {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        <p>Type: {uploadedFile.type}</p>
+                        <p>Format: {uploadedFile.name.split('.').pop()?.toUpperCase() || 'Unknown'}</p>
+                        <p className="text-green-300">✓ File ready for upload</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {isUploading && (
+                    <div className="bg-gray-700 rounded-lg p-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                        <span className="text-cyan-400 text-sm">Uploading...</span>
+                      </div>
+                      <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
+                        <div 
+                          className="bg-cyan-400 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-3 sm:pt-4">
+                  <button
+                    onClick={handleUploadSubmit}
+                    disabled={!uploadedFile || isUploading}
+                    className="w-full inline-flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-800"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span className="text-sm">Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadIcon className="h-4 w-4" />
+                        <span className="text-sm">Upload Final Work</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    The client will be able to view your uploaded work
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
