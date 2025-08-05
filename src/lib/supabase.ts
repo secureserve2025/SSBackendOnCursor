@@ -823,7 +823,7 @@ export const getProjectWithAllDetails = async (projectId: string) => {
 };
 
 // Work Products functions
-export const uploadWorkProduct = async (projectId: string, file: File, metadata: any) => {
+export const uploadWorkProduct = async (projectId: string, file: File, metadata: any, options: { updateStatus?: boolean } = {}) => {
   try {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('User not authenticated');
@@ -890,12 +890,16 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
       throw dbError;
     }
 
-    // Update project status to indicate work has been uploaded
-    try {
-      await updateProjectStatusWorkflow(projectId, 'AI Verified');
-    } catch (statusError) {
-      console.warn('Failed to update project status after upload:', statusError);
-      // Don't fail the upload if status update fails
+    // Update project status ONLY if explicitly requested (default: false)
+    if (options.updateStatus === true) {
+      try {
+        await updateProjectStatusWorkflow(projectId, 'AI Verified');
+      } catch (statusError) {
+        console.warn('Failed to update project status after upload:', statusError);
+        // Don't fail the upload if status update fails
+      }
+    } else {
+      console.log('Project status update skipped as requested');
     }
 
     return { ...dbData, url: urlData.publicUrl };

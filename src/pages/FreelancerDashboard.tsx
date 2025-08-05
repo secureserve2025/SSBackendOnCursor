@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText, Upload as UploadIcon } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText, Upload as UploadIcon, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions, uploadWorkProduct } from '../lib/supabase';
+import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
+import { uploadWorkProductWithReupload, canReuploadWorkProduct, getLatestWorkProduct } from '../lib/videoReuploadUtils';
 import EmailService from '../emails/emailService';
 
 interface ProfileData {
@@ -68,6 +70,10 @@ const FreelancerDashboard: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Video modal state
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedWorkProduct, setSelectedWorkProduct] = useState<any>(null);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -216,9 +222,43 @@ const FreelancerDashboard: React.FC = () => {
     setShowDeliverablesModal(true);
   };
 
-  const handleWorkProductClick = (workProduct: any) => {
-    if (workProduct.file_url) {
-      window.open(workProduct.file_url, '_blank');
+  const handleWorkProductClick = async (workProduct: any) => {
+    if (!workProduct || !workProduct.file_path) {
+      console.error('No work product or file path found:', workProduct);
+      alert('No video file found for this project.');
+      return;
+    }
+
+    try {
+      // Use production-ready video access function
+      const result = await accessVideo(workProduct);
+      
+      if (result.success && result.url) {
+        console.log('Video access successful:', result.url);
+        
+        // Try to open the video in a new tab
+        const newWindow = window.open(result.url, '_blank');
+        
+        // If the window is blocked or fails to open, show an embedded video modal
+        if (!newWindow || newWindow.closed) {
+          console.log('Popup blocked, showing video modal instead');
+          setSelectedWorkProduct(workProduct);
+          setShowVideoModal(true);
+        }
+      } else {
+        console.error('Video access failed:', result.error);
+        
+        // Show fallback modal with error message
+        setSelectedWorkProduct({
+          ...workProduct,
+          error: result.error,
+          fallbackUrl: result.fallbackUrl
+        });
+        setShowVideoModal(true);
+      }
+    } catch (error) {
+      console.error('Error accessing video:', error);
+      alert('Failed to access video. Please try again later.');
     }
   };
 
@@ -380,14 +420,70 @@ const FreelancerDashboard: React.FC = () => {
   };
 
   // Final Work Upload functions
-  const handleUploadClick = (project: any) => {
+  const handleUploadClick = async (project: any) => {
+    // Check if user is authenticated and is a freelancer
+    const { user } = await getCurrentUser();
+    if (!user) {
+      alert('Please log in to upload work products.');
+      return;
+    }
+
+    // Check if project status is "Production in Progress"
+    if (project.project_status_workflow !== 'Production in Progress') {
+      alert('Upload is only available for projects with "Production in Progress" status.');
+      return;
+    }
+
+    // Check if user has permission to upload for this project
+    const canUpload = await canReuploadWorkProduct(project.id, user.id);
+    if (!canUpload) {
+      alert('You do not have permission to upload work products for this project.');
+      return;
+    }
+
     // Check if project already has work products
     if (project.work_products && project.work_products.length > 0) {
       const confirmReplace = window.confirm(
-        `This project already has ${project.work_products.length} uploaded work product(s).\n\nDo you want to upload a new file? This will add to the existing uploads.`
+        `This project already has ${project.work_products.length} uploaded work product(s).\n\nDo you want to upload a new file? This will replace the existing upload.`
       );
       if (!confirmReplace) return;
     }
+    
+    setSelectedProjectForUpload(project);
+    setShowUploadModal(true);
+  };
+
+  const handleReuploadClick = async (project: any) => {
+    // Check if user is authenticated and is a freelancer
+    const { user } = await getCurrentUser();
+    if (!user) {
+      alert('Please log in to re-upload work products.');
+      return;
+    }
+
+    // Check if project status is "Production in Progress"
+    if (project.project_status_workflow !== 'Production in Progress') {
+      alert('Re-upload is only available for projects with "Production in Progress" status.');
+      return;
+    }
+
+    // Check if user has permission to re-upload for this project
+    const canReupload = await canReuploadWorkProduct(project.id, user.id);
+    if (!canReupload) {
+      alert('You do not have permission to re-upload work products for this project.');
+      return;
+    }
+
+    // Check if project has existing work products
+    if (!project.work_products || project.work_products.length === 0) {
+      alert('No existing work products found to re-upload.');
+      return;
+    }
+
+    const confirmReupload = window.confirm(
+      `This will replace the existing work product with a new file.\n\nAre you sure you want to re-upload?`
+    );
+    if (!confirmReupload) return;
     
     setSelectedProjectForUpload(project);
     setShowUploadModal(true);
@@ -440,30 +536,64 @@ const FreelancerDashboard: React.FC = () => {
         });
       }, 200);
       
-      // Upload the file using the existing uploadWorkProduct function
-      const { data, error } = await uploadWorkProduct(
-        selectedProjectForUpload.id,
-        uploadedFile,
-        {
-          duration: 0, // Will be extracted from video metadata
-          resolution: 'Unknown',
-          format: uploadedFile.name.split('.').pop()?.toUpperCase() || 'MP4'
+      // Check if this is a re-upload (project already has work products)
+      const hasExisting = selectedProjectForUpload.work_products && selectedProjectForUpload.work_products.length > 0;
+      
+      let result;
+      if (hasExisting) {
+        // Use re-upload function with replaceExisting option
+        result = await uploadWorkProductWithReupload(
+          selectedProjectForUpload.id,
+          uploadedFile,
+          {
+            duration: 0, // Will be extracted from video metadata
+            resolution: 'Unknown',
+            format: uploadedFile.name.split('.').pop()?.toUpperCase() || 'MP4'
+          },
+          {
+            replaceExisting: true,
+            keepHistory: true,
+            updateStatus: false // IMPORTANT: Do not change project status
+          }
+        );
+      } else {
+        // Use regular upload function but ensure no status change
+        const { data, error } = await uploadWorkProduct(
+          selectedProjectForUpload.id,
+          uploadedFile,
+          {
+            duration: 0, // Will be extracted from video metadata
+            resolution: 'Unknown',
+            format: uploadedFile.name.split('.').pop()?.toUpperCase() || 'MP4'
+          },
+          { updateStatus: false } // IMPORTANT: Do not change project status
+        );
+        
+        if (error) {
+          throw error;
         }
-      );
+        
+        result = {
+          success: true,
+          newWorkProduct: data,
+          message: 'Work product uploaded successfully'
+        };
+      }
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (error) {
-        console.error('Error uploading final work:', error);
-        alert(`Failed to upload final work: ${error.message || 'Unknown error'}`);
+      if (!result.success) {
+        console.error('Error uploading final work:', result.error);
+        alert(`Failed to upload final work: ${result.error || 'Unknown error'}`);
         return;
       }
 
-      console.log('Final work uploaded successfully:', data);
+      console.log('Final work uploaded successfully:', result);
       
       // Show success message with more details
-      alert(`Final work uploaded successfully!\n\nFile: ${uploadedFile.name}\nSize: ${(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB\n\nThe client will be able to view your uploaded work.`);
+      const action = hasExisting ? 're-uploaded' : 'uploaded';
+      alert(`Final work ${action} successfully!\n\nFile: ${uploadedFile.name}\nSize: ${(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB\n\nThe client will be able to view your uploaded work.\n\nNote: Project status remains unchanged as requested.`);
       
       // Reload projects to show the uploaded work
       await loadProjects();
@@ -1072,8 +1202,22 @@ const FreelancerDashboard: React.FC = () => {
                             <span className="text-xs">Play</span>
                           </button>
                           <span className="text-gray-400 text-xs">
-                            {project.work_products.length} file(s)
+                            {project.work_products.length === 1 ? '1st upload' : 
+                             project.work_products.length === 2 ? '2nd upload' :
+                             project.work_products.length === 3 ? '3rd upload' :
+                             `${project.work_products.length}th upload`}
                           </span>
+                          {/* Show re-upload button only for freelancers and "Production in Progress" status */}
+                          {project.project_status_workflow === 'Production in Progress' && (
+                            <button
+                              onClick={() => handleReuploadClick(project)}
+                              className="inline-flex items-center space-x-1 text-orange-400 hover:text-orange-300 transition-colors"
+                              title="Re-upload work product"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              <span className="text-xs">Re-upload</span>
+                            </button>
+                          )}
                         </div>
                       ) : project.project_status_workflow === 'Production in Progress' ? (
                         <button
@@ -1197,6 +1341,86 @@ const FreelancerDashboard: React.FC = () => {
                     <p className="text-gray-300 text-sm mt-1">{selectedVerificationReport.verification_notes}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {showVideoModal && selectedWorkProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Video Player</h3>
+                <button
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    setSelectedWorkProduct(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-white font-medium mb-2">{selectedWorkProduct.file_name}</h4>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                                      <video 
+                    controls 
+                    className="w-full h-auto max-h-[60vh] rounded"
+                    preload="metadata"
+                    onError={(e) => {
+                      console.error('Video loading error:', e);
+                      alert('Failed to load video. Please check your internet connection and try again.');
+                    }}
+                  >
+                    <source 
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/work-products/${selectedWorkProduct.file_path}`} 
+                      type={selectedWorkProduct.file_type} 
+                    />
+                    Your browser does not support the video tag.
+                  </video>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="text-sm text-gray-400">
+                      <p>File Size: {(selectedWorkProduct.file_size / (1024 * 1024)).toFixed(2)} MB</p>
+                      {selectedWorkProduct.video_duration && (
+                        <p>Duration: {Math.floor(selectedWorkProduct.video_duration / 60)}:{(selectedWorkProduct.video_duration % 60).toString().padStart(2, '0')}</p>
+                      )}
+                      {selectedWorkProduct.video_resolution && (
+                        <p>Resolution: {selectedWorkProduct.video_resolution}</p>
+                      )}
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          const downloadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/work-products/${selectedWorkProduct.file_path}`;
+                          const link = document.createElement('a');
+                          link.href = downloadUrl;
+                          link.download = selectedWorkProduct.file_name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                      >
+                        Download Video
+                      </button>
+                      <button
+                        onClick={() => {
+                          const videoUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/work-products/${selectedWorkProduct.file_path}`;
+                          window.open(videoUrl, '_blank');
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                      >
+                        Open in New Tab
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

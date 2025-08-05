@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow } from '../lib/supabase';
+import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -97,10 +98,19 @@ const ClientDashboard: React.FC = () => {
   const [isSendingChecklist, setIsSendingChecklist] = useState(false);
 
   // Fund Escrow state
+  
+  // Work Verification Modal state
+  const [showWorkVerificationModal, setShowWorkVerificationModal] = useState(false);
+  const [selectedProjectForVerification, setSelectedProjectForVerification] = useState<any>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [showFundEscrowModal, setShowFundEscrowModal] = useState(false);
   const [escrowProjects, setEscrowProjects] = useState<any[]>([]);
   const [selectedEscrowProject, setSelectedEscrowProject] = useState<any>(null);
   const [isFundingEscrow, setIsFundingEscrow] = useState(false);
+
+  // Video modal state
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedWorkProduct, setSelectedWorkProduct] = useState<any>(null);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -333,16 +343,119 @@ const ClientDashboard: React.FC = () => {
     setEditingProjectId(null);
   };
 
-  const handleWorkProductClick = (workProduct: any) => {
-    if (workProduct && workProduct.file_path) {
-      // Open video in new tab
-      window.open(workProduct.file_path, '_blank');
+  const handleWorkProductClick = async (workProduct: any) => {
+    if (!workProduct || !workProduct.file_path) {
+      console.error('No work product or file path found:', workProduct);
+      alert('No video file found for this project.');
+      return;
+    }
+
+    try {
+      // Use production-ready video access function
+      const result = await accessVideo(workProduct);
+      
+      if (result.success && result.url) {
+        console.log('Video access successful:', result.url);
+        
+        // Try to open the video in a new tab
+        const newWindow = window.open(result.url, '_blank');
+        
+        // If the window is blocked or fails to open, show an embedded video modal
+        if (!newWindow || newWindow.closed) {
+          console.log('Popup blocked, showing video modal instead');
+          setSelectedWorkProduct(workProduct);
+          setShowVideoModal(true);
+        }
+      } else {
+        console.error('Video access failed:', result.error);
+        
+        // Show fallback modal with error message
+        setSelectedWorkProduct({
+          ...workProduct,
+          error: result.error,
+          fallbackUrl: result.fallbackUrl
+        });
+        setShowVideoModal(true);
+      }
+    } catch (error) {
+      console.error('Error accessing video:', error);
+      alert('Failed to access video. Please try again later.');
     }
   };
 
   const handleVerificationReportClick = (report: any) => {
     setSelectedVerificationReport(report);
     setShowVerificationModal(true);
+  };
+
+  // Verification functions
+  const handleVerifyWorkClick = (project: any) => {
+    setSelectedProjectForVerification(project);
+    setShowWorkVerificationModal(true);
+  };
+
+  const handleManualReview = async () => {
+    if (!selectedProjectForVerification) return;
+    
+    setIsVerifying(true);
+    try {
+      // Update project status to "Under Manual Review"
+      const { error } = await updateProject(selectedProjectForVerification.id, {
+        project_status_workflow: 'Under Manual Review'
+      });
+
+      if (error) {
+        console.error('Error updating project status:', error);
+        alert('Failed to initiate manual review. Please try again.');
+        return;
+      }
+
+      alert('Manual review initiated successfully. The freelancer will have 48-72 hours to revise and resubmit.');
+      
+      // Reload projects to reflect the status change
+      await loadProjects();
+      
+      // Close modal
+      setShowWorkVerificationModal(false);
+      setSelectedProjectForVerification(null);
+    } catch (error) {
+      console.error('Error in manual review:', error);
+      alert('Failed to initiate manual review. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleAIVerify = async () => {
+    if (!selectedProjectForVerification) return;
+    
+    setIsVerifying(true);
+    try {
+      // Update project status to "AI Verification in Progress"
+      const { error } = await updateProject(selectedProjectForVerification.id, {
+        project_status_workflow: 'AI Verification in Progress'
+      });
+
+      if (error) {
+        console.error('Error updating project status:', error);
+        alert('Failed to initiate AI verification. Please try again.');
+        return;
+      }
+
+      alert('AI verification initiated successfully. You will have 24 hours to raise concerns if the match score is 90% or higher.');
+      
+      // Reload projects to reflect the status change
+      await loadProjects();
+      
+      // Close modal
+      setShowWorkVerificationModal(false);
+      setSelectedProjectForVerification(null);
+    } catch (error) {
+      console.error('Error in AI verification:', error);
+      alert('Failed to initiate AI verification. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   // Project modification functions
@@ -1215,13 +1328,26 @@ const ClientDashboard: React.FC = () => {
                     </div>
                     <div className="text-center">
                       {project.work_products && project.work_products.length > 0 ? (
-                        <button
-                          onClick={() => handleWorkProductClick(project.work_products[0])}
-                          className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <Play className="h-4 w-4" />
-                          <span className="text-xs">Play</span>
-                        </button>
+                        <div className="flex flex-col items-center space-y-1">
+                          <button
+                            onClick={() => handleWorkProductClick(project.work_products[0])}
+                            className="inline-flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <Play className="h-4 w-4" />
+                            <span className="text-xs">Play</span>
+                          </button>
+                          {/* Show Verify Work button only for "Production in Progress" status */}
+                          {project.project_status_workflow === 'Production in Progress' && (
+                            <button
+                              onClick={() => handleVerifyWorkClick(project)}
+                              className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
+                              title="Verify Work"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              <span className="text-xs">Verify Work</span>
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-gray-500 text-xs">-</span>
                       )}
@@ -1448,6 +1574,91 @@ const ClientDashboard: React.FC = () => {
                     <p className="text-gray-300 text-sm mt-1">{selectedVerificationReport.verification_notes}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {showVideoModal && selectedWorkProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Video Player</h3>
+                <button
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    setSelectedWorkProduct(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-white font-medium mb-2">{selectedWorkProduct.file_name}</h4>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                                                        <video 
+                      controls 
+                      className="w-full h-auto max-h-[60vh] rounded"
+                      preload="metadata"
+                      onError={(e) => handleVideoError(e, selectedWorkProduct.fallbackUrl)}
+                      poster={selectedWorkProduct.error ? undefined : undefined}
+                    >
+                      <source 
+                        src={selectedWorkProduct.error ? (selectedWorkProduct.fallbackUrl || generateVideoUrl(selectedWorkProduct.file_path)) : generateVideoUrl(selectedWorkProduct.file_path)} 
+                        type={selectedWorkProduct.file_type} 
+                      />
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="text-sm text-gray-400">
+                      <p>File Size: {formatFileSize(selectedWorkProduct.file_size)}</p>
+                      {selectedWorkProduct.video_duration && (
+                        <p>Duration: {formatDuration(selectedWorkProduct.video_duration)}</p>
+                      )}
+                      {selectedWorkProduct.video_resolution && (
+                        <p>Resolution: {selectedWorkProduct.video_resolution}</p>
+                      )}
+                      {selectedWorkProduct.error && (
+                        <p className="text-red-400">Error: {selectedWorkProduct.error}</p>
+                      )}
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          const downloadUrl = selectedWorkProduct.error ? 
+                            (selectedWorkProduct.fallbackUrl || generateVideoUrl(selectedWorkProduct.file_path)) : 
+                            generateVideoUrl(selectedWorkProduct.file_path);
+                          const link = document.createElement('a');
+                          link.href = downloadUrl;
+                          link.download = selectedWorkProduct.file_name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                      >
+                        Download Video
+                      </button>
+                      <button
+                        onClick={() => {
+                          const videoUrl = selectedWorkProduct.error ? 
+                            (selectedWorkProduct.fallbackUrl || generateVideoUrl(selectedWorkProduct.file_path)) : 
+                            generateVideoUrl(selectedWorkProduct.file_path);
+                          window.open(videoUrl, '_blank');
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                      >
+                        Open in New Tab
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2284,6 +2495,93 @@ const ClientDashboard: React.FC = () => {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* Work Verification Modal */}
+      {showWorkVerificationModal && selectedProjectForVerification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Verification Notice</h3>
+                <button
+                  onClick={() => {
+                    setShowWorkVerificationModal(false);
+                    setSelectedProjectForVerification(null);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    You can verify the final work either manually or using AI.
+                  </p>
+                  <p className="text-gray-300 text-sm leading-relaxed mt-3">
+                    If you choose <strong className="text-yellow-400">AI Verification</strong>, please note the following:
+                  </p>
+                  <ul className="text-gray-300 text-sm leading-relaxed mt-3 space-y-2 list-disc list-inside">
+                    <li>The deliverable will be checked against the agreed checklist.</li>
+                    <li>If the match score is <strong className="text-green-400">90% or higher</strong>, you'll have <strong className="text-blue-400">24 hours</strong> to raise concerns. If none are raised, funds will be automatically released to the freelancer.</li>
+                    <li>If the score is below 90%, or if you choose Manual Review, the freelancer will have <strong className="text-orange-400">48–72 hours</strong> to revise and resubmit.</li>
+                    <li>If the freelancer fails to respond to either a Manual Review or a raised concern, funds will be returned to your account, <strong className="text-red-400">MINUS cancellation fees</strong>.</li>
+                  </ul>
+                  <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+                    <p className="text-yellow-400 text-sm font-medium">
+                      ⚠️ Once AI Verification is initiated, the timeline is fixed and cannot be changed.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="text-center text-gray-300 text-sm">
+                  <p>Please choose how you'd like to proceed.</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    onClick={handleManualReview}
+                    disabled={isVerifying}
+                    className="flex-1 inline-flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        <span>Manual Review</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={handleAIVerify}
+                    disabled={isVerifying}
+                    className="flex-1 inline-flex items-center justify-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4" />
+                        <span>AI Verify</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fund Escrow Modal */}
       {showFundEscrowModal && (
