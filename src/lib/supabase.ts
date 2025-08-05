@@ -1037,7 +1037,7 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
   try {
     console.log('Fetching projects for freelancer:', freelancerId);
 
-    // Get projects with client info - only show projects that have been sent to freelancer
+    // Get projects with client info - only show projects that are assigned to freelancer
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .select(`
@@ -1050,7 +1050,15 @@ export const getFreelancerProjectsWithDetails = async (freelancerId: string) => 
         )
       `)
       .eq('freelancer_id', freelancerId)
-      .eq('sent_to_freelancer', true)
+      .in('project_status_workflow', [
+        'Assigned to Freelancer',
+        'Checklist Signed off',
+        'Fund Secured',
+        'Production in Progress',
+        'AI Verified',
+        'Under Manual Revision',
+        'Successfully Closed'
+      ])
       .order('created_at', { ascending: false });
 
     if (projectsError) {
@@ -1335,6 +1343,7 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
           project_id,
           project_name,
           client_id,
+          project_status_workflow,
           client_profiles!projects_client_id_fkey(
             full_name
           ),
@@ -1344,6 +1353,13 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
         )
       `)
       .eq('projects.freelancer_id', freelancerId)
+      .in('projects.project_status_workflow', [
+        'Fund Secured',
+        'Production in Progress',
+        'AI Verified',
+        'Under Manual Revision',
+        'Successfully Closed'
+      ])
       .order('created_at', { ascending: false });
 
     if (transactionsError) {

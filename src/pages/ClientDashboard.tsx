@@ -312,7 +312,7 @@ const ClientDashboard: React.FC = () => {
     setCurrentProjectStatus(projectStatus);
     setShowDeliverablesModal(true);
     
-    // Only enable editing for "Project Created" status (not "Freelancer OK Checklist")
+    // Only enable editing for "Project Created" status
     if (projectStatus === 'Project Created') {
       setIsEditingDeliverables(true);
       // If no deliverables exist, initialize with 3 empty rows
@@ -406,7 +406,7 @@ const ClientDashboard: React.FC = () => {
 
   // Project modification functions
   const handleProjectClick = async (project: any) => {
-    if (project.project_status_workflow === 'Project Created' || project.project_status_workflow === 'Freelancer OK Checklist') {
+    if (project.project_status_workflow === 'Project Created') {
       setSelectedProjectForModify(project);
       setModifyFreelancerId(project.freelancer_id || '');
       setModifyProjectValue(project.transaction_value || '');
@@ -559,11 +559,10 @@ const ClientDashboard: React.FC = () => {
 
       // Handle the JSON response from the updated function
       if (data && data.success) {
-        if (data.already_sent) {
-          alert('Project is already visible to freelancer. No changes needed.');
-        } else {
-          alert('Checklist sent to freelancer successfully! The freelancer will now be able to see this project.');
-        }
+        alert('Checklist sent to freelancer successfully! Project status updated to "Assigned to Freelancer". The freelancer will now be able to see this project in their dashboard.');
+        
+        // Refresh the projects list to show the updated status
+        await loadProjects();
       } else {
         alert(data?.message || 'Failed to send checklist to freelancer. Please try again.');
         return;
@@ -1330,6 +1329,27 @@ const ClientDashboard: React.FC = () => {
                       <p className="text-gray-500 text-xs mt-1">Deliverables will appear here once they are added.</p>
                     </div>
                   )}
+                  
+                  {/* Special note for "Checklist Signed off" status */}
+                  {currentProjectStatus === 'Checklist Signed off' && (
+                    <div className="mt-6 pt-4 border-t border-gray-600">
+                      <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                            <span className="text-yellow-900 text-xs font-bold">!</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-yellow-300 text-sm font-medium mb-1">
+                              The deliverable checklist has been signed off.
+                            </p>
+                            <p className="text-yellow-200 text-xs">
+                              Please initiate the fund deposit into the escrow account. If not completed within 48 hours, the project will be automatically deleted.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1337,7 +1357,7 @@ const ClientDashboard: React.FC = () => {
               
 
               
-                              {/* Send Checklist to Freelancer Button - Show for "Project Created" or "Freelancer OK Checklist" status and not in editing mode */}
+                              {/* Send Checklist to Freelancer Button - Show for "Project Created" status and not in editing mode */}
               {currentProjectStatus === 'Project Created' && (
                 <div className="mt-6 pt-4 border-t border-gray-600">
                   <div className="text-center">
@@ -1415,7 +1435,7 @@ const ClientDashboard: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">
-                  {selectedProjectForModify.project_status_workflow === 'Freelancer OK Checklist' ? 'Project Details' : 'Modify Project'}
+                  Modify Project
                 </h3>
                 <button
                   onClick={() => {
@@ -1449,7 +1469,7 @@ const ClientDashboard: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Freelancer ID
                   </label>
-                  {isModifying && selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' ? (
+                  {isModifying ? (
                     <select
                       value={modifyFreelancerId}
                       onChange={(e) => setModifyFreelancerId(e.target.value)}
@@ -1478,7 +1498,7 @@ const ClientDashboard: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Project Value (₹)
                   </label>
-                  {isModifying && selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' ? (
+                  {isModifying ? (
                     <input
                       type="number"
                       value={modifyProjectValue}
@@ -1502,7 +1522,7 @@ const ClientDashboard: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                {selectedProjectForModify.project_status_workflow !== 'Freelancer OK Checklist' && (
+                {(
                   <div className="flex flex-col sm:flex-row gap-2 pt-4">
                     {!isModifying ? (
                       <>
@@ -1543,14 +1563,7 @@ const ClientDashboard: React.FC = () => {
                   </div>
                 )}
 
-                {/* Info message for Freelancer OK Checklist projects */}
-                {selectedProjectForModify.project_status_workflow === 'Freelancer OK Checklist' && (
-                  <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mt-4">
-                    <p className="text-blue-300 text-sm">
-                      This project has been approved by the freelancer. You can only delete the project at this stage.
-                    </p>
-                  </div>
-                )}
+
 
                 {/* Delete Section */}
                 <div className="border-t border-gray-600 pt-4 mt-4">

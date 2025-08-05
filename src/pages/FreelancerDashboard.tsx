@@ -214,7 +214,7 @@ const FreelancerDashboard: React.FC = () => {
   };
 
   const handleAgreeToDeliverables = async () => {
-    if (!currentProjectId || (currentProjectStatus !== 'Project Created' && currentProjectStatus !== 'Checklist Signed off')) {
+    if (!currentProjectId || (currentProjectStatus !== 'Assigned to Freelancer' && currentProjectStatus !== 'Checklist Signed off')) {
       console.log('Invalid project state:', { currentProjectId, currentProjectStatus });
       return;
     }
@@ -930,8 +930,8 @@ const FreelancerDashboard: React.FC = () => {
                 ))}
               </div>
 
-              {/* Agree Button - Show if project status is "Project Created" or "Checklist Signed off" */}
-              {(currentProjectStatus === 'Project Created' || currentProjectStatus === 'Checklist Signed off') && (
+              {/* Agree Button - Show if project status is "Assigned to Freelancer" or "Checklist Signed off" */}
+              {(currentProjectStatus === 'Assigned to Freelancer' || currentProjectStatus === 'Checklist Signed off') && (
                 <div className="mt-6 pt-4 border-t border-gray-600">
                   <button
                     onClick={handleAgreeToDeliverables}

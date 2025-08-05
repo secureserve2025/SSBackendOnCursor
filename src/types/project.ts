@@ -117,7 +117,6 @@ export const PROJECT_WORKFLOW_STATUS = {
   CHECKLIST_SENT_TO_FREELANCER: 'Checklist Sent to Freelancer',
   ASSIGNED_TO_FREELANCER: 'Assigned to Freelancer',
   CHECKLIST_SIGNED_OFF: 'Checklist Signed off',
-  FREELANCER_OKD_CHECKLIST: 'Freelancer OK\'d Checklist',
   FUND_SECURED: 'Fund Secured',
   PRODUCTION_IN_PROGRESS: 'Production in Progress',
   AI_VERIFIED: 'AI Verified',
