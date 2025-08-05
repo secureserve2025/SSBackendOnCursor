@@ -1116,7 +1116,19 @@ export const updateProjectDeliverables = async (projectId: string, deliverables:
     console.log('Updating deliverables for project:', projectId);
     console.log('New deliverables:', deliverables);
 
-    // First, delete existing deliverables for this project
+    // First, get existing deliverables to preserve their created_at timestamps
+    const { data: existingDeliverables, error: fetchError } = await supabase
+      .from('deliverables')
+      .select('id, deliverable_text, created_at')
+      .eq('project_id', projectId)
+      .order('deliverable_order');
+
+    if (fetchError) {
+      console.error('Error fetching existing deliverables:', fetchError);
+      return { data: null, error: fetchError };
+    }
+
+    // Delete existing deliverables for this project
     const { error: deleteError } = await supabase
       .from('deliverables')
       .delete()
@@ -1133,12 +1145,17 @@ export const updateProjectDeliverables = async (projectId: string, deliverables:
       return { data: [], error: null };
     }
 
-    // Insert new deliverables
-    const deliverableData = deliverables.map((text, index) => ({
-      project_id: projectId,
-      deliverable_text: text,
-      deliverable_order: index + 1
-    }));
+    // Prepare deliverable data, preserving created_at timestamps where possible
+    const deliverableData = deliverables.map((text, index) => {
+      const existingDeliverable = existingDeliverables?.find(d => d.deliverable_text === text);
+      return {
+        project_id: projectId,
+        deliverable_text: text,
+        deliverable_order: index + 1,
+        created_at: existingDeliverable?.created_at || undefined, // Preserve original created_at if text matches
+        updated_at: new Date().toISOString() // Set current timestamp for updated_at
+      };
+    });
 
     const { data, error } = await supabase
       .from('deliverables')
@@ -1163,7 +1180,7 @@ export const getClientProjectsForEscrow = async (clientId: string) => {
   try {
     console.log('Fetching projects for escrow funding for client:', clientId);
 
-    // First, get all projects with "Checklist Signed off" status
+    // Get all projects with "Checklist Signed off" status
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
       .select(`
@@ -1190,27 +1207,48 @@ export const getClientProjectsForEscrow = async (clientId: string) => {
       return { data: null, error: projectsError };
     }
 
-    // Filter out projects that already have transactions
-    const projectsWithoutTransactions = [];
+    // Filter out projects that already have transactions with "Fund Secured" status
+    // and get transaction values for projects that need funding
+    const projectsWithoutFunding = [];
     for (const project of projects) {
-      const { data: transactions, error: transactionError } = await supabase
+      // Check for existing "Fund Secured" transactions
+      const { data: fundedTransactions, error: fundedError } = await supabase
         .from('transactions')
-        .select('id')
-        .eq('project_id', project.id);
+        .select('id, transaction_status')
+        .eq('project_id', project.id)
+        .eq('transaction_status', 'Fund Secured');
 
-      if (transactionError) {
-        console.error('Error checking transactions for project:', project.id, transactionError);
+      if (fundedError) {
+        console.error('Error checking funded transactions for project:', project.id, fundedError);
         continue;
       }
 
-      // Only include projects that have no transactions
-      if (!transactions || transactions.length === 0) {
-        projectsWithoutTransactions.push(project);
+      // Only include projects that don't have "Fund Secured" transactions
+      if (!fundedTransactions || fundedTransactions.length === 0) {
+        // Get the transaction value for this project
+        const { data: projectTransaction, error: transactionError } = await supabase
+          .from('transactions')
+          .select('transaction_value')
+          .eq('project_id', project.id)
+          .single();
+
+        if (transactionError && transactionError.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Error fetching transaction value for project:', project.id, transactionError);
+          continue;
+        }
+
+        // Add transaction value to project object
+        const projectWithValue = {
+          ...project,
+          transaction_value: projectTransaction?.transaction_value || 0
+        };
+
+        projectsWithoutFunding.push(projectWithValue);
       }
     }
 
-    console.log('Projects for escrow funding (excluding already funded):', projectsWithoutTransactions);
-    return { data: projectsWithoutTransactions, error: null };
+    console.log('Projects for escrow funding (excluding already funded):', projectsWithoutFunding);
+    return { data: projectsWithoutFunding, error: null };
   } catch (err) {
     console.error('Exception in getClientProjectsForEscrow:', err);
     return { data: null, error: { message: 'Failed to fetch projects for escrow funding' } }
@@ -1293,37 +1331,171 @@ export const createEscrowTransaction = async (transactionData: {
   }
 };
 
+// Fund escrow for a project
+export const fundEscrow = async (projectId: string, transactionValue: number) => {
+  try {
+    console.log('Funding escrow for project:', projectId, 'with value:', transactionValue);
+
+    // First, verify the project exists and has the correct status
+    const { data: project, error: projectCheckError } = await supabase
+      .from('projects')
+      .select('id, project_status_workflow')
+      .eq('id', projectId)
+      .single();
+
+    if (projectCheckError) {
+      console.error('Error checking project:', projectCheckError);
+      return { data: null, error: { message: 'Project not found' } };
+    }
+
+    if (project.project_status_workflow !== 'Checklist Signed off') {
+      console.error('Project status is not "Checklist Signed off":', project.project_status_workflow);
+      return { data: null, error: { message: 'Project is not ready for funding' } };
+    }
+
+    // Update project status to "Fund Secured"
+    const { error: projectError } = await updateProjectStatusWorkflow(projectId, 'Fund Secured');
+    
+    if (projectError) {
+      console.error('Error updating project status:', projectError);
+      return { data: null, error: projectError };
+    }
+
+    // Create or update transaction with "Fund Secured" status
+    const { data: existingTransaction, error: fetchError } = await supabase
+      .from('transactions')
+      .select('id, transaction_id')
+      .eq('project_id', projectId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error fetching existing transaction:', fetchError);
+      return { data: null, error: fetchError };
+    }
+
+    let transactionResult;
+    if (existingTransaction) {
+      // Update existing transaction
+      const { data, error } = await supabase
+        .from('transactions')
+        .update({
+          transaction_value: transactionValue,
+          transaction_status: 'Fund Secured',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingTransaction.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating transaction:', error);
+        return { data: null, error };
+      }
+      transactionResult = data;
+    } else {
+      // Create new transaction
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+          project_id: projectId,
+          transaction_value: transactionValue,
+          transaction_status: 'Fund Secured',
+          transaction_type: 'escrow_funding'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating transaction:', error);
+        return { data: null, error };
+      }
+      transactionResult = data;
+    }
+
+    console.log('Escrow funded successfully:', transactionResult);
+    return { data: transactionResult, error: null };
+  } catch (err) {
+    console.error('Exception in fundEscrow:', err);
+    return { data: null, error: { message: 'Failed to fund escrow' } }
+  }
+};
+
 // Get client transactions with project details
 export const getClientTransactions = async (clientId: string) => {
   try {
     console.log('Fetching transactions for client:', clientId);
 
-    const { data: transactions, error: transactionsError } = await supabase
+    // First, let's get all transactions for this client to debug
+    const { data: allTransactions, error: allTransactionsError } = await supabase
       .from('transactions')
       .select(`
         *,
-        projects!inner(
+        projects(
           project_id,
           project_name,
           freelancer_id,
-          client_profiles!projects_client_id_fkey(
-            full_name
-          ),
-          freelancer_profiles!projects_freelancer_id_fkey(
-            full_name
-          )
+          project_status_workflow,
+          client_id
         )
       `)
       .eq('projects.client_id', clientId)
       .order('created_at', { ascending: false });
 
-    if (transactionsError) {
-      console.error('Error fetching transactions:', transactionsError);
-      return { data: null, error: transactionsError };
+    if (allTransactionsError) {
+      console.error('Error fetching all transactions:', allTransactionsError);
+      return { data: null, error: allTransactionsError };
     }
 
-    console.log('Client transactions:', transactions);
-    return { data: transactions, error: null };
+    console.log('All transactions for client:', allTransactions);
+
+    // Now filter out the ones we don't want
+    const filteredTransactions = allTransactions?.filter(transaction => {
+      const projectStatus = transaction.projects?.project_status_workflow;
+      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus);
+      
+      return projectStatus && 
+             projectStatus !== 'Project Created' && 
+             projectStatus !== 'Assigned to Freelancer';
+    }) || [];
+
+    console.log('Filtered transactions:', filteredTransactions);
+
+    // Now get the full details for filtered transactions
+    if (filteredTransactions.length > 0) {
+      const transactionIds = filteredTransactions.map(t => t.id);
+      
+      const { data: detailedTransactions, error: detailedError } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          projects(
+            project_id,
+            project_name,
+            freelancer_id,
+            project_status_workflow,
+            client_id,
+            client_profiles!projects_client_id_fkey(
+              full_name
+            ),
+            freelancer_profiles!projects_freelancer_id_fkey(
+              full_name
+            )
+          )
+        `)
+        .in('id', transactionIds)
+        .order('created_at', { ascending: false });
+
+      if (detailedError) {
+        console.error('Error fetching detailed transactions:', detailedError);
+        return { data: null, error: detailedError };
+      }
+
+      console.log('Final client transactions:', detailedTransactions);
+      return { data: detailedTransactions, error: null };
+    } else {
+      console.log('No transactions found after filtering');
+      return { data: [], error: null };
+    }
   } catch (err) {
     console.error('Exception in getClientTransactions:', err);
     return { data: null, error: { message: 'Failed to fetch client transactions' } }
@@ -1335,40 +1507,78 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
   try {
     console.log('Fetching transactions for freelancer:', freelancerId);
 
-    const { data: transactions, error: transactionsError } = await supabase
+    // First, let's get all transactions for this freelancer to debug
+    const { data: allTransactions, error: allTransactionsError } = await supabase
       .from('transactions')
       .select(`
         *,
-        projects!inner(
+        projects(
           project_id,
           project_name,
           client_id,
           project_status_workflow,
-          client_profiles!projects_client_id_fkey(
-            full_name
-          ),
-          freelancer_profiles!projects_freelancer_id_fkey(
-            full_name
-          )
+          freelancer_id
         )
       `)
       .eq('projects.freelancer_id', freelancerId)
-      .in('projects.project_status_workflow', [
-        'Fund Secured',
-        'Production in Progress',
-        'AI Verified',
-        'Under Manual Revision',
-        'Successfully Closed'
-      ])
       .order('created_at', { ascending: false });
 
-    if (transactionsError) {
-      console.error('Error fetching freelancer transactions:', transactionsError);
-      return { data: null, error: transactionsError };
+    if (allTransactionsError) {
+      console.error('Error fetching all freelancer transactions:', allTransactionsError);
+      return { data: null, error: allTransactionsError };
     }
 
-    console.log('Freelancer transactions:', transactions);
-    return { data: transactions, error: null };
+    console.log('All transactions for freelancer:', allTransactions);
+
+    // Now filter out the ones we don't want
+    const filteredTransactions = allTransactions?.filter(transaction => {
+      const projectStatus = transaction.projects?.project_status_workflow;
+      console.log('Transaction:', transaction.transaction_id, 'Project status:', projectStatus);
+      
+      return projectStatus && 
+             projectStatus !== 'Project Created' && 
+             projectStatus !== 'Assigned to Freelancer' &&
+             projectStatus !== 'Checklist Signed off';
+    }) || [];
+
+    console.log('Filtered freelancer transactions:', filteredTransactions);
+
+    // Now get the full details for filtered transactions
+    if (filteredTransactions.length > 0) {
+      const transactionIds = filteredTransactions.map(t => t.id);
+      
+      const { data: detailedTransactions, error: detailedError } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          projects(
+            project_id,
+            project_name,
+            client_id,
+            project_status_workflow,
+            freelancer_id,
+            client_profiles!projects_client_id_fkey(
+              full_name
+            ),
+            freelancer_profiles!projects_freelancer_id_fkey(
+              full_name
+            )
+          )
+        `)
+        .in('id', transactionIds)
+        .order('created_at', { ascending: false });
+
+      if (detailedError) {
+        console.error('Error fetching detailed freelancer transactions:', detailedError);
+        return { data: null, error: detailedError };
+      }
+
+      console.log('Final freelancer transactions:', detailedTransactions);
+      return { data: detailedTransactions, error: null };
+    } else {
+      console.log('No freelancer transactions found after filtering');
+      return { data: [], error: null };
+    }
   } catch (err) {
     console.error('Exception in getFreelancerTransactions:', err);
     return { data: null, error: { message: 'Failed to fetch freelancer transactions' } }

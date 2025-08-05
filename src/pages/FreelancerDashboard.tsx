@@ -282,6 +282,9 @@ const FreelancerDashboard: React.FC = () => {
         // Don't fail the entire operation if email fails
       }
 
+      // Reload transactions to reflect the status change
+      await loadTransactions();
+      
       // Close the modal
       setShowDeliverablesModal(false);
       setCurrentProjectStatus('');

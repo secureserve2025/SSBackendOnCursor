@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow } from '../lib/supabase';
 import AddProjectForm from '../components/AddProjectForm';
 
 interface ProfileData {
@@ -74,13 +74,7 @@ const ClientDashboard: React.FC = () => {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [savingDeliverables, setSavingDeliverables] = useState(false);
 
-  // New state for Fund Escrow functionality
-  const [showFundEscrowModal, setShowFundEscrowModal] = useState(false);
-  const [escrowProjects, setEscrowProjects] = useState<any[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [escrowValue, setEscrowValue] = useState<string>('');
-  const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
+  // New state for transactions
   const [transactions, setTransactions] = useState<any[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
 
@@ -101,6 +95,12 @@ const ClientDashboard: React.FC = () => {
   // Checklist sending state
   const [currentProjectStatus, setCurrentProjectStatus] = useState<string>('');
   const [isSendingChecklist, setIsSendingChecklist] = useState(false);
+
+  // Fund Escrow state
+  const [showFundEscrowModal, setShowFundEscrowModal] = useState(false);
+  const [escrowProjects, setEscrowProjects] = useState<any[]>([]);
+  const [selectedEscrowProject, setSelectedEscrowProject] = useState<any>(null);
+  const [isFundingEscrow, setIsFundingEscrow] = useState(false);
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -245,66 +245,7 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
-  const loadEscrowProjects = async () => {
-    try {
-      const { user } = await getCurrentUser();
-      if (user) {
-        const { data, error } = await getClientProjectsForEscrow(user.id);
-        if (error) {
-          console.error('Error loading escrow projects:', error);
-        } else {
-          setEscrowProjects(data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Exception loading escrow projects:', error);
-    }
-  };
 
-  const handleFundEscrowClick = async () => {
-    await loadEscrowProjects();
-    setShowFundEscrowModal(true);
-  };
-
-  const handleProjectSelect = (projectId: string) => {
-    setSelectedProjectId(projectId);
-    const project = escrowProjects.find(p => p.id === projectId);
-    setSelectedProject(project);
-  };
-
-  const handleTransfer = async () => {
-    if (!selectedProjectId || !escrowValue || parseFloat(escrowValue) <= 0) {
-      alert('Please select a project and enter a valid amount.');
-      return;
-    }
-
-    setIsCreatingTransaction(true);
-    try {
-      const { data, error } = await createEscrowTransaction({
-        project_id: selectedProjectId,
-        value: parseFloat(escrowValue)
-      });
-
-      if (error) {
-        console.error('Error creating transaction:', error);
-        alert('Failed to create transaction. Please try again.');
-      } else {
-        console.log('Transaction created successfully:', data);
-        alert('Transaction created successfully!');
-        setShowFundEscrowModal(false);
-        setSelectedProjectId('');
-        setSelectedProject(null);
-        setEscrowValue('');
-        await loadTransactions(); // Refresh transactions list
-        await loadEscrowProjects(); // Refresh escrow projects list to remove funded project
-      }
-    } catch (error) {
-      console.error('Exception creating transaction:', error);
-      alert('Failed to create transaction. Please try again.');
-    } finally {
-      setIsCreatingTransaction(false);
-    }
-  };
 
   const handleDeliverablesClick = (deliverables: any[], projectStatus: string, projectId: string) => {
     setSelectedDeliverables(deliverables);
@@ -312,8 +253,8 @@ const ClientDashboard: React.FC = () => {
     setCurrentProjectStatus(projectStatus);
     setShowDeliverablesModal(true);
     
-    // Only enable editing for "Project Created" status
-    if (projectStatus === 'Project Created') {
+    // Enable editing for "Project Created" and "Assigned to Freelancer" status
+    if (projectStatus === 'Project Created' || projectStatus === 'Assigned to Freelancer') {
       setIsEditingDeliverables(true);
       // If no deliverables exist, initialize with 3 empty rows
       if (!deliverables || deliverables.length === 0) {
@@ -409,7 +350,12 @@ const ClientDashboard: React.FC = () => {
     if (project.project_status_workflow === 'Project Created') {
       setSelectedProjectForModify(project);
       setModifyFreelancerId(project.freelancer_id || '');
-      setModifyProjectValue(project.transaction_value || '');
+      
+      // Get transaction value from transactions table
+      const projectTransaction = transactions.find(t => t.project_id === project.id);
+      const transactionValue = projectTransaction ? projectTransaction.transaction_value : '';
+      setModifyProjectValue(transactionValue ? transactionValue.toString() : '');
+      
       setShowDeleteConfirm(false);
       setModifyErrors({ freelancerId: '', projectValue: '' });
       
@@ -462,7 +408,11 @@ const ClientDashboard: React.FC = () => {
     }
 
     try {
-      // Update project
+      console.log('Updating project:', selectedProjectForModify.id, {
+        freelancer_id: modifyFreelancerId
+      });
+
+      // Update project with freelancer_id only
       const { error: projectError } = await updateProject(selectedProjectForModify.id, {
         freelancer_id: modifyFreelancerId
       });
@@ -477,9 +427,16 @@ const ClientDashboard: React.FC = () => {
       const projectTransaction = transactions.find(t => t.project_id === selectedProjectForModify.id);
       if (projectTransaction) {
         const newValue = parseFloat(modifyProjectValue);
-        const { error: transactionError } = await updateTransaction(projectTransaction.transaction_id, {
+        console.log('Updating transaction:', projectTransaction.id || projectTransaction.transaction_id, {
           transaction_value: newValue
         });
+        
+        const { error: transactionError } = await updateTransaction(
+          projectTransaction.id || projectTransaction.transaction_id, 
+          {
+            transaction_value: newValue
+          }
+        );
 
         if (transactionError) {
           console.error('Error updating transaction:', transactionError);
@@ -495,6 +452,7 @@ const ClientDashboard: React.FC = () => {
       setShowProjectModifyModal(false);
       setSelectedProjectForModify(null);
       setIsModifying(false);
+      setModifyErrors({ freelancerId: '', projectValue: '' });
       alert('Project updated successfully!');
     } catch (error) {
       console.error('Error updating project:', error);
@@ -507,7 +465,11 @@ const ClientDashboard: React.FC = () => {
     setModifyErrors({ freelancerId: '', projectValue: '' });
     if (selectedProjectForModify) {
       setModifyFreelancerId(selectedProjectForModify.freelancer_id || '');
-      setModifyProjectValue(selectedProjectForModify.transaction_value || '');
+      
+      // Reset transaction value from transactions table
+      const projectTransaction = transactions.find(t => t.project_id === selectedProjectForModify.id);
+      const transactionValue = projectTransaction ? projectTransaction.transaction_value : '';
+      setModifyProjectValue(transactionValue ? transactionValue.toString() : '');
     }
   };
 
@@ -579,6 +541,70 @@ const ClientDashboard: React.FC = () => {
       alert('Failed to send checklist to freelancer. Please try again.');
     } finally {
       setIsSendingChecklist(false);
+    }
+  };
+
+  // Fund Escrow functions
+  const handleFundEscrowClick = async () => {
+    try {
+      const { user } = await getCurrentUser();
+      if (!user) {
+        alert('User not authenticated. Please log in again.');
+        return;
+      }
+
+      console.log('Loading escrow projects for user:', user.id);
+      const { data, error } = await getClientProjectsForEscrow(user.id);
+      
+      if (error) {
+        console.error('Error loading escrow projects:', error);
+        alert(`Failed to load projects for funding: ${error.message || 'Unknown error'}`);
+        return;
+      }
+
+      console.log('Escrow projects loaded:', data);
+      setEscrowProjects(data || []);
+      setShowFundEscrowModal(true);
+    } catch (error) {
+      console.error('Error opening fund escrow modal:', error);
+      alert(`Failed to open fund escrow modal: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleEscrowProjectSelect = (project: any) => {
+    setSelectedEscrowProject(project);
+  };
+
+  const handleTransferMoney = async () => {
+    if (!selectedEscrowProject) return;
+
+    setIsFundingEscrow(true);
+    try {
+      console.log('Funding escrow for project:', selectedEscrowProject.id, 'with value:', selectedEscrowProject.transaction_value);
+      
+      const { data, error } = await fundEscrow(selectedEscrowProject.id, selectedEscrowProject.transaction_value);
+      
+      if (error) {
+        console.error('Error funding escrow:', error);
+        alert(`Failed to fund escrow: ${error.message || 'Unknown error'}`);
+        return;
+      }
+
+      alert('Escrow funded successfully! Project status updated to "Fund Secured".');
+      
+      // Reload projects and transactions
+      await loadProjects();
+      await loadTransactions();
+      
+      // Close the modal
+      setShowFundEscrowModal(false);
+      setSelectedEscrowProject(null);
+      setEscrowProjects([]);
+    } catch (error) {
+      console.error('Exception funding escrow:', error);
+      alert(`Failed to fund escrow: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsFundingEscrow(false);
     }
   };
 
@@ -1357,7 +1383,7 @@ const ClientDashboard: React.FC = () => {
               
 
               
-                              {/* Send Checklist to Freelancer Button - Show for "Project Created" status and not in editing mode */}
+                              {/* Send Checklist to Freelancer Button - Show only for "Project Created" status and not in editing mode */}
               {currentProjectStatus === 'Project Created' && (
                 <div className="mt-6 pt-4 border-t border-gray-600">
                   <div className="text-center">
@@ -1511,7 +1537,7 @@ const ClientDashboard: React.FC = () => {
                   ) : (
                     <input
                       type="text"
-                      value={`₹${modifyProjectValue}`}
+                      value={modifyProjectValue ? `₹${modifyProjectValue}` : ''}
                       disabled
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
                     />
@@ -1535,8 +1561,8 @@ const ClientDashboard: React.FC = () => {
                         </button>
                         <button
                           onClick={handleModifySave}
-                          disabled
-                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-gray-400 text-sm rounded cursor-not-allowed"
+                          disabled={!isModifying}
+                          className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:text-gray-400 text-white text-sm rounded transition-colors"
                         >
                           <Save className="h-4 w-4" />
                           <span>Save</span>
@@ -1621,13 +1647,13 @@ const ClientDashboard: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <button
-              disabled
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-600 text-gray-400 rounded-lg font-medium cursor-not-allowed opacity-50"
-              aria-label="Fund Escrow (Disabled)"
-              title="Fund Escrow is now automatically handled when creating projects"
+              onClick={handleFundEscrowClick}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+              aria-label="Fund Escrow"
+              title="Fund escrow for projects with Checklist Signed off status"
             >
               <CreditCard className="h-4 w-4" aria-hidden="true" />
-              <span>Fund Escrow (Disabled)</span>
+              <span>Fund Escrow</span>
             </button>
           </div>
         </div>
@@ -1720,128 +1746,7 @@ const ClientDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Fund Escrow Modal */}
-      {showFundEscrowModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">Fund Escrow</h3>
-              <button
-                onClick={() => setShowFundEscrowModal(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              {/* Project ID Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Project ID *
-                </label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => handleProjectSelect(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  required
-                >
-                  <option value="">Select a project</option>
-                  {escrowProjects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.project_id} - {project.project_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Project Name (Read-only) */}
-              {selectedProject && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Project Name
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedProject.project_name}
-                    readOnly
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
-                  />
-                </div>
-              )}
-
-              {/* Freelancer ID (Read-only) */}
-              {selectedProject && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Freelancer ID
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedProject.freelancer_id}
-                    readOnly
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
-                  />
-                </div>
-              )}
-
-              {/* Freelancer Name (Read-only) */}
-              {selectedProject && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Freelancer Name
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedProject.freelancer_profiles?.full_name || 'N/A'}
-                    readOnly
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300"
-                  />
-                </div>
-              )}
-
-              {/* Value Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Value (₹) *
-                </label>
-                <input
-                  type="number"
-                  value={escrowValue}
-                  onChange={(e) => setEscrowValue(e.target.value)}
-                  placeholder="Enter amount (e.g., 5000.00)"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  required
-                />
-              </div>
-
-              {/* Transfer Button */}
-              <div className="pt-4">
-                <button
-                  onClick={handleTransfer}
-                  disabled={!selectedProjectId || !escrowValue || isCreatingTransaction}
-                  className={`w-full py-2 px-4 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 ${
-                    !selectedProjectId || !escrowValue || isCreatingTransaction
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isCreatingTransaction ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Processing...</span>
-                    </div>
-                  ) : (
-                    'Transfer'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -2379,6 +2284,101 @@ const ClientDashboard: React.FC = () => {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* Fund Escrow Modal */}
+      {showFundEscrowModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Fund Escrow</h3>
+                <button
+                  onClick={() => {
+                    setShowFundEscrowModal(false);
+                    setSelectedEscrowProject(null);
+                    setEscrowProjects([]);
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Project Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Select Project
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const project = escrowProjects.find(p => p.id === e.target.value);
+                      handleEscrowProjectSelect(project);
+                    }}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="">Choose a project...</option>
+                    {escrowProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.project_id} - {project.project_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Project Value */}
+                {selectedEscrowProject && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Project Value (₹)
+                    </label>
+                    <input
+                      type="text"
+                      value={`₹${selectedEscrowProject.transaction_value?.toLocaleString() || '0'}`}
+                      disabled
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+                    />
+                  </div>
+                )}
+
+                {/* Transfer Button */}
+                {selectedEscrowProject && (
+                  <div className="pt-4">
+                    <button
+                      onClick={handleTransferMoney}
+                      disabled={isFundingEscrow}
+                      className="w-full inline-flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors"
+                    >
+                      {isFundingEscrow ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4" />
+                          <span>Transfer the Money</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* No Projects Message */}
+                {escrowProjects.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <CreditCard className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <p className="text-gray-400 text-sm">No projects available for funding.</p>
+                    <p className="text-gray-500 text-xs mt-1">Only projects with "Checklist Signed off" status can be funded.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
