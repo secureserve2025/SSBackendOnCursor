@@ -11,10 +11,11 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Project Management**: Create, track, and manage projects with AI-powered deliverables
 - **AI Video Production Specialist**: Advanced AI agent for generating project deliverables
 - **Email Notifications**: Automated email notifications for project assignments using EmailJS
-- **Real-time Messaging**: Built-in communication system
+- **Real-time Messaging**: Built-in communication system with project-based messaging
 - **Escrow Transaction System**: Secure payment processing with auto-calculated fees
 - **Transaction Tracking**: Monitor payments and project finances with role-based access
 - **Work Product Upload System**: Secure video file upload with proper project mapping
+- **Work Verification System**: AI and manual verification options for uploaded work
 - **Responsive Design**: Modern UI with dark mode support
 - **Freelancer ID Validation**: Real-time validation of freelancer IDs in project creation
 
@@ -26,10 +27,12 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Project Tracking**: Monitor project progress and deliverables
 - **Escrow Payment System**: Secure fund escrow with automatic project status updates
 - **Transaction Management**: Create and track escrow transactions with auto-calculated fees
-- **Communication**: Direct messaging with freelancers
+- **Communication**: Direct messaging with freelancers through project-based messaging system
 - **File Upload System**: Drag-and-drop file uploads with progress tracking
 - **Email Notifications**: Automatic email notifications to freelancers when projects are created
 - **Work Product Review**: View and review uploaded final work from freelancers
+- **Work Verification**: Verify uploaded work with AI analysis or manual review options
+- **Manual Revision Process**: Initiate manual revision workflow with status updates
 
 ### **Freelancer Features**
 - **Profile Showcase**: Professional profile with skills and portfolio
@@ -37,7 +40,7 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Work Management**: Track active projects and deadlines
 - **Earnings Tracking**: Monitor income and payment history with status-based filtering
 - **Transaction Monitoring**: View escrow transactions in read-only mode
-- **Client Communication**: Direct messaging with clients
+- **Client Communication**: Direct messaging with clients through project-based messaging system
 - **Email Notifications**: Receive email notifications for new project assignments
 - **Deliverables Management**: Review and agree to project deliverables with status updates
 - **Client Notifications**: Automatically notify clients when deliverables are signed off
@@ -60,6 +63,7 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **Real-time Subscriptions**: Live data updates
 - **Authentication**: Built-in user management with automatic profile creation
 - **AI Integration**: OpenAI GPT-4 integration for intelligent project assistance
+- **Edge Functions**: Serverless backend functions for AI chat and email services
 
 ### **Email & Communication**
 - **EmailJS**: Automated email notifications for project assignments and status updates
@@ -73,6 +77,86 @@ A modern, secure freelancing platform built with React, TypeScript, and Supabase
 - **OpenAI API**: Advanced AI capabilities for project assistance
 - **PDF Processing**: pdf-parse for document analysis
 - **Document Processing**: mammoth for DOC/DOCX file handling
+
+## 🏗️ Backend Architecture
+
+### **Architecture Type**: JAMstack (JavaScript, APIs, Markup)
+- **Frontend**: Vite + React + TypeScript (SPA)
+- **Backend**: Supabase (Database, Auth, Storage, Edge Functions)
+- **APIs**: OpenAI, Resend
+- **Deployment**: Static hosting + Supabase
+
+### **Supabase Edge Functions**
+```
+supabase/functions/
+├── ai-chat/index.ts          # AI-powered deliverable generation
+└── send-email/index.ts       # Email notification service
+```
+
+#### **AI Chat Function** (`ai-chat/index.ts`)
+- **Purpose**: AI-powered deliverable generation
+- **Technology**: Deno + OpenAI API
+- **Features**:
+  - OpenAI GPT-4 integration
+  - Conversation management
+  - Database persistence
+  - Error handling & rate limiting
+  - CORS support
+
+#### **Email Service Function** (`send-email/index.ts`)
+- **Purpose**: Email notifications
+- **Technology**: Deno + Resend API
+- **Features**:
+  - Resend API integration
+  - HTML email templates
+  - CORS handling
+
+### **API Integration Patterns**
+
+#### **A. Supabase Client Pattern**
+```typescript
+// Direct database operations
+const { data, error } = await supabase
+  .from('projects')
+  .select('*')
+  .eq('client_id', userId)
+```
+
+#### **B. Edge Function Calls**
+```typescript
+// AI Chat API calls
+const response = await fetch('/functions/v1/ai-chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'start', projectId, projectData })
+})
+```
+
+#### **C. External API Integrations**
+```typescript
+// OpenAI API (via Edge Functions)
+const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') })
+
+// Resend API (via Edge Functions)
+const resendResponse = await fetch('https://api.resend.com/emails', {
+  method: 'POST',
+  headers: { 'Authorization': `Bearer ${resendApiKey}` }
+})
+```
+
+### **Environment Configuration**
+```bash
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# OpenAI Configuration
+VITE_OPENAI_API_KEY=sk-your_openai_api_key
+
+# Edge Function Environment Variables
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+RESEND_API_KEY=your_resend_api_key
+```
 
 ## 📁 Project Structure
 
@@ -98,7 +182,9 @@ SSBackendOnCursor/
 │   │   ├── FreelancerDashboard.tsx
 │   │   └── ClientDashboard.tsx
 │   ├── lib/
-│   │   └── supabase.ts      # Enhanced Supabase client & functions
+│   │   ├── supabase.ts      # Enhanced Supabase client & functions
+│   │   ├── videoUtils.ts    # Video file handling utilities
+│   │   └── videoReuploadUtils.ts # Video reupload functionality
 │   ├── services/
 │   │   └── aiVideoAgent.js  # AI video production specialist
 │   ├── utils/
@@ -112,6 +198,9 @@ SSBackendOnCursor/
 │   ├── App.tsx              # Main app component
 │   ├── main.tsx             # App entry point
 │   └── index.css            # Global styles
+├── supabase/functions/      # Backend Edge Functions
+│   ├── ai-chat/            # AI chat API endpoint
+│   └── send-email/         # Email service API endpoint
 ├── database_schema.sql      # Complete database schema
 ├── projects_schema.sql      # Project-related database schema
 ├── update_projects_and_add_new_tables.sql # Project workflow tables
@@ -130,7 +219,8 @@ SSBackendOnCursor/
 ├── diagnose_signup_issue.sql # Signup diagnostics
 ├── test_supabase_connection.sql # Connection testing
 ├── setup_complete_database.sql # Complete database setup with transactions and messages
-├── supabase/functions/ai-chat/index.ts # AI chat API endpoint
+├── fix_messages_table.sql      # Messages table fixes and project_messages table creation
+├── assign_projects_to_client.sql # Project assignment for testing
 ├── test-ai-system-simple.js # AI system testing script
 ├── test-ai-direct.js        # Direct AI testing for browser console
 ├── PROFILE_SETUP_GUIDE.md   # Profile system guide
@@ -236,6 +326,27 @@ Visit `http://localhost:5173`
 4. **Review & Approval**: Client reviews and accepts AI-generated deliverables
 5. **Integration**: Seamless transfer to project deliverables section
 
+## 🔍 Work Verification System
+
+### **Client Dashboard Verification Features**
+- **Verify Work Button**: Available for projects with "Production in Progress" and "Under Manual Revision" status
+- **AI Verification**: Automated analysis of uploaded work products
+- **Manual Review**: Client-initiated manual review process
+- **Status Management**: Automatic project status updates based on verification actions
+
+### **Verification Workflow**
+1. **Work Upload**: Freelancer uploads final work products
+2. **Verification Trigger**: Client clicks "Verify Work" button
+3. **AI Analysis**: Automated analysis of uploaded content
+4. **Manual Review Option**: Client can initiate manual review process
+5. **Status Updates**: Project status automatically updates based on verification results
+
+### **Manual Revision Process**
+- **Manual Review Button**: Available in verification modal
+- **Status Update**: Changes project status to "Under Manual Revision"
+- **User Guidance**: Displays message "Use messages section to complete Manual Revision"
+- **Modal Persistence**: Verification modal stays open until manually closed
+
 ## 🔒 Security Features
 
 ### **Environment Variable Security**
@@ -261,6 +372,22 @@ Visit `http://localhost:5173`
 - **🔍 Environment Checks**: Runtime validation of API keys and database connections
 - **📊 Test Results**: Comprehensive testing shows all systems operational
 
+### **Authentication & Authorization**
+- **Supabase Auth**: Secure user authentication with enhanced error handling
+- **Role-based Access**: Separate client/freelancer permissions
+- **Session Management**: Automatic session handling
+
+### **Data Protection**
+- **Row Level Security (RLS)**: Database-level access control with public read policies
+- **Input Validation**: Client-side and server-side validation with real-time feedback
+- **Secure API**: Supabase handles API security
+- **File Upload Security**: Secure file handling with size and type validation
+
+### **Profile Security**
+- **Encrypted Storage**: Sensitive data encryption
+- **Masked Display**: Aadhar numbers masked for privacy
+- **Secure Validation**: Robust input validation with visual indicators
+
 ## 🗄️ Database Schema
 
 ### **Core Tables**
@@ -272,7 +399,15 @@ Visit `http://localhost:5173`
 - **`work_products`**: Final work products from freelancers with video metadata and storage mapping
 - **`verification_reports`**: Project verification and quality reports
 - **`transactions`**: Escrow payment records with auto-calculated fees and status tracking
-- **`messages`**: Communication between users with auto-generated message IDs
+- **`project_messages`**: Communication between users with auto-generated message IDs and project-based messaging
+
+### **Messaging System**
+- **Project-based Messaging**: Messages are linked to specific projects for organized communication
+- **Real-time Updates**: Live message updates using Supabase real-time subscriptions
+- **User Authentication**: Proper mapping between auth user IDs and profile IDs
+- **Message Validation**: Input validation with character limits and error handling
+- **Read Status Tracking**: Message read/unread status for better user experience
+- **Sender Information**: Display sender names and timestamps for each message
 
 ### **Project Workflow System**
 - **Project Status Tracking**: 9-stage workflow from creation to completion
@@ -311,24 +446,9 @@ Visit `http://localhost:5173`
 - **Email Notifications**: Automated email alerts for project assignments
 - **Escrow Fee Calculation**: Automatic 3.5% fee calculation for both client and freelancer
 - **Role-based Transaction Access**: Clients can create transactions, freelancers can only view
-
-## 🔐 Security Features
-
-### **Authentication & Authorization**
-- **Supabase Auth**: Secure user authentication with enhanced error handling
-- **Role-based Access**: Separate client/freelancer permissions
-- **Session Management**: Automatic session handling
-
-### **Data Protection**
-- **Row Level Security (RLS)**: Database-level access control with public read policies
-- **Input Validation**: Client-side and server-side validation with real-time feedback
-- **Secure API**: Supabase handles API security
-- **File Upload Security**: Secure file handling with size and type validation
-
-### **Profile Security**
-- **Encrypted Storage**: Sensitive data encryption
-- **Masked Display**: Aadhar numbers masked for privacy
-- **Secure Validation**: Robust input validation with visual indicators
+- **Project-based Messaging**: Organized communication linked to specific projects
+- **Real-time Message Updates**: Live message synchronization using Supabase subscriptions
+- **User Authentication Mapping**: Proper handling of auth user IDs vs profile IDs
 
 ## 🎨 UI/UX Features
 
@@ -345,6 +465,9 @@ Visit `http://localhost:5173`
 - **Modal Dialogs**: Confirmation and information modals
 - **Freelancer ID Validation**: Visual feedback with icons and colors
 - **Email Notifications**: Professional email templates with dynamic content
+- **Messaging Interface**: Project-based messaging with real-time updates
+- **Message Validation**: Input validation with character limits and error handling
+- **Real-time Subscriptions**: Live message synchronization and status updates
 
 ### **Project Creation Features**
 - **System-generated Project IDs**: Auto-generated V+4 digits format
@@ -454,6 +577,8 @@ npm run build
 - `fix_signup_triggers.sql` - Signup trigger fixes
 - `restore_freelancer_profile.sql` - Profile restoration
 - `check_and_restore_client_profile.sql` - Client profile fixes
+- `fix_messages_table.sql` - Messages table fixes and project_messages table creation
+- `assign_projects_to_client.sql` - Project assignment for testing messaging functionality
 
 ### **Testing Scripts**
 - `test_database_tables.sql` - Database table testing
@@ -526,7 +651,26 @@ npm run build
 - Restart development server after making `.env` changes
 - Run `node test-ai-system-simple.js` to validate environment configuration
 
+**Work Verification Issues**
+- Ensure project status is "Production in Progress" or "Under Manual Revision"
+- Check that work products have been uploaded by freelancer
+- Verify verification modal appears when "Verify Work" button is clicked
+- Check browser console for any JavaScript errors during verification process
+
+**Messaging System Issues**
+- Run `fix_messages_table.sql` to create the project_messages table with proper structure
+- Check that user authentication is working properly (auth user ID vs profile ID mapping)
+- Verify projects are assigned to the correct client/freelancer profiles
+- Use `assign_projects_to_client.sql` to reassign projects for testing if needed
+- Check browser console for any authentication or permission errors
+- Ensure real-time subscriptions are working for live message updates
+
 ### **Recent Fixes Applied**
+- ✅ **💬 Messaging System**: Complete project-based messaging system with real-time updates
+- ✅ **🔧 Database Schema**: Fixed project_messages table with proper column structure
+- ✅ **🔐 Authentication**: Fixed user ID mapping between auth users and profile IDs
+- ✅ **🚫 Error Prevention**: Eliminated false "User not authenticated" errors during loading
+- ✅ **📱 UI/UX**: Enhanced messaging interface with project selection and real-time updates
 - ✅ **🔒 Security Improvements**: Removed all hardcoded API keys from source code
 - ✅ **🔐 Environment Variable Security**: Proper `.env` file configuration with git ignore protection
 - ✅ **🗑️ Repository Cleanup**: Removed sensitive files containing API keys
@@ -561,6 +705,9 @@ npm run build
 - ✅ **Storage Organization**: Structured file storage with user and project-based organization
 - ✅ **Error Handling & Cleanup**: Robust error handling with storage cleanup on database failures
 - ✅ **Enhanced UI/UX**: Improved upload modal with detailed file information and validation feedback
+- ✅ **Work Verification System**: Complete verification workflow with AI and manual review options
+- ✅ **Manual Revision Process**: Enhanced manual review functionality with status updates and user guidance
+- ✅ **Verification Modal Improvements**: Persistent modal with clear user feedback and status management
 
 ## 📄 License
 

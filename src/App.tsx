@@ -13,6 +13,7 @@ import FreelancerSignup from './pages/FreelancerSignup';
 import ClientSignup from './pages/ClientSignup';
 import FreelancerDashboard from './pages/FreelancerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
+import Messages from './pages/Messages';
 import { checkOpenAIConfiguration } from './lib/supabase';
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
         <Route path="/signup/client" element={<ClientSignup />} />
         <Route path="/freelancer/dashboard" element={<FreelancerDashboard />} />
         <Route path="/client/dashboard" element={<ClientDashboard />} />
+        <Route path="/messages" element={<Messages />} />
         <Route path="/" element={
           <div className="min-h-screen transition-colors duration-300 bg-gray-900">
             {/* Header Component */}

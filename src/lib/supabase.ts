@@ -701,21 +701,177 @@ export const createTransaction = async (transactionData: any) => {
 
 // Message Management Functions
 export const getMessages = async (projectId: string) => {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: true })
-  return { data, error }
+  try {
+    console.log('Fetching messages for project:', projectId);
+    
+    const { data, error } = await supabase
+      .from('messages')
+      .select(`
+        *,
+        client_profiles!messages_client_id_fkey(
+          full_name,
+          client_id
+        ),
+        freelancer_profiles!messages_freelancer_id_fkey(
+          full_name,
+          freelancer_id
+        )
+      `)
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
+    }
+
+    console.log('Messages fetched successfully:', data?.length || 0);
+    return { data, error: null };
+  } catch (error) {
+    console.error('Exception in getMessages:', error);
+    return { data: null, error: { message: 'Failed to fetch messages' } };
+  }
+}
+
+export const getMessagesForProject = async (projectId: string) => {
+  try {
+    console.log('Fetching messages for project:', projectId);
+    
+    const { data, error } = await supabase
+      .from('project_messages')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
+    }
+
+    // Transform the data to match the expected interface
+    const transformedData = data?.map(message => ({
+      ...message,
+      message_text: message.message // Transform 'message' to 'message_text' for frontend compatibility
+    })) || [];
+
+    console.log('Messages fetched successfully:', transformedData.length);
+    return { data: transformedData, error: null };
+  } catch (error) {
+    console.error('Exception in getMessagesForProject:', error);
+    return { data: null, error: { message: 'Failed to fetch messages' } };
+  }
 }
 
 export const sendMessage = async (messageData: any) => {
-  const { data, error } = await supabase
-    .from('messages')
-    .insert(messageData)
-    .select()
-    .single()
-  return { data, error }
+  try {
+    console.log('Sending message:', messageData);
+    
+    // Transform message_text to message for database compatibility
+    const dbMessageData = {
+      ...messageData,
+      message: messageData.message_text,
+      message_text: undefined // Remove the incorrect field
+    };
+    delete dbMessageData.message_text;
+    
+    const { data, error } = await supabase
+      .from('project_messages')
+      .insert(dbMessageData)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error sending message:', error);
+      throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
+    }
+
+    console.log('Message sent successfully:', data);
+    return { data, error: null };
+  } catch (error) {
+    console.error('Exception in sendMessage:', error);
+    return { data: null, error: { message: 'Failed to send message' } };
+  }
+}
+
+export const getProjectsForMessaging = async (userId: string, userType: 'client' | 'freelancer') => {
+  try {
+    console.log('Fetching projects for messaging:', { userId, userType });
+    
+    // First, let's get all projects to see what exists
+    const { data: allProjects, error: allProjectsError } = await supabase
+      .from('projects')
+      .select('id, project_id, project_name, client_id, freelancer_id, project_status_workflow')
+      .limit(5);
+    
+    console.log('All projects (first 5):', JSON.stringify(allProjects, null, 2));
+    console.log('All projects error:', allProjectsError);
+    
+    // Let's also check what client profiles exist
+    const { data: clientProfiles, error: clientProfilesError } = await supabase
+      .from('client_profiles')
+      .select('id, client_id, full_name, email')
+      .limit(5);
+    
+    console.log('Client profiles (first 5):', JSON.stringify(clientProfiles, null, 2));
+    console.log('Client profiles error:', clientProfilesError);
+    
+    let query;
+    if (userType === 'client') {
+      // Get projects where user is the client
+      query = supabase
+        .from('projects')
+        .select(`
+          id,
+          project_id,
+          project_name,
+          client_id,
+          freelancer_id,
+          project_status_workflow,
+          created_at,
+          updated_at,
+          freelancer_profiles!projects_freelancer_id_fkey(
+            full_name,
+            freelancer_id
+          )
+        `)
+        .eq('client_id', userId);
+    } else {
+      // Get projects where user is the freelancer
+      query = supabase
+        .from('projects')
+        .select(`
+          id,
+          project_id,
+          project_name,
+          client_id,
+          freelancer_id,
+          project_status_workflow,
+          created_at,
+          updated_at,
+          client_profiles!projects_client_id_fkey(
+            full_name,
+            client_id
+          )
+        `)
+        .eq('freelancer_id', userId);
+    }
+
+    const { data, error } = await query.order('updated_at', { ascending: false });
+
+    console.log('Query result - data:', data);
+    console.log('Query result - error:', error);
+
+    if (error) {
+      console.error('Error fetching projects for messaging:', error);
+      throw new Error(`Database error: ${error.message || 'Unknown database error'}`);
+    }
+
+    console.log('Projects for messaging fetched successfully:', data?.length || 0);
+    return { data, error: null };
+  } catch (error) {
+    console.error('Exception in getProjectsForMessaging:', error);
+    return { data: null, error: { message: 'Failed to fetch projects for messaging' } };
+  }
 }
 
 // Utility Functions
