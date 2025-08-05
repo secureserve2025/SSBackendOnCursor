@@ -103,6 +103,7 @@ const ClientDashboard: React.FC = () => {
   const [showWorkVerificationModal, setShowWorkVerificationModal] = useState(false);
   const [selectedProjectForVerification, setSelectedProjectForVerification] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [showManualRevisionMessage, setShowManualRevisionMessage] = useState(false);
   const [showFundEscrowModal, setShowFundEscrowModal] = useState(false);
   const [escrowProjects, setEscrowProjects] = useState<any[]>([]);
   const [selectedEscrowProject, setSelectedEscrowProject] = useState<any>(null);
@@ -399,9 +400,9 @@ const ClientDashboard: React.FC = () => {
     
     setIsVerifying(true);
     try {
-      // Update project status to "Under Manual Review"
+      // Update project status to "Under Manual Revision"
       const { error } = await updateProject(selectedProjectForVerification.id, {
-        project_status_workflow: 'Under Manual Review'
+        project_status_workflow: 'Under Manual Revision'
       });
 
       if (error) {
@@ -410,14 +411,13 @@ const ClientDashboard: React.FC = () => {
         return;
       }
 
-      alert('Manual review initiated successfully. The freelancer will have 48-72 hours to revise and resubmit.');
+      // Show popup message
+      setShowManualRevisionMessage(true);
       
       // Reload projects to reflect the status change
       await loadProjects();
       
-      // Close modal
-      setShowWorkVerificationModal(false);
-      setSelectedProjectForVerification(null);
+      // Don't close modal automatically - let user close it manually
     } catch (error) {
       console.error('Error in manual review:', error);
       alert('Failed to initiate manual review. Please try again.');
@@ -1336,8 +1336,8 @@ const ClientDashboard: React.FC = () => {
                             <Play className="h-4 w-4" />
                             <span className="text-xs">Play</span>
                           </button>
-                          {/* Show Verify Work button only for "Production in Progress" status */}
-                          {project.project_status_workflow === 'Production in Progress' && (
+                          {/* Show Verify Work button for "Production in Progress" and "Under Manual Revision" status */}
+                          {(project.project_status_workflow === 'Production in Progress' || project.project_status_workflow === 'Under Manual Revision') && (
                             <button
                               onClick={() => handleVerifyWorkClick(project)}
                               className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
@@ -2507,6 +2507,7 @@ const ClientDashboard: React.FC = () => {
                   onClick={() => {
                     setShowWorkVerificationModal(false);
                     setSelectedProjectForVerification(null);
+                    setShowManualRevisionMessage(false);
                   }}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
@@ -2577,6 +2578,16 @@ const ClientDashboard: React.FC = () => {
                     )}
                   </button>
                 </div>
+                
+                {/* Manual Revision Message */}
+                {showManualRevisionMessage && (
+                  <div className="mt-4 p-3 bg-gray-700 border border-gray-600 text-gray-300 text-sm rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                      <span>Use messages section to complete Manual Revision</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
