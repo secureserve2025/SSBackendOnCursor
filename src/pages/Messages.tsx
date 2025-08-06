@@ -322,7 +322,14 @@ const Messages: React.FC = () => {
         throw new Error('User profile not found');
       }
 
-      const userId = profile.user_id; // Use the auth user ID from the profile
+      // For freelancers, use freelancer_id; for clients, use user_id
+      let userId;
+      if (userType === 'freelancer') {
+        userId = profile.freelancer_id; // Use freelancer_id for freelancers
+      } else {
+        userId = profile.user_id; // Use user_id for clients
+      }
+      
       if (!userId) {
         throw new Error('User ID not found in profile');
       }
@@ -576,7 +583,7 @@ const Messages: React.FC = () => {
       case 'Under Manual Revision':
         return 'bg-yellow-500';
       case 'AI Verified':
-        return 'bg-purple-500';
+        return 'bg-cyan-500';
       case 'Completed':
         return 'bg-gray-500';
       default:
@@ -594,7 +601,7 @@ const Messages: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-purple-400 animate-spin mx-auto mb-4" />
+                     <Loader2 className="h-8 w-8 text-cyan-400 animate-spin mx-auto mb-4" />
           <p className="text-gray-300">Loading messages...</p>
         </div>
       </div>
@@ -610,7 +617,7 @@ const Messages: React.FC = () => {
           <p className="text-gray-300 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                         className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
           >
             Retry
           </button>
@@ -625,7 +632,7 @@ const Messages: React.FC = () => {
       <div className="bg-gray-800 border-b border-gray-700 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <MessageSquare className="h-6 w-6 text-purple-400" aria-hidden="true" />
+            <MessageSquare className="h-6 w-6 text-cyan-400" aria-hidden="true" />
             <div>
               <h1 className="text-xl font-bold text-white">Messages</h1>
               <p className="text-sm text-gray-400">
@@ -656,7 +663,7 @@ const Messages: React.FC = () => {
             {/* Back to Dashboard Button */}
             <button
               onClick={() => navigate(userType === 'client' ? '/client/dashboard' : '/freelancer/dashboard')}
-              className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
               aria-label="Back to dashboard"
             >
               <ChevronRight className="h-4 w-4 rotate-180" aria-hidden="true" />
@@ -665,7 +672,7 @@ const Messages: React.FC = () => {
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="lg:hidden p-2 rounded hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="lg:hidden p-2 rounded hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
               aria-label={`${sidebarCollapsed ? 'Show' : 'Hide'} sidebar`}
               aria-expanded={!sidebarCollapsed}
             >
@@ -676,15 +683,15 @@ const Messages: React.FC = () => {
       </div>
 
              {/* Main Content */}
-       <div className="flex h-[calc(100vh-80px)]">
-                   {/* Left Sidebar - Project Selection */}
+               <div className="flex h-[calc(100vh-80px)]">
+          {/* Left Sidebar - Project Selection */}
           <div className={`${sidebarCollapsed ? 'w-16 lg:w-16' : 'w-80'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
             <div className="p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
                 <h2 className={`text-lg font-semibold text-white ${sidebarCollapsed ? 'hidden' : ''}`}>Projects</h2>
                 <button
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="p-1 rounded hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="p-1 rounded hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   aria-label={`${sidebarCollapsed ? 'Expand' : 'Collapse'} sidebar`}
                   aria-expanded={!sidebarCollapsed}
                 >
@@ -723,9 +730,9 @@ const Messages: React.FC = () => {
                                            {/* Project Header */}
                       <button
                         onClick={() => toggleProjectExpansion(project.id)}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
                           selectedProject?.id === project.id
-                            ? 'bg-purple-600 text-white'
+                            ? 'bg-cyan-600 text-white'
                             : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                         }`}
                         aria-label={`${expandedProjects.has(project.id) ? 'Collapse' : 'Expand'} project ${project.project_name}`}
@@ -783,13 +790,13 @@ const Messages: React.FC = () => {
                          )}
 
                                                    {/* Action Button */}
-                          <button
-                            onClick={() => handleProjectSelect(project)}
-                            className={`w-full text-left px-3 py-2 rounded text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 ${
-                              selectedProject?.id === project.id
-                                ? 'bg-purple-500 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-600'
-                            }`}
+                                                     <button
+                             onClick={() => handleProjectSelect(project)}
+                             className={`w-full text-left px-3 py-2 rounded text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-400 ${
+                               selectedProject?.id === project.id
+                                 ? 'bg-cyan-500 text-white'
+                                 : 'text-gray-400 hover:text-white hover:bg-gray-600'
+                             }`}
                             aria-label={`View messages for project ${project.project_name}`}
                           >
                             View Messages
@@ -863,11 +870,11 @@ const Messages: React.FC = () => {
                                      {/* New Messages Indicator */}
                    {newMessagesCount > 0 && (
                      <div className="absolute top-4 right-4 z-10">
-                       <button
-                         onClick={scrollToBottom}
-                         className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg flex items-center space-x-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                         aria-label={`Scroll to ${newMessagesCount} new message${newMessagesCount !== 1 ? 's' : ''}`}
-                       >
+                                           <button
+                      onClick={scrollToBottom}
+                      className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-lg flex items-center space-x-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      aria-label={`Scroll to ${newMessagesCount} new message${newMessagesCount !== 1 ? 's' : ''}`}
+                    >
                          <span>{newMessagesCount} new message{newMessagesCount !== 1 ? 's' : ''}</span>
                          <ChevronDown className="h-4 w-4" aria-hidden="true" />
                        </button>
@@ -879,9 +886,9 @@ const Messages: React.FC = () => {
                      {[1, 2, 3].map((i) => (
                        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
                          <div className="animate-pulse">
-                           <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                             i % 2 === 0 ? 'bg-purple-600' : 'bg-gray-700'
-                           }`}>
+                                                       <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                              i % 2 === 0 ? 'bg-cyan-600' : 'bg-gray-700'
+                            }`}>
                              <div className="h-3 bg-gray-400 rounded mb-2"></div>
                              <div className="h-4 bg-gray-400 rounded"></div>
                            </div>
@@ -904,13 +911,13 @@ const Messages: React.FC = () => {
                          key={message.id}
                          className={`flex ${message.sender_type === userType ? 'justify-end' : 'justify-start'}`}
                        >
-                         <div
-                           className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${
-                             message.sender_type === userType
-                               ? 'bg-purple-600 text-white'
-                               : 'bg-gray-700 text-gray-300'
-                           }`}
-                         >
+                                                   <div
+                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-sm ${
+                              message.sender_type === userType
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-700 text-gray-300'
+                            }`}
+                          >
                                                        <div className="flex items-center space-x-2 mb-1">
                               <User className="h-3 w-3" aria-hidden="true" />
                               <span className="text-xs opacity-75">
@@ -954,18 +961,18 @@ const Messages: React.FC = () => {
                        }
                      }}
                      placeholder="Type your message..."
-                     className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50"
+                                           className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50"
                      rows={2}
                      maxLength={200}
                      aria-label="Message input"
                      aria-describedby="message-help"
                    />
-                   <button
-                     onClick={handleSendMessage}
-                     disabled={!newMessage.trim() || isSending}
-                     className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                     aria-label="Send message"
-                   >
+                                       <button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || isSending}
+                      className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                      aria-label="Send message"
+                    >
                     {isSending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (

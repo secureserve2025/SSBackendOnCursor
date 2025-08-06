@@ -222,6 +222,16 @@ CREATE POLICY "Clients can create transactions for their projects" ON transactio
     )
   );
 
+-- Only CLIENTS can update transactions for their projects
+CREATE POLICY "Clients can update transactions for their projects" ON transactions
+  FOR UPDATE USING (
+    auth.uid() IN (
+      SELECT cp.user_id FROM client_profiles cp 
+      JOIN projects p ON p.client_id = cp.user_id 
+      WHERE p.id::UUID = transactions.project_id::UUID
+    )
+  );
+
 -- RLS Policies for Messages
 CREATE POLICY "Users can view project messages" ON messages
   FOR SELECT USING (

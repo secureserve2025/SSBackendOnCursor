@@ -1794,8 +1794,17 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
 export const updateTransaction = async (transactionId: string, transactionData: any) => {
   try {
     console.log('Updating transaction:', transactionId, transactionData);
-
-    const { data, error } = await supabase
+    
+    // First, let's check if the transaction exists
+    const { data: existingTransaction, error: checkError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('transaction_id', transactionId);
+    
+    console.log('Existing transaction check:', existingTransaction, checkError);
+    
+    // Try with transaction_id first
+    let { data, error } = await supabase
       .from('transactions')
       .update({
         ...transactionData,
@@ -1804,6 +1813,31 @@ export const updateTransaction = async (transactionId: string, transactionData: 
       .eq('transaction_id', transactionId)
       .select()
       .single();
+    
+    // If that fails, try with id field
+    if (error && error.code === 'PGRST116') {
+      console.log('Transaction not found with transaction_id, trying with id field');
+      const { data: transactionCheck } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('transaction_id', transactionId)
+        .single();
+      
+      if (transactionCheck?.id) {
+        const { data: updateData, error: updateError } = await supabase
+          .from('transactions')
+          .update({
+            ...transactionData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', transactionCheck.id)
+          .select()
+          .single();
+        
+        data = updateData;
+        error = updateError;
+      }
+    }
 
     if (error) {
       console.error('Error updating transaction:', error);

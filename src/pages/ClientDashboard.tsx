@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow, supabase } from '../lib/supabase';
 import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
 import AddProjectForm from '../components/AddProjectForm';
 
@@ -465,9 +465,22 @@ const ClientDashboard: React.FC = () => {
       setModifyFreelancerId(project.freelancer_id || '');
       
       // Get transaction value from transactions table
-      const projectTransaction = transactions.find(t => t.project_id === project.id);
-      const transactionValue = projectTransaction ? projectTransaction.transaction_value : '';
-      setModifyProjectValue(transactionValue ? transactionValue.toString() : '');
+      // Note: getClientTransactions filters out "Project Created" transactions, so we need to get it directly
+      let transactionValue = '';
+      try {
+        const { data: projectTransaction } = await supabase
+          .from('transactions')
+          .select('transaction_value')
+          .eq('project_id', project.id)
+          .single();
+        
+        if (projectTransaction) {
+          transactionValue = projectTransaction.transaction_value?.toString() || '';
+        }
+      } catch (error) {
+        console.log('No transaction found for project:', project.id);
+      }
+      setModifyProjectValue(transactionValue);
       
       setShowDeleteConfirm(false);
       setModifyErrors({ freelancerId: '', projectValue: '' });
@@ -475,8 +488,10 @@ const ClientDashboard: React.FC = () => {
       // Load available freelancer IDs only for "Project Created" status
       if (project.project_status_workflow === 'Project Created') {
         try {
-          const { data: freelancerIds } = await getAllFreelancerIds();
-          if (freelancerIds) {
+          const { data: freelancerData } = await getAllFreelancerIds();
+          if (freelancerData) {
+            // Extract just the freelancer_id values from the objects
+            const freelancerIds = freelancerData.map((freelancer: any) => freelancer.freelancer_id);
             setAvailableFreelancerIds(freelancerIds);
           }
         } catch (error) {
@@ -521,6 +536,7 @@ const ClientDashboard: React.FC = () => {
     }
 
     try {
+      console.log('Selected project for modify:', selectedProjectForModify);
       console.log('Updating project:', selectedProjectForModify.id, {
         freelancer_id: modifyFreelancerId
       });
@@ -537,25 +553,48 @@ const ClientDashboard: React.FC = () => {
       }
 
       // Find and update the associated transaction
-      const projectTransaction = transactions.find(t => t.project_id === selectedProjectForModify.id);
-      if (projectTransaction) {
-        const newValue = parseFloat(modifyProjectValue);
-        console.log('Updating transaction:', projectTransaction.id || projectTransaction.transaction_id, {
-          transaction_value: newValue
-        });
+      // Note: getClientTransactions filters out "Project Created" transactions, so we need to get it directly
+      try {
+        console.log('Looking for transaction with project_id:', selectedProjectForModify.id);
         
-        const { error: transactionError } = await updateTransaction(
-          projectTransaction.id || projectTransaction.transaction_id, 
-          {
-            transaction_value: newValue
-          }
-        );
-
-        if (transactionError) {
-          console.error('Error updating transaction:', transactionError);
-          alert('Project updated but transaction update failed');
-          return;
+        // First, let's see what transactions exist for this project
+        const { data: allProjectTransactions, error: allTransactionsError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('project_id', selectedProjectForModify.id);
+        
+        console.log('All transactions for this project:', allProjectTransactions);
+        
+        const { data: projectTransaction, error: transactionQueryError } = await supabase
+          .from('transactions')
+          .select('transaction_id, transaction_value, project_id')
+          .eq('project_id', selectedProjectForModify.id)
+          .single();
+        
+        if (transactionQueryError) {
+          console.error('Error querying transaction:', transactionQueryError);
         }
+        
+        if (projectTransaction) {
+          const newValue = parseFloat(modifyProjectValue);
+          const transactionId = projectTransaction.transaction_id;
+          console.log('Found transaction:', projectTransaction);
+          console.log('Updating transaction:', transactionId, {
+            transaction_value: newValue
+          });
+          
+          const { error: transactionError } = await updateTransaction(transactionId, {
+            transaction_value: newValue
+          });
+
+          if (transactionError) {
+            console.error('Error updating transaction:', transactionError);
+            alert('Project updated but transaction update failed');
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('No transaction found for project:', selectedProjectForModify.id);
       }
 
       // Reload projects and transactions
@@ -573,16 +612,29 @@ const ClientDashboard: React.FC = () => {
     }
   };
 
-  const handleModifyCancel = () => {
+  const handleModifyCancel = async () => {
     setIsModifying(false);
     setModifyErrors({ freelancerId: '', projectValue: '' });
     if (selectedProjectForModify) {
       setModifyFreelancerId(selectedProjectForModify.freelancer_id || '');
       
       // Reset transaction value from transactions table
-      const projectTransaction = transactions.find(t => t.project_id === selectedProjectForModify.id);
-      const transactionValue = projectTransaction ? projectTransaction.transaction_value : '';
-      setModifyProjectValue(transactionValue ? transactionValue.toString() : '');
+      // Note: getClientTransactions filters out "Project Created" transactions, so we need to get it directly
+      let transactionValue = '';
+      try {
+        const { data: projectTransaction } = await supabase
+          .from('transactions')
+          .select('transaction_value')
+          .eq('project_id', selectedProjectForModify.id)
+          .single();
+        
+        if (projectTransaction) {
+          transactionValue = projectTransaction.transaction_value?.toString() || '';
+        }
+      } catch (error) {
+        console.log('No transaction found for project:', selectedProjectForModify.id);
+      }
+      setModifyProjectValue(transactionValue);
     }
   };
 
@@ -1940,7 +1992,7 @@ const ClientDashboard: React.FC = () => {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-700 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-red-400">
-              ₹{transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0).toLocaleString()}
+                              ₹{transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0).toLocaleString()}
             </div>
             <div className="text-sm text-gray-300">Total Spent</div>
           </div>
@@ -1950,7 +2002,7 @@ const ClientDashboard: React.FC = () => {
           </div>
           <div className="bg-gray-700 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-purple-400">
-              ₹{transactions.length > 0 ? (transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0) / transactions.length).toFixed(0) : '0'}
+                              ₹{transactions.length > 0 ? (transactions.reduce((sum, t) => sum + (t.transaction_value || 0), 0) / transactions.length).toFixed(0) : '0'}
             </div>
             <div className="text-sm text-gray-300">Average Project Cost</div>
           </div>
