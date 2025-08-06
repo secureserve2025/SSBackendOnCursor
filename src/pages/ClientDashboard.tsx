@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText, RefreshCw } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Plus, Upload, Building, Eye, Play, FileText, RefreshCw, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow, supabase } from '../lib/supabase';
+import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUserType, getClientProjectsWithDetails, updateProjectDeliverables, getClientProjectsForEscrow, createEscrowTransaction, getClientTransactions, updateProject, updateTransaction, deleteProject, getAllFreelancerIds, sendChecklistToFreelancer, fundEscrow, getClientNotifications, supabase } from '../lib/supabase';
 import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
 import AddProjectForm from '../components/AddProjectForm';
+import Notifications from '../components/Notifications';
 
 interface ProfileData {
   fullName: string;
@@ -96,6 +97,7 @@ const ClientDashboard: React.FC = () => {
   // Checklist sending state
   const [currentProjectStatus, setCurrentProjectStatus] = useState<string>('');
   const [isSendingChecklist, setIsSendingChecklist] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // Fund Escrow state
   
@@ -141,7 +143,8 @@ const ClientDashboard: React.FC = () => {
     { id: 'add-project', label: 'New Project', icon: Plus },
     { id: 'projects', label: 'My Projects', icon: Briefcase },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
-    { id: 'messages', label: 'Messages', icon: MessageSquare }
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'notifications', label: 'Notifications', icon: Bell }
   ];
 
   // Load user data on component mount
@@ -150,6 +153,7 @@ const ClientDashboard: React.FC = () => {
       try {
         const { user } = await getCurrentUser();
         if (user) {
+          setCurrentUserId(user.id);
           // Get user type and profile
           const { userType, profile } = await getUserType(user.id);
           
@@ -2048,6 +2052,8 @@ const ClientDashboard: React.FC = () => {
         return renderTransactionsContent();
       case 'messages':
         return renderMessagesContent();
+      case 'notifications':
+        return renderNotificationsContent();
       default:
         return renderProfileContent();
     }
@@ -2078,6 +2084,18 @@ const ClientDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const renderNotificationsContent = () => {
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <Notifications 
+          userType="client"
+          userId={currentUserId}
+          getNotifications={getClientNotifications}
+        />
       </div>
     );
   };

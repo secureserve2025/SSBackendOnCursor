@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText, Upload as UploadIcon, RefreshCw } from 'lucide-react';
+import { User, Briefcase, CreditCard, MessageSquare, CheckCircle, Clock, Shield, Edit3, Save, X, Upload, Building, Eye, Play, FileText, Upload as UploadIcon, RefreshCw, Bell } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions, uploadWorkProduct } from '../lib/supabase';
+import { getCurrentUser, signOut, getFreelancerProfile, updateFreelancerProfile, getUserType, getFreelancerProjectsWithDetails, updateProjectStatusWorkflow, getFreelancerTransactions, uploadWorkProduct, getFreelancerNotifications } from '../lib/supabase';
 import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
 import { uploadWorkProductWithReupload, canReuploadWorkProduct, getLatestWorkProduct } from '../lib/videoReuploadUtils';
 import EmailService from '../emails/emailService';
+import Notifications from '../components/Notifications';
 
 interface ProfileData {
   fullName: string;
@@ -90,7 +91,8 @@ const FreelancerDashboard: React.FC = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'projects', label: 'My Projects', icon: Briefcase },
     { id: 'transactions', label: 'Transactions', icon: CreditCard },
-    { id: 'messages', label: 'Messages', icon: MessageSquare }
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'notifications', label: 'Notifications', icon: Bell }
   ];
 
 
@@ -495,8 +497,8 @@ const FreelancerDashboard: React.FC = () => {
     const file = event.target.files?.[0];
     if (file) {
       // Check file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB. Please select a smaller file.');
+      if (file.size > 50 * 1024 * 1024) {
+        alert('File size must be less than 50MB. Please select a smaller file.');
         event.target.value = ''; // Clear the input
         return;
       }
@@ -1590,6 +1592,18 @@ const FreelancerDashboard: React.FC = () => {
     );
   };
 
+  const renderNotificationsContent = () => {
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <Notifications 
+          userType="freelancer"
+          userId={profileData.freelancerId}
+          getNotifications={getFreelancerNotifications}
+        />
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
@@ -1600,6 +1614,8 @@ const FreelancerDashboard: React.FC = () => {
         return renderTransactionsContent();
       case 'messages':
         return renderMessagesContent();
+      case 'notifications':
+        return renderNotificationsContent();
       default:
         return renderProfileContent();
     }
@@ -1771,7 +1787,7 @@ const FreelancerDashboard: React.FC = () => {
                         Project ID: {selectedProjectForUpload.project_id || 'N/A'}
                       </p>
                       <p className="text-blue-200 text-xs mt-1">
-                        File size limit: 10MB | Supported formats: MP4, AVI, MOV, WMV, FLV, WebM
+                        File size limit: 50MB | Supported formats: MP4, AVI, MOV, WMV, FLV, WebM
                       </p>
                       <p className="text-blue-200 text-xs mt-1">
                         This will be saved to work_products storage with proper project mapping

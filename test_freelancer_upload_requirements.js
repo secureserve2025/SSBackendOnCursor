@@ -132,7 +132,7 @@ console.log('\n6. Testing File Validation:');
 function testFileValidation() {
   const fileChecks = [
     '✅ Only video files are accepted',
-    '✅ File size limit enforced (10MB)',
+    '✅ File size limit enforced (50MB)',
     '✅ Supported formats: MP4, AVI, MOV, WMV, FLV, WebM',
     '✅ File type validation works',
     '✅ File size validation works',

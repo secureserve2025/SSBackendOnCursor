@@ -98,49 +98,78 @@ export const signUp = async (email: string, password: string, userType: 'freelan
           } else if (profile) {
             console.log('Profile created automatically:', profile);
           } else {
-            console.warn('No profile found after signup - trigger may have failed');
+            console.log('No profile found, user will need to complete profile setup');
           }
         } catch (err) {
-          console.error('Exception checking profile:', err);
+          console.error('Error checking profile creation:', err);
         }
-      }, 2000); // Wait 2 seconds for trigger to execute
+      }, 1000);
     }
-
+    
     return { data, error };
   } catch (err) {
     console.error('Exception in signUp:', err);
-    return { 
-      data: null, 
-      error: { message: 'Database error saving new user. Please try again.' } 
-    }
+    return { data: null, error: { message: 'An unexpected error occurred during signup' } };
   }
-}
+};
 
 export const signIn = async (email: string, password: string) => {
-  // Check if we have valid Supabase credentials from environment variables
-  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    return { 
-      data: null, 
-      error: { message: 'Supabase not configured. Please add your Supabase credentials to the .env file.' } 
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      console.error('Signin error:', error);
+    } else if (data.user) {
+      console.log('User signed in successfully:', data.user.id);
     }
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Exception in signIn:', err);
+    return { data: null, error: { message: 'An unexpected error occurred during signin' } };
   }
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  })
-  return { data, error }
-}
+};
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut()
-  return { error }
-}
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Signout error:', error);
+    } else {
+      console.log('User signed out successfully');
+    }
+    return { error };
+  } catch (err) {
+    console.error('Exception in signOut:', err);
+    return { error: { message: 'An unexpected error occurred during signout' } };
+  }
+};
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  return { user, error }
-}
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    // Suppress refresh token errors when no user is logged in
+    if (error && error.message?.includes('Refresh Token Not Found')) {
+      console.log('No active user session - this is normal for new visitors');
+      return { user: null, error: null };
+    }
+    
+    if (error) {
+      console.error('Error getting current user:', error);
+    } else if (user) {
+      console.log('Current user found:', user.id);
+    }
+    
+    return { user, error: error && !error.message?.includes('Refresh Token Not Found') ? error : null };
+  } catch (err) {
+    console.error('Exception in getCurrentUser:', err);
+    return { user: null, error: { message: 'Failed to get current user' } };
+  }
+};
 
 // Freelancer Profile Management Functions
 export const getFreelancerProfile = async (userId: string) => {
@@ -989,10 +1018,10 @@ export const uploadWorkProduct = async (projectId: string, file: File, metadata:
       throw new Error('File must be a video file');
     }
 
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Validate file size (50MB limit)
+    const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      throw new Error('File size must be less than 10MB');
+      throw new Error('File size must be less than 50MB');
     }
 
     const filePath = `${userId}/${projectId}/${file.name}`;
@@ -2120,5 +2149,170 @@ export const saveVerificationReport = async (projectId: string, aiResponse: any)
   } catch (err) {
     console.error('Exception in saveVerificationReport:', err);
     return { data: null, error: err };
+  }
+};
+
+// Notification functions for both client and freelancer dashboards
+export const getClientNotifications = async (userId: string) => {
+  try {
+    console.log('Fetching notifications for client user:', userId);
+
+    // Get projects with specific statuses using user_id directly
+    const { data: projects, error: projectsError } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        freelancer_profiles!projects_freelancer_id_fkey (
+          full_name,
+          email,
+          updated_at
+        )
+      `)
+      .eq('client_id', userId)
+      .in('project_status_workflow', ['Under Manual Revision', 'AI Verified'])
+      .order('created_at', { ascending: false });
+
+    if (projectsError) {
+      console.error('Error fetching client notifications:', projectsError);
+      return { data: null, error: projectsError };
+    }
+
+    // For each project, get additional details
+    const notificationsWithDetails = await Promise.all(
+      projects.map(async (project) => {
+        // Get latest work product upload
+        const { data: workProduct } = await supabase
+          .from('work_products')
+          .select('updated_at')
+          .eq('project_id', project.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Get latest message (handle case where messages table might not exist)
+        let latestMessage = null;
+        try {
+          const { data: messageData } = await supabase
+            .from('messages')
+            .select('created_at')
+            .eq('project_id', project.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          latestMessage = messageData;
+        } catch (error) {
+          console.log('No messages found for project or messages table not accessible:', project.id);
+        }
+
+        // Get verification report for AI Verified projects
+        let verificationReport = null;
+        if (project.project_status_workflow === 'AI Verified') {
+          const { data: report } = await supabase
+            .from('verification_reports')
+            .select('*')
+            .eq('project_id', project.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          verificationReport = report;
+        }
+
+        return {
+          ...project,
+          last_work_product_upload: workProduct?.updated_at || null,
+          last_message_timestamp: latestMessage?.created_at || null,
+          verification_report: verificationReport
+        };
+      })
+    );
+
+    console.log('Client notifications fetched:', notificationsWithDetails);
+    return { data: notificationsWithDetails, error: null };
+  } catch (err) {
+    console.error('Exception in getClientNotifications:', err);
+    return { data: null, error: { message: 'Failed to fetch client notifications' } };
+  }
+};
+
+export const getFreelancerNotifications = async (freelancerId: string) => {
+  try {
+    console.log('Fetching notifications for freelancer:', freelancerId);
+
+    // Get projects with specific statuses
+    const { data: projects, error: projectsError } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        client_profiles!projects_client_id_fkey (
+          client_id,
+          full_name,
+          email,
+          company_name,
+          updated_at
+        )
+      `)
+      .eq('freelancer_id', freelancerId)
+      .in('project_status_workflow', ['Under Manual Revision', 'AI Verified'])
+      .order('created_at', { ascending: false });
+
+    if (projectsError) {
+      console.error('Error fetching freelancer notifications:', projectsError);
+      return { data: null, error: projectsError };
+    }
+
+    // For each project, get additional details
+    const notificationsWithDetails = await Promise.all(
+      projects.map(async (project) => {
+        // Get latest work product view by client
+        const { data: workProduct } = await supabase
+          .from('work_products')
+          .select('updated_at')
+          .eq('project_id', project.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Get latest message (handle case where messages table might not exist)
+        let latestMessage = null;
+        try {
+          const { data: messageData } = await supabase
+            .from('messages')
+            .select('created_at')
+            .eq('project_id', project.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          latestMessage = messageData;
+        } catch (error) {
+          console.log('No messages found for project or messages table not accessible:', project.id);
+        }
+
+        // Get verification report for AI Verified projects
+        let verificationReport = null;
+        if (project.project_status_workflow === 'AI Verified') {
+          const { data: report } = await supabase
+            .from('verification_reports')
+            .select('*')
+            .eq('project_id', project.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          verificationReport = report;
+        }
+
+        return {
+          ...project,
+          last_work_product_view: workProduct?.updated_at || null,
+          last_message_timestamp: latestMessage?.created_at || null,
+          verification_report: verificationReport
+        };
+      })
+    );
+
+    console.log('Freelancer notifications fetched:', notificationsWithDetails);
+    return { data: notificationsWithDetails, error: null };
+  } catch (err) {
+    console.error('Exception in getFreelancerNotifications:', err);
+    return { data: null, error: { message: 'Failed to fetch freelancer notifications' } };
   }
 };

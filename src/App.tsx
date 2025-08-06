@@ -30,6 +30,29 @@ function App() {
     checkOpenAIConfiguration();
   }, []);
 
+  // Suppress console errors for better user experience
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      // Suppress specific errors that are expected
+      const errorMessage = args.join(' ');
+      if (
+        errorMessage.includes('Refresh Token Not Found') ||
+        errorMessage.includes('Invalid Refresh Token') ||
+        errorMessage.includes('vite.svg')
+      ) {
+        // Don't log these expected errors
+        return;
+      }
+      // Log other errors normally
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
+
   return (
     <Router>
       <Routes>

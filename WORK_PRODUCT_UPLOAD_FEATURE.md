@@ -9,7 +9,7 @@ The Work Product Upload feature allows freelancers to upload their final video w
 - **Location**: Freelancer Dashboard → My Projects tab
 - **Trigger**: Click "Upload" button for projects with "Production in Progress" status
 - **File Types**: MP4, AVI, MOV, WMV, FLV, WebM
-- **Size Limit**: 10MB maximum
+- **Size Limit**: 50MB maximum
 - **Storage**: Files are stored in Supabase `work-products` bucket
 
 ### 2. Database Schema
@@ -35,7 +35,7 @@ The `work_products` table stores:
 - Modal opens with file selection interface
 - File validation occurs:
   - File type must be video
-  - File size must be < 10MB
+  - File size must be < 50MB
   - Supported formats are checked
 
 #### Step 2: Upload to Storage
@@ -127,7 +127,7 @@ work-products/
 1. Navigate to My Projects tab
 2. Find project with "Production in Progress" status
 3. Click "Upload" button
-4. Select video file (max 10MB)
+4. Select video file (max 50MB)
 5. Click "Upload Final Work"
 6. Wait for upload completion
 7. Verify file appears in projects table
@@ -156,7 +156,7 @@ Run the test script:
 ## Troubleshooting
 
 ### Common Issues
-1. **File too large**: Reduce file size to < 10MB
+1. **File too large**: Reduce file size to < 50MB
 2. **Unsupported format**: Convert to MP4, AVI, MOV, WMV, FLV, or WebM
 3. **Upload fails**: Check network connection and try again
 4. **Database error**: Contact support
