@@ -267,6 +267,8 @@ const FreelancerDashboard: React.FC = () => {
     setShowVerificationModal(true);
   };
 
+
+
   const handleAgreeToDeliverables = async () => {
     if (!currentProjectId || (currentProjectStatus !== 'Assigned to Freelancer' && currentProjectStatus !== 'Checklist Signed off')) {
       console.log('Invalid project state:', { currentProjectId, currentProjectStatus });
@@ -1233,13 +1235,18 @@ const FreelancerDashboard: React.FC = () => {
                     </div>
                     <div className="text-center">
                       {project.verification_reports && project.verification_reports.length > 0 ? (
-                        <button
-                          onClick={() => handleVerificationReportClick(project.verification_reports[0])}
-                          className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span className="text-xs">View</span>
-                        </button>
+                        <div className="flex flex-col items-center space-y-1">
+                          <button
+                            onClick={() => handleVerificationReportClick(project.verification_reports[0])}
+                            className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">View</span>
+                          </button>
+                          <span className="text-xs font-medium text-green-400">
+                            {project.verification_reports[0].verification_score}% Match
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-gray-500 text-xs">-</span>
                       )}

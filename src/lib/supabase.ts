@@ -2010,3 +2010,115 @@ export const updateProjectStatusWithHistory = async (
     return { data: null, error: { message: 'Failed to update project status' } }
   }
 };
+
+// Fetch detailed project information
+export const fetchProjectDetails = async (projectId: string) => {
+  try {
+    console.log('Fetching project details for project_id:', projectId);
+
+    // Get project basic information
+    const { data: projectData, error: projectError } = await supabase
+      .from('projects')
+      .select(`
+        project_id,
+        project_name,
+        freelancer_id,
+        desired_completion_date
+      `)
+      .eq('project_id', projectId)
+      .single();
+
+    if (projectError) {
+      console.error('Error fetching project data:', projectError);
+      throw projectError;
+    }
+
+    // Get latest work product (video upload/reupload)
+    const { data: workProductData, error: workProductError } = await supabase
+      .from('work_products')
+      .select(`
+        updated_at,
+        file_path
+      `)
+      .eq('project_id', projectId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (workProductError && workProductError.code !== 'PGRST116') {
+      console.error('Error fetching work product data:', workProductError);
+      throw workProductError;
+    }
+
+    // Get deliverables
+    const { data: deliverablesData, error: deliverablesError } = await supabase
+      .from('deliverables')
+      .select(`
+        deliverable_order,
+        deliverable_text
+      `)
+      .eq('project_id', projectId)
+      .order('deliverable_order', { ascending: true });
+
+    if (deliverablesError) {
+      console.error('Error fetching deliverables data:', deliverablesError);
+      throw deliverablesError;
+    }
+
+    // Combine all data
+    const projectDetails = {
+      project_id: projectData.project_id,
+      project_name: projectData.project_name,
+      freelancer_id: projectData.freelancer_id,
+      desired_completion_date: projectData.desired_completion_date,
+      last_video_upload_date: workProductData?.updated_at || null,
+      final_video_url: workProductData?.file_path || null,
+      deliverables: deliverablesData || []
+    };
+
+    console.log('Project details fetched successfully:', projectDetails);
+    return { data: projectDetails, error: null };
+  } catch (err) {
+    console.error('Exception in fetchProjectDetails:', err);
+    return { data: null, error: err };
+  }
+};
+
+// Save verification report to database
+export const saveVerificationReport = async (projectId: string, aiResponse: any) => {
+  try {
+    console.log('Saving verification report for project:', projectId);
+
+    const { data, error } = await supabase
+      .from('verification_reports')
+      .insert({
+        project_id: projectId,
+        report_title: "AI Verification Report",
+        report_content: aiResponse.report_content,
+        report_type: "auto-ai",
+        verification_status: "completed",
+        verified_by: "Gemini Pro 2.5",
+        verification_score: aiResponse.verification_score,
+        verification_notes: null,
+        file_path: null,
+        file_type: null,
+        file_size: null,
+        storage_bucket: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving verification report:', error);
+      return { data: null, error };
+    }
+
+    console.log('Verification report saved successfully:', data);
+    return { data, error: null };
+  } catch (err) {
+    console.error('Exception in saveVerificationReport:', err);
+    return { data: null, error: err };
+  }
+};

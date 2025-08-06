@@ -431,9 +431,9 @@ const ClientDashboard: React.FC = () => {
     
     setIsVerifying(true);
     try {
-      // Update project status to "AI Verification in Progress"
+      // Update project status to "AI Verified"
       const { error } = await updateProject(selectedProjectForVerification.id, {
-        project_status_workflow: 'AI Verification in Progress'
+        project_status_workflow: 'AI Verified'
       });
 
       if (error) {
@@ -442,7 +442,15 @@ const ClientDashboard: React.FC = () => {
         return;
       }
 
-      alert('AI verification initiated successfully. You will have 24 hours to raise concerns if the match score is 90% or higher.');
+      // Import and call the verification function directly
+      const { verifyProject } = await import('../api/verifyProject');
+      const response = await verifyProject(selectedProjectForVerification.project_id);
+
+      if (response.success) {
+        alert(`AI verification completed successfully!\n\nVerification Score: ${response.data.verification_score}%\nReport ID: ${response.data.report_id}\n\nYou will have 24 hours to raise concerns if the match score is 90% or higher.`);
+      } else {
+        throw new Error('AI verification failed');
+      }
       
       // Reload projects to reflect the status change
       await loadProjects();
@@ -452,7 +460,7 @@ const ClientDashboard: React.FC = () => {
       setSelectedProjectForVerification(null);
     } catch (error) {
       console.error('Error in AI verification:', error);
-      alert('Failed to initiate AI verification. Please try again.');
+      alert(`Failed to initiate AI verification: ${error.message}`);
     } finally {
       setIsVerifying(false);
     }
@@ -1389,7 +1397,17 @@ const ClientDashboard: React.FC = () => {
                             <span className="text-xs">Play</span>
                           </button>
                           {/* Show Verify Work button for "Production in Progress" and "Under Manual Revision" status */}
-                          {(project.project_status_workflow === 'Production in Progress' || project.project_status_workflow === 'Under Manual Revision') && (
+                          {/* Only show if verification score is less than 90% or no verification report exists */}
+                          {(() => {
+                            const shouldShow = (project.project_status_workflow === 'Production in Progress' || project.project_status_workflow === 'Under Manual Revision') && 
+                             (!project.verification_reports || 
+                              project.verification_reports.length === 0 || 
+                              (project.verification_reports[0] && Math.round(project.verification_reports[0].verification_score * 100) < 90));
+                            
+                            console.log('Project:', project.project_id, 'Status:', project.project_status_workflow, 'Verification Reports:', project.verification_reports?.length, 'Score:', project.verification_reports?.[0]?.verification_score, 'Should Show:', shouldShow);
+                            
+                            return shouldShow;
+                          })() && (
                             <button
                               onClick={() => handleVerifyWorkClick(project)}
                               className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
@@ -1406,13 +1424,18 @@ const ClientDashboard: React.FC = () => {
                     </div>
                     <div className="text-center">
                       {project.verification_reports && project.verification_reports.length > 0 ? (
-                        <button
-                          onClick={() => handleVerificationReportClick(project.verification_reports[0])}
-                          className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
-                        >
-                          <FileText className="h-4 w-4" />
-                          <span className="text-xs">View</span>
-                        </button>
+                        <div className="flex flex-col items-center space-y-1">
+                          <button
+                            onClick={() => handleVerificationReportClick(project.verification_reports[0])}
+                            className="inline-flex items-center space-x-1 text-green-400 hover:text-green-300 transition-colors"
+                          >
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">View</span>
+                          </button>
+                          <span className="text-xs font-medium text-green-400">
+                            {Math.round(project.verification_reports[0].verification_score * 100)}% Match
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-gray-500 text-xs">-</span>
                       )}
