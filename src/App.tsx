@@ -30,6 +30,20 @@ function App() {
     checkOpenAIConfiguration();
   }, []);
 
+  // Production environment checker
+  useEffect(() => {
+    if (import.meta.env.PROD) {
+      console.log('🚀 Production Environment Check');
+      console.log('==============================');
+      console.log('Environment Variables:');
+      console.log('- VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Set' : '❌ Missing');
+      console.log('- VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing');
+      console.log('- VITE_OPENAI_API_KEY:', import.meta.env.VITE_OPENAI_API_KEY ? '✅ Set' : '❌ Missing');
+      console.log('Current URL:', window.location.href);
+      console.log('User Agent:', navigator.userAgent);
+    }
+  }, []);
+
   // Suppress console errors for better user experience
   useEffect(() => {
     const originalError = console.error;

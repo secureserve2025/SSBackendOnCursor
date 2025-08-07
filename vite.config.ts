@@ -29,4 +29,6 @@ export default defineConfig({
     // Ensure environment variables are available at build time
     'process.env': {},
   },
+  // Ensure proper handling of environment variables
+  envPrefix: 'VITE_',
 });
