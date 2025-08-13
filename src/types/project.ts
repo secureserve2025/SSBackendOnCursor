@@ -7,7 +7,7 @@ export interface Project {
   client_id: string; // References client_profiles.user_id
   freelancer_id: string; // References freelancer_profiles.freelancer_id
   project_category: string; // Default: "Video Production"
-  project_name: string; // 3-20 characters
+  project_name: string; // 3-30 characters
   project_requirement: string; // Max 200 characters
   desired_completion_date: string; // Date in ISO format
   project_status: 'Draft' | 'Active' | 'In Progress' | 'Completed' | 'Cancelled';
@@ -82,7 +82,7 @@ export const FILE_UPLOAD_CONFIG = {
 export const PROJECT_VALIDATION = {
   projectName: {
     minLength: 3,
-    maxLength: 20
+    maxLength: 30
   },
   projectRequirement: {
     maxLength: 200

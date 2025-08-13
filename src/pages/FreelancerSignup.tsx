@@ -121,28 +121,21 @@ const FreelancerSignup: React.FC = () => {
         const { data, error } = await signUp(formData.email, formData.password, 'freelancer');
         
         if (error) {
-          if (error.message.includes('already registered')) {
-            setErrors({
-              email: 'This email is already registered',
-              password: '',
-              confirmPassword: '',
-              agreeToTerms: ''
-            });
-          } else {
-            setErrors({
-              email: error.message,
-              password: '',
-              confirmPassword: '',
-              agreeToTerms: ''
-            });
-          }
+          setErrors({
+            email: error.message,
+            password: '',
+            confirmPassword: '',
+            agreeToTerms: ''
+          });
           return;
         }
 
         if (data.user) {
           setSuccessMessage('Account created successfully! Please check your email to verify your account.');
+          
           // Reset form
           setFormData({ email: '', password: '', confirmPassword: '', agreeToTerms: false });
+          
           // Redirect to login after 3 seconds
           setTimeout(() => {
             navigate('/login/freelancer');

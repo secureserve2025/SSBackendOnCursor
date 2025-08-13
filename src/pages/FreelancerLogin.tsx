@@ -51,14 +51,14 @@ const FreelancerLogin: React.FC = () => {
       }
 
       if (data.user) {
-        // Check if user is a freelancer
+        // Check if user has a freelancer profile by checking user metadata
         const userType = data.user.user_metadata?.user_type;
         if (userType === 'freelancer') {
-          // Redirect to freelancer dashboard
+          // User is a freelancer, redirect to freelancer dashboard
           navigate('/freelancer/dashboard');
         } else {
           setErrors({
-            email: 'This account is not registered as a freelancer',
+            email: 'No freelancer account found for this email. Please sign up as a freelancer first.',
             password: ''
           });
         }

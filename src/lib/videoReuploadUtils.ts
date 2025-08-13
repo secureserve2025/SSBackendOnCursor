@@ -305,11 +305,26 @@ export const canReuploadWorkProduct = async (projectId: string, userId: string):
     }
 
     // Get freelancer profile to check user_id
-    const { data: freelancerProfile } = await supabase
-      .from('freelancer_profiles')
-      .select('user_id')
-      .eq('freelancer_id', project.freelancer_id)
-      .single();
+    let freelancerProfile;
+    
+    // Check if freelancer_id is a UUID or human-readable ID
+    if (project.freelancer_id.includes('-')) {
+      // It's a UUID, look up by id
+      const { data: profile } = await supabase
+        .from('freelancer_profiles')
+        .select('user_id')
+        .eq('id', project.freelancer_id)
+        .single();
+      freelancerProfile = profile;
+    } else {
+      // It's a human-readable ID, look up by freelancer_id
+      const { data: profile } = await supabase
+        .from('freelancer_profiles')
+        .select('user_id')
+        .eq('freelancer_id', project.freelancer_id)
+        .single();
+      freelancerProfile = profile;
+    }
 
     // Check if user is the assigned freelancer
     const isAssignedFreelancer = freelancerProfile?.user_id === userId;

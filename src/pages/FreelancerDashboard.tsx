@@ -6,6 +6,7 @@ import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVi
 import { uploadWorkProductWithReupload, canReuploadWorkProduct, getLatestWorkProduct } from '../lib/videoReuploadUtils';
 import EmailService from '../emails/emailService';
 import Notifications from '../components/Notifications';
+import { formatToISTDisplay, getRelativeTimeIST } from '../lib/istUtils';
 
 interface ProfileData {
   fullName: string;
@@ -125,7 +126,7 @@ const FreelancerDashboard: React.FC = () => {
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
               aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
-              freelancerId: profile.freelancer_id || ''
+              freelancerId: profile.id || '' // Use UUID (id) for database queries
             });
             
             setOriginalData({
@@ -135,7 +136,7 @@ const FreelancerDashboard: React.FC = () => {
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
               aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
-              freelancerId: profile.freelancer_id || ''
+              freelancerId: profile.id || '' // Use UUID (id) for database queries
             });
             
             // Check if profile is complete
@@ -1114,10 +1115,10 @@ const FreelancerDashboard: React.FC = () => {
 
         {/* Projects Table */}
         <div className="overflow-x-auto">
-          <div className="min-w-full">
+          <div className="min-w-[800px] lg:min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-7 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-7 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Client ID</div>
@@ -1168,10 +1169,10 @@ const FreelancerDashboard: React.FC = () => {
             ) : (
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {projects.map((project, index) => (
-                  <div key={project.id} className={`grid grid-cols-7 gap-4 p-4 text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
+                  <div key={project.id} className={`grid grid-cols-7 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
                     <div className="text-left text-white font-medium">{project.project_id}</div>
                     <div className="text-left text-white">{project.project_name}</div>
-                    <div className="text-left text-gray-300">{project.client_id}</div>
+                    <div className="text-left text-gray-300">{project.client_display_id || project.client_id}</div>
                     <div className="text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         project.project_status_workflow === 'Successfully Closed' ? 'bg-green-500/20 text-green-400' :
@@ -1246,7 +1247,7 @@ const FreelancerDashboard: React.FC = () => {
                             <span className="text-xs">View</span>
                           </button>
                           <span className="text-xs font-medium text-green-400">
-                            {project.verification_reports[0].verification_score}% Match
+                            {Math.round(project.verification_reports[0].verification_score * 100)}% Match
                           </span>
                         </div>
                       ) : (

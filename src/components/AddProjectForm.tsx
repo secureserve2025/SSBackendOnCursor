@@ -3,6 +3,7 @@ import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertC
 import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables, createEscrowTransaction } from '../lib/supabase';
 import EmailService, { ProjectNotificationData } from '../emails/emailService';
 import AIDeliverableChat from './AIDeliverableChat';
+import { getTomorrowISTDateForInput, isDateInPastIST, formatToISTDisplay } from '../lib/istUtils';
 
 interface FileUpload {
   id: string;
@@ -59,9 +60,17 @@ const AddProjectForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidatingFreelancer, setIsValidatingFreelancer] = useState(false);
   const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
+  const [validatedFreelancerData, setValidatedFreelancerData] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentClientId, setCurrentClientId] = useState<string>('');
   const [createdProjectId, setCreatedProjectId] = useState<string>('');
+  const [validationDebounceTimer, setValidationDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  // Freelancer dropdown state
+  const [availableFreelancers, setAvailableFreelancers] = useState<any[]>([]);
+  const [isLoadingFreelancers, setIsLoadingFreelancers] = useState(false);
+  const [showFreelancerDropdown, setShowFreelancerDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // AI Chat state
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -69,6 +78,7 @@ const AddProjectForm: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const categories = [
     { value: 'Video Production', label: 'Video Production', enabled: true },
@@ -96,51 +106,133 @@ const AddProjectForm: React.FC = () => {
         if (user) {
           setCurrentUserId(user.id);
           
-          // Get client profile
-          const { data: clientProfile, error: profileError } = await getClientProfile(user.id);
-          if (profileError) {
-            console.error('Error getting client profile:', profileError);
+          // Load client profile
+          const { data: clientProfile, error: clientError } = await getClientProfile(user.id);
+          if (clientError) {
+            console.error('Error getting client profile:', clientError);
             return;
           }
           
           if (clientProfile) {
-            setCurrentClientId(clientProfile.client_id);
-            console.log('Loaded client ID:', clientProfile.client_id);
+            setCurrentClientId(clientProfile.id); // Use the UUID id, not the client_id string
+            console.log('Loaded client ID:', clientProfile.id);
           }
         }
       } catch (err) {
-        console.error('Exception loading current user:', err);
+        console.error('Error loading current user:', err);
       }
     };
 
     loadCurrentUser();
   }, []);
 
-  // Get tomorrow's date in YYYY-MM-DD format
+  // Load available freelancers (wait for user authentication)
+  useEffect(() => {
+    if (!currentUserId) {
+      console.log('⏳ Waiting for user authentication before loading freelancers...');
+      return;
+    }
+
+    const loadFreelancers = async () => {
+      try {
+        setIsLoadingFreelancers(true);
+        console.log('🔍 Loading freelancers for authenticated user...');
+        
+        const { data, error } = await getAllFreelancerIds();
+        
+        console.log('🔍 getAllFreelancerIds response:', { data, error });
+        
+        if (error) {
+          console.error('❌ Error loading freelancers:', error);
+          return;
+        }
+        
+        if (data && Array.isArray(data)) {
+          setAvailableFreelancers(data);
+          console.log('✅ Loaded freelancers:', data);
+          console.log('✅ Number of freelancers:', data.length);
+        } else {
+          console.log('⚠️ No freelancer data returned or data is not an array');
+          setAvailableFreelancers([]);
+        }
+      } catch (err) {
+        console.error('❌ Exception loading freelancers:', err);
+        setAvailableFreelancers([]);
+      } finally {
+        setIsLoadingFreelancers(false);
+      }
+    };
+
+    loadFreelancers();
+  }, [currentUserId]); // Added currentUserId as dependency
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowFreelancerDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
+
+
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (validationDebounceTimer) {
+        clearTimeout(validationDebounceTimer);
+      }
+    };
+  }, [validationDebounceTimer]);
+
+  // Get tomorrow's date in IST timezone for date input
   const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return getTomorrowISTDateForInput();
   };
+
+  // Filter freelancers based on search term
+  const filteredFreelancers = availableFreelancers.filter(freelancer => 
+    freelancer.freelancer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    freelancer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    freelancer.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handle freelancer selection
+  const handleFreelancerSelect = (freelancer: any) => {
+    setFormData(prev => ({ ...prev, freelancerId: freelancer.id })); // Use UUID id instead of freelancer_id string
+    setSearchTerm(freelancer.freelancer_id); // Keep showing the string ID in the UI
+    setShowFreelancerDropdown(false);
+    setFreelancerValidationStatus('success');
+    setValidatedFreelancerData(freelancer);
+    setErrors(prev => ({ ...prev, freelancerId: '' }));
+  };
+
+
 
   // Validate individual fields
   const validateField = (name: keyof FormErrors, value: string) => {
     switch (name) {
       case 'projectName':
-        return value.trim().length < 3 ? 'Project name must be at least 3 characters long' : '';
+        if (value.trim().length < 3) return 'Project name must be at least 3 characters long';
+        if (value.trim().length > 30) return 'Project name cannot exceed 30 characters';
+        return '';
       case 'projectRequirement':
         return value.trim().length < 10 ? 'Project requirement must be at least 10 characters long' : '';
       case 'freelancerId':
-        const freelancerIdRegex = /^F\d{9}$/;
+        // Freelancer ID validation is handled by database validation, not format validation
         if (!value.trim()) return 'Freelancer ID is required';
-        return !freelancerIdRegex.test(value) ? 'Freelancer ID must be in format F123456789' : '';
+        return ''; // Skip format validation as we use database validation
       case 'completionDate':
         if (!value) return 'Completion date is required';
-        const selectedDate = new Date(value);
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
-        return selectedDate < tomorrow ? 'Completion date must be at least tomorrow' : '';
+        return isDateInPastIST(value) ? 'Completion date must be at least tomorrow (IST)' : '';
       case 'projectValue':
         if (!value) return 'Project value is required';
         const numValue = parseFloat(value);
@@ -156,8 +248,8 @@ const AddProjectForm: React.FC = () => {
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Clear error when user starts typing
-    if (errors[field as keyof FormErrors]) {
+    // Clear error when user starts typing (except for freelancerId which has auto-validation)
+    if (errors[field as keyof FormErrors] && field !== 'freelancerId') {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
@@ -168,7 +260,7 @@ const AddProjectForm: React.FC = () => {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  // Format Freelancer ID input
+  // Format Freelancer ID input with debounced validation
   const handleFreelancerIdChange = (value: string) => {
     // Remove any non-digit characters except F at the beginning
     let formatted = value.replace(/[^F\d]/g, '');
@@ -184,39 +276,83 @@ const AddProjectForm: React.FC = () => {
     }
     
     handleInputChange('freelancerId', formatted);
+    
+    // Clear previous debounce timer
+    if (validationDebounceTimer) {
+      clearTimeout(validationDebounceTimer);
+    }
+    
+    // Less aggressive validation - only show errors for complete but invalid formats
+    if (formatted.length === 10 && !/^F\d{9}$/.test(formatted)) {
+      // Show format error only for complete but incorrectly formatted IDs
+      setFreelancerValidationStatus('error');
+      setValidatedFreelancerData(null);
+      setErrors(prev => ({ ...prev, freelancerId: 'Freelancer ID must be in format F123456789' }));
+    } else if (formatted.length === 10 && /^F\d{9}$/.test(formatted)) {
+      // Clear format errors and start database validation
+      console.log('🔍 Setting up validation for freelancer ID:', formatted);
+      setFreelancerValidationStatus('idle');
+      setValidatedFreelancerData(null);
+      setErrors(prev => ({ ...prev, freelancerId: '' }));
+      
+      const timer = setTimeout(() => {
+        console.log('⏰ Debounce timer triggered, validating:', formatted);
+        validateFreelancerIdExists(formatted);
+      }, 500); // 500ms debounce
+      
+      setValidationDebounceTimer(timer);
+    } else if (formatted.length === 0) {
+      // Clear everything when field is empty
+      setFreelancerValidationStatus('idle');
+      setValidatedFreelancerData(null);
+      setErrors(prev => ({ ...prev, freelancerId: '' }));
+    }
   };
 
-  // Validate freelancer ID exists in database
+  // Enhanced freelancer ID validation with profile completion check
   const validateFreelancerIdExists = async (freelancerId: string) => {
     if (!freelancerId || freelancerId.length !== 10) return false;
     
     setIsValidatingFreelancer(true);
     setFreelancerValidationStatus('validating');
+    setValidatedFreelancerData(null);
+    
     try {
-      console.log('Validating freelancer ID in form:', freelancerId);
-      const { data, error } = await validateFreelancerId(freelancerId);
-      setIsValidatingFreelancer(false);
-      setFreelancerValidationStatus('idle'); // Reset status after validation
+      console.log('🔍 Validating freelancer ID in form:', freelancerId);
+      console.log('🔍 Calling validateFreelancerId function...');
+      console.log('🔍 Function call started at:', new Date().toISOString());
       
-      console.log('Validation result:', { data, error });
+      const { data, error } = await validateFreelancerId(freelancerId);
+      
+      console.log('🔍 Function call completed at:', new Date().toISOString());
+      setIsValidatingFreelancer(false);
+      
+      console.log('📋 Validation result:', { data, error });
+      console.log('📋 Error details:', error);
+      console.log('📋 Data details:', data);
       
       // Check if there's an error or no data returned
       if (error || !data) {
-        console.log('Freelancer ID not found, setting error');
-        const errorMessage = error?.message || 'Freelancer ID not found in database';
+        console.log('❌ Freelancer validation failed');
+        const errorMessage = error?.message || 'Please enter a valid Freelancer ID. The entered ID does not exist.';
         setErrors(prev => ({ ...prev, freelancerId: errorMessage }));
         setFreelancerValidationStatus('error');
+        setValidatedFreelancerData(null);
+        console.log('🔴 Validation error set:', errorMessage);
         return false;
       }
       
-      console.log('Freelancer ID validated successfully');
+      console.log('✅ Freelancer validation successful:', data.full_name);
       setErrors(prev => ({ ...prev, freelancerId: '' }));
       setFreelancerValidationStatus('success');
+      setValidatedFreelancerData(data);
       return true;
+      
     } catch (err) {
-      console.error('Exception in validateFreelancerIdExists:', err);
+      console.error('❌ Exception in validateFreelancerIdExists:', err);
       setIsValidatingFreelancer(false);
       setFreelancerValidationStatus('error');
+      setValidatedFreelancerData(null);
       setErrors(prev => ({ ...prev, freelancerId: 'Error validating freelancer ID' }));
       return false;
     }
@@ -405,11 +541,29 @@ const AddProjectForm: React.FC = () => {
     const newErrors: FormErrors = {
       projectName: validateField('projectName', formData.projectName),
       projectRequirement: validateField('projectRequirement', formData.projectRequirement),
-      freelancerId: validateField('freelancerId', formData.freelancerId),
+      freelancerId: '', // Handle freelancer validation separately
       completionDate: validateField('completionDate', formData.completionDate),
       projectValue: validateField('projectValue', formData.projectValue),
       deliverables: ''
     };
+
+    // Freelancer ID validation - use current state and comprehensive checks
+    if (!formData.freelancerId) {
+      newErrors.freelancerId = 'Freelancer ID is required';
+    } else if (formData.freelancerId.length < 10) {
+      newErrors.freelancerId = 'Freelancer ID must be exactly 10 characters (F followed by 9 digits)';
+    } else if (formData.freelancerId.length === 10) {
+      const freelancerIdRegex = /^F\d{9}$/;
+      if (!freelancerIdRegex.test(formData.freelancerId)) {
+        newErrors.freelancerId = 'Freelancer ID must be in format F123456789';
+      } else if (freelancerValidationStatus === 'validating') {
+        newErrors.freelancerId = 'Please wait for freelancer validation to complete';
+      } else if (freelancerValidationStatus === 'error') {
+        newErrors.freelancerId = errors.freelancerId || 'Please enter a valid Freelancer ID. The entered ID does not exist.';
+      } else if (freelancerValidationStatus !== 'success' || !validatedFreelancerData) {
+        newErrors.freelancerId = 'Freelancer ID must be validated before proceeding';
+      }
+    }
 
     setErrors(newErrors);
     return !Object.values(newErrors).some(error => error !== '');
@@ -444,7 +598,7 @@ const AddProjectForm: React.FC = () => {
 
       // Prepare project data for database
       const projectData = {
-        client_id: currentUserId, // Use the user ID, not client_id
+        client_id: currentClientId, // Use the client profile UUID id
         freelancer_id: formData.freelancerId,
         project_category: formData.category,
         project_name: formData.projectName,
@@ -879,7 +1033,7 @@ const AddProjectForm: React.FC = () => {
                   onBlur={(e) => handleInputBlur('projectName', e.target.value)}
                   placeholder="Enter your project name"
                   required
-                  maxLength={20}
+                  maxLength={30}
                   aria-invalid={errors.projectName ? 'true' : 'false'}
                   aria-describedby={errors.projectName ? 'project-name-error' : undefined}
                   className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
@@ -892,35 +1046,51 @@ const AddProjectForm: React.FC = () => {
                   <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
                 </div>
               </div>
-              {errors.projectName && (
-                <p id="project-name-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.projectName}
-                </p>
-              )}
+              
+              {/* Character Counter */}
+              <div className="flex justify-between items-center mt-1">
+                <div className="flex-1">
+                  {errors.projectName && (
+                    <p id="project-name-error" className="text-red-400 text-xs sm:text-sm flex items-center" role="alert">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {errors.projectName}
+                    </p>
+                  )}
+                </div>
+                <span className={`text-xs ${
+                  formData.projectName.length >= 25 
+                    ? formData.projectName.length === 30 
+                      ? 'text-red-400' 
+                      : 'text-yellow-400'
+                    : 'text-gray-500'
+                }`}>
+                  {formData.projectName.length}/30
+                </span>
+              </div>
             </div>
 
             {/* Freelancer ID */}
             <div>
               <label htmlFor="freelancer-id" className="block text-gray-300 text-sm font-semibold mb-2">
-                Freelancer ID *
+                Select Freelancer *
               </label>
-              <div className="relative">
+              <div className="relative overflow-visible" ref={dropdownRef}>
                 <input
                   id="freelancer-id"
                   name="freelancerId"
                   type="text"
-                  value={formData.freelancerId}
-                  onChange={(e) => handleFreelancerIdChange(e.target.value)}
-                  onBlur={(e) => {
-                    handleInputBlur('freelancerId', e.target.value);
-                    if (e.target.value.length === 10) {
-                      validateFreelancerIdExists(e.target.value);
-                    }
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowFreelancerDropdown(true);
+                    setFormData(prev => ({ ...prev, freelancerId: '' }));
+                    setFreelancerValidationStatus('idle');
+                    setValidatedFreelancerData(null);
+                    setErrors(prev => ({ ...prev, freelancerId: '' }));
                   }}
-                  placeholder="F123456789"
+                  onFocus={() => setShowFreelancerDropdown(true)}
+                  placeholder="Search freelancer by ID, name, or email..."
                   required
-                  maxLength={10}
                   aria-invalid={errors.freelancerId ? 'true' : 'false'}
                   aria-describedby={`freelancer-id-help ${errors.freelancerId ? 'freelancer-id-error' : ''}`.trim()}
                   className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base ${
@@ -934,7 +1104,7 @@ const AddProjectForm: React.FC = () => {
                   }`}
                 />
                 <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
-                  {isValidatingFreelancer ? (
+                  {isLoadingFreelancers ? (
                     <Loader className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 animate-spin" />
                   ) : freelancerValidationStatus === 'success' ? (
                     <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
@@ -944,17 +1114,122 @@ const AddProjectForm: React.FC = () => {
                     <User className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
                   )}
                 </div>
+                
+                {/* Freelancer Dropdown */}
+                {showFreelancerDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto sm:max-h-60 max-h-40 left-0 right-0">
+                    {isLoadingFreelancers ? (
+                      <div className="p-4 text-center text-gray-400">
+                        <Loader className="h-5 w-5 animate-spin mx-auto mb-2" />
+                        <span>Loading freelancers...</span>
+                      </div>
+                    ) : filteredFreelancers.length === 0 ? (
+                      <div className="p-4 text-center text-gray-400">
+                        {searchTerm ? 'No freelancers found matching your search' : 'No active freelancers available'}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Available: {availableFreelancers.length} | Filtered: {filteredFreelancers.length}
+                        </div>
+                        {availableFreelancers.length > 0 && (
+                          <div className="mt-2 p-2 bg-gray-700 rounded">
+                            <div className="text-xs text-gray-300 mb-1">Available freelancers:</div>
+                            {availableFreelancers.map((freelancer) => (
+                              <div key={freelancer.freelancer_id} className="text-xs text-gray-400">
+                                {freelancer.freelancer_id} - {freelancer.full_name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      filteredFreelancers.map((freelancer) => (
+                        <div
+                          key={freelancer.freelancer_id}
+                          onClick={() => handleFreelancerSelect(freelancer)}
+                          className="p-2 sm:p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white font-medium text-sm sm:text-base truncate">{freelancer.full_name}</div>
+                              <div className="text-gray-400 text-xs sm:text-sm truncate">{freelancer.freelancer_id}</div>
+                              <div className="text-gray-500 text-xs truncate">{freelancer.email}</div>
+                            </div>
+                            <div className="text-green-400 text-xs ml-2 flex-shrink-0">
+                              ✓ Active
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
+              
               <p id="freelancer-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
-                Format: F followed by 9 digits (e.g., F123456789)
+                Search and select from available active freelancers
+                {process.env.NODE_ENV === 'development' && (
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      console.log('🔍 Debug: Available freelancers:', availableFreelancers);
+                      console.log('🔍 Debug: Filtered freelancers:', filteredFreelancers);
+                      console.log('🔍 Debug: Search term:', searchTerm);
+                      
+                      // Test the function directly
+                      console.log('🔍 Testing getAllFreelancerIds function...');
+                      const { data, error } = await getAllFreelancerIds();
+                      console.log('🔍 Direct function result:', { data, error });
+                    }}
+                    className="ml-2 text-purple-400 hover:text-purple-300 underline"
+                  >
+                    Debug
+                  </button>
+                )}
               </p>
-              {errors.freelancerId && (
-                <p id="freelancer-id-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.freelancerId}
-                </p>
+              
+              {/* Validation Status Messages */}
+              {freelancerValidationStatus === 'validating' && (
+                <div className="flex items-center space-x-2 text-blue-400 text-xs sm:text-sm mt-1">
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span>Validating freelancer profile...</span>
+                </div>
               )}
               
+              {freelancerValidationStatus === 'success' && validatedFreelancerData && (
+                <div className="bg-green-900/30 border border-green-600 rounded-lg p-3 mt-2">
+                  <div className="flex items-center space-x-2 text-green-400 text-xs sm:text-sm mb-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">Freelancer Verified</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-gray-300">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Name:</span>
+                      <span className="font-medium">{validatedFreelancerData.full_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Email:</span>
+                      <span className="font-mono">{validatedFreelancerData.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Status:</span>
+                      <span className="capitalize text-green-400">{validatedFreelancerData.account_status}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Profile:</span>
+                      <span className="text-green-400">✓ Complete</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {errors.freelancerId && (
+                <div className="bg-red-900/30 border border-red-600 rounded-lg p-3 mt-2">
+                  <div className="flex items-center space-x-2 text-red-400 text-xs sm:text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="font-medium">Validation Error</span>
+                  </div>
+                  <p className="text-red-300 text-xs mt-1">{errors.freelancerId}</p>
+                </div>
+              )}
 
             </div>
           </div>
@@ -1070,7 +1345,7 @@ const AddProjectForm: React.FC = () => {
               </div>
             </div>
             <p id="completion-date-help" className="text-gray-400 text-xs sm:text-sm mt-1">
-              Minimum date: Tomorrow
+              Minimum date: Tomorrow (IST) - {formatToISTDisplay(getTomorrowDate())}
             </p>
             {errors.completionDate && (
               <p id="completion-date-error" className="text-red-400 text-xs sm:text-sm mt-1 flex items-center" role="alert">

@@ -70,3 +70,37 @@
     transform: translateY(0);
   }
 }
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Smooth scrolling for horizontal tables */
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Better touch targets for small buttons */
+  button {
+    min-height: 44px;
+  }
+  
+  /* Prevent text selection on buttons */
+  button {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Better modal appearance on small screens */
+  .fixed.inset-0 > div {
+    margin: 12px;
+    max-height: calc(100vh - 24px);
+  }
+  
+  /* Ensure tables are readable on mobile */
+  .min-w-\[800px\] {
+    width: 800px;
+  }
+}

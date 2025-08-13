@@ -1,44 +1,74 @@
--- Test script to check if the projects table and related tables exist
--- Run this in your Supabase SQL Editor to verify the schema
+-- Test script to check freelancer_profiles table and RLS policies
+-- Run this in Supabase SQL editor
 
--- Check if projects table exists
+-- 1. Check if freelancer_profiles table exists and has data
+SELECT '=== CHECKING FREELANCER_PROFILES TABLE ===' as section;
+
 SELECT 
-    table_name,
-    CASE 
-        WHEN table_name IS NOT NULL THEN 'EXISTS'
-        ELSE 'MISSING'
-    END as status
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
-AND table_name IN ('projects', 'project_files', 'deliverables', 'client_profiles', 'freelancer_profiles');
+    COUNT(*) as total_freelancers,
+    COUNT(CASE WHEN account_status = 'active' THEN 1 END) as active_freelancers,
+    COUNT(CASE WHEN profile_completed = true THEN 1 END) as completed_profiles,
+    COUNT(CASE WHEN account_status = 'active' AND profile_completed = true THEN 1 END) as active_completed_profiles
+FROM freelancer_profiles;
 
--- Check projects table structure
+-- 2. Show all freelancer profiles (if any exist)
+SELECT '=== ALL FREELANCER PROFILES ===' as section;
+
 SELECT 
-    column_name,
-    data_type,
-    is_nullable,
-    column_default
-FROM information_schema.columns 
-WHERE table_schema = 'public' 
-AND table_name = 'projects'
-ORDER BY ordinal_position;
+    freelancer_id,
+    full_name,
+    email,
+    account_status,
+    profile_completed,
+    created_at
+FROM freelancer_profiles
+ORDER BY created_at DESC;
 
--- Check if functions exist
+-- 3. Check RLS policies
+SELECT '=== RLS POLICIES FOR FREELANCER_PROFILES ===' as section;
+
 SELECT 
-    routine_name,
-    routine_type
-FROM information_schema.routines 
-WHERE routine_schema = 'public' 
-AND routine_name IN ('generate_project_id', 'auto_assign_project_id', 'validate_freelancer_id', 'get_project_with_details');
+    schemaname,
+    tablename,
+    policyname,
+    cmd,
+    qual,
+    with_check
+FROM pg_policies 
+WHERE tablename = 'freelancer_profiles';
 
--- Test the generate_project_id function
-SELECT generate_project_id() as test_project_id;
+-- 4. Check if RLS is enabled on the table
+SELECT '=== RLS STATUS ===' as section;
 
--- Check if there are any existing projects
-SELECT COUNT(*) as project_count FROM projects;
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity
+FROM pg_tables 
+WHERE tablename = 'freelancer_profiles';
 
--- Check if there are any existing client profiles
-SELECT COUNT(*) as client_count FROM client_profiles;
+-- 5. Test the function directly
+SELECT '=== TESTING FUNCTION ===' as section;
 
--- Check if there are any existing freelancer profiles
-SELECT COUNT(*) as freelancer_count FROM freelancer_profiles; 
+SELECT * FROM get_all_active_freelancer_ids();
+
+-- 6. Check if there are any users in auth.users
+SELECT '=== AUTH USERS ===' as section;
+
+SELECT 
+    id,
+    email,
+    created_at
+FROM auth.users
+LIMIT 5;
+
+-- 7. Check if there are any client profiles
+SELECT '=== CLIENT PROFILES ===' as section;
+
+SELECT 
+    client_id,
+    full_name,
+    email,
+    created_at
+FROM client_profiles
+LIMIT 5; 

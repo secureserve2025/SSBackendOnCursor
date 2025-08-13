@@ -51,14 +51,14 @@ const ClientLogin: React.FC = () => {
       }
 
       if (data.user) {
-        // Check if user is a client
+        // Check if user has a client profile by checking user metadata
         const userType = data.user.user_metadata?.user_type;
         if (userType === 'client') {
-          // Redirect to client dashboard
+          // User is a client, redirect to client dashboard
           navigate('/client/dashboard');
         } else {
           setErrors({
-            email: 'This account is not registered as a client',
+            email: 'No client account found for this email. Please sign up as a client first.',
             password: ''
           });
         }

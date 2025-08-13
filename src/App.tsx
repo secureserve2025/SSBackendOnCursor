@@ -14,7 +14,7 @@ import ClientSignup from './pages/ClientSignup';
 import FreelancerDashboard from './pages/FreelancerDashboard';
 import ClientDashboard from './pages/ClientDashboard';
 import Messages from './pages/Messages';
-import { checkOpenAIConfiguration } from './lib/supabase';
+import { checkOpenAIConfiguration, initializeAuth } from './lib/supabase';
 
 function App() {
   // Always use dark mode
@@ -25,9 +25,14 @@ function App() {
     document.documentElement.classList.add('dark');
   }, []);
 
-  // Check OpenAI configuration on app load
+  // Check OpenAI configuration and initialize auth on app load
   useEffect(() => {
     checkOpenAIConfiguration();
+    
+    // Initialize Supabase auth
+    initializeAuth().catch(err => {
+      console.warn('Failed to initialize auth:', err);
+    });
   }, []);
 
   // Production environment checker
@@ -53,7 +58,9 @@ function App() {
       if (
         errorMessage.includes('Refresh Token Not Found') ||
         errorMessage.includes('Invalid Refresh Token') ||
-        errorMessage.includes('vite.svg')
+        errorMessage.includes('vite.svg') ||
+        errorMessage.includes('400') ||
+        errorMessage.includes('token?grant_type=refresh_token')
       ) {
         // Don't log these expected errors
         return;

@@ -5,6 +5,7 @@ import { getCurrentUser, signOut, getClientProfile, updateClientProfile, getUser
 import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVideoError } from '../lib/videoUtils';
 import AddProjectForm from '../components/AddProjectForm';
 import Notifications from '../components/Notifications';
+import { formatToISTDisplay, getRelativeTimeIST } from '../lib/istUtils';
 
 interface ProfileData {
   fullName: string;
@@ -14,7 +15,8 @@ interface ProfileData {
   companyName: string;
   panTanNumber: string;
   upiId: string;
-  clientId: string;
+  clientId: string; // UUID for database queries
+  clientDisplayId: string; // Human-readable format like 'C123456789'
 }
 
 interface FormErrors {
@@ -41,7 +43,8 @@ const ClientDashboard: React.FC = () => {
     companyName: '',
     panTanNumber: '',
     upiId: '',
-    clientId: ''
+    clientId: '',
+    clientDisplayId: ''
   });
   const [originalData, setOriginalData] = useState<ProfileData>({
     fullName: '',
@@ -51,7 +54,8 @@ const ClientDashboard: React.FC = () => {
     companyName: '',
     panTanNumber: '',
     upiId: '',
-    clientId: ''
+    clientId: '',
+    clientDisplayId: ''
   });
   const [errors, setErrors] = useState<FormErrors>({
     fullName: '',
@@ -167,7 +171,8 @@ const ClientDashboard: React.FC = () => {
               companyName: profile.company_name || '',
               panTanNumber: profile.pan_tan_number || '',
               upiId: profile.upi_id || '',
-              clientId: profile.client_id || ''
+              clientId: profile.id || '', // UUID for database queries
+              clientDisplayId: profile.client_id || '' // Human-readable format for display
             });
             
             setOriginalData({
@@ -178,7 +183,8 @@ const ClientDashboard: React.FC = () => {
               companyName: profile.company_name || '',
               panTanNumber: profile.pan_tan_number || '',
               upiId: profile.upi_id || '',
-              clientId: profile.client_id || ''
+              clientId: profile.id || '', // UUID for database queries
+              clientDisplayId: profile.client_id || '' // Human-readable format for display
             });
             
             // Check if profile is complete
@@ -208,31 +214,33 @@ const ClientDashboard: React.FC = () => {
     loadUserData();
   }, []);
 
-  // Load projects when My Projects tab is active
+  // Load projects when My Projects tab is active AND profile data is available
   useEffect(() => {
-    if (activeTab === 'projects') {
+    if (activeTab === 'projects' && profileData.clientId) {
       loadProjects();
     }
-  }, [activeTab]);
+  }, [activeTab, profileData.clientId]);
 
-  // Load transactions when Transactions tab is active
+  // Load transactions when Transactions tab is active AND profile data is available
   useEffect(() => {
-    if (activeTab === 'transactions') {
+    if (activeTab === 'transactions' && profileData.clientId) {
       loadTransactions();
     }
-  }, [activeTab]);
+  }, [activeTab, profileData.clientId]);
 
   const loadProjects = async () => {
     setProjectsLoading(true);
     try {
-      const { user } = await getCurrentUser();
-      if (user) {
-        const { data, error } = await getClientProjectsWithDetails(user.id);
+      // Use the client profile ID (UUID) instead of user ID
+      if (profileData.clientId) {
+        const { data, error } = await getClientProjectsWithDetails(profileData.clientId);
         if (error) {
           console.error('Error loading projects:', error);
         } else {
           setProjects(data || []);
         }
+      } else {
+        console.error('Client profile ID not available');
       }
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -244,14 +252,16 @@ const ClientDashboard: React.FC = () => {
   const loadTransactions = async () => {
     setTransactionsLoading(true);
     try {
-      const { user } = await getCurrentUser();
-      if (user) {
-        const { data, error } = await getClientTransactions(user.id);
+      // Use the client profile ID (UUID) instead of user ID
+      if (profileData.clientId) {
+        const { data, error } = await getClientTransactions(profileData.clientId);
         if (error) {
           console.error('Error loading transactions:', error);
         } else {
           setTransactions(data || []);
         }
+      } else {
+        console.error('Client profile ID not available');
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -451,7 +461,7 @@ const ClientDashboard: React.FC = () => {
       const response = await verifyProject(selectedProjectForVerification.project_id);
 
       if (response.success) {
-        alert(`AI verification completed successfully!\n\nVerification Score: ${response.data.verification_score}%\nReport ID: ${response.data.report_id}\n\nYou will have 24 hours to raise concerns if the match score is 90% or higher.`);
+        alert(`AI verification completed successfully!\n\nVerification Score: ${Math.round(response.data.verification_score * 100)}%\nReport ID: ${response.data.report_id}\n\nYou will have 24 hours to raise concerns if the match score is 90% or higher.`);
       } else {
         throw new Error('AI verification failed');
       }
@@ -474,7 +484,7 @@ const ClientDashboard: React.FC = () => {
   const handleProjectClick = async (project: any) => {
     if (project.project_status_workflow === 'Project Created') {
       setSelectedProjectForModify(project);
-      setModifyFreelancerId(project.freelancer_id || '');
+      setModifyFreelancerId(project.freelancer_display_id || project.freelancer_id || '');
       
       // Get transaction value from transactions table
       // Note: getClientTransactions filters out "Project Created" transactions, so we need to get it directly
@@ -549,13 +559,40 @@ const ClientDashboard: React.FC = () => {
 
     try {
       console.log('Selected project for modify:', selectedProjectForModify);
+      
+      // Convert human-readable freelancer ID to UUID if needed
+      let freelancerIdForUpdate = modifyFreelancerId;
+      if (modifyFreelancerId.startsWith('F')) {
+        // This is a human-readable ID, we need to find the UUID
+        try {
+          const { data: freelancerProfile, error: freelancerError } = await supabase
+            .from('freelancer_profiles')
+            .select('id')
+            .eq('freelancer_id', modifyFreelancerId)
+            .single();
+          
+          if (freelancerError || !freelancerProfile) {
+            console.error('Error finding freelancer UUID:', freelancerError);
+            alert('Failed to find freelancer. Please check the freelancer ID.');
+            return;
+          }
+          
+          freelancerIdForUpdate = freelancerProfile.id;
+          console.log('Converted freelancer ID:', modifyFreelancerId, 'to UUID:', freelancerIdForUpdate);
+        } catch (error) {
+          console.error('Error converting freelancer ID to UUID:', error);
+          alert('Failed to find freelancer. Please check the freelancer ID.');
+          return;
+        }
+      }
+      
       console.log('Updating project:', selectedProjectForModify.id, {
-        freelancer_id: modifyFreelancerId
+        freelancer_id: freelancerIdForUpdate
       });
 
       // Update project with freelancer_id only
       const { error: projectError } = await updateProject(selectedProjectForModify.id, {
-        freelancer_id: modifyFreelancerId
+        freelancer_id: freelancerIdForUpdate
       });
 
       if (projectError) {
@@ -667,15 +704,31 @@ const ClientDashboard: React.FC = () => {
         return;
       }
 
-      // Reload projects and transactions
-      await loadProjects();
-      await loadTransactions();
+      // Immediately remove the project from local state
+      setProjects(prevProjects => 
+        prevProjects.filter(project => project.id !== selectedProjectForModify.id)
+      );
       
+      // Also remove from transactions if any exist for this project
+      setTransactions(prevTransactions => 
+        prevTransactions.filter(transaction => transaction.project_id !== selectedProjectForModify.id)
+      );
+
+      // Close the modal first
       setShowProjectModifyModal(false);
       setSelectedProjectForModify(null);
       setShowDeleteConfirm(false);
       setIsDeleting(false);
+      
+      // Show success message
       alert('Project deleted successfully!');
+      
+      // Then reload data from server to ensure consistency
+      setTimeout(async () => {
+        await loadProjects();
+        await loadTransactions();
+      }, 100);
+      
     } catch (error) {
       console.error('Error deleting project:', error);
       alert('Failed to delete project');
@@ -1010,7 +1063,7 @@ const ClientDashboard: React.FC = () => {
                 id="client-id"
                 name="clientId"
                 type="text"
-                value={profileData.clientId || 'Will be assigned after profile completion'}
+                value={profileData.clientDisplayId || 'Will be assigned after profile completion'}
                 disabled
                 className="w-full px-4 py-3 pr-12 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60 text-sm sm:text-base"
                 aria-describedby="client-id-help"
@@ -1021,7 +1074,7 @@ const ClientDashboard: React.FC = () => {
               </div>
             </div>
             <p id="client-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
-              {profileData.clientId 
+              {profileData.clientDisplayId 
                 ? 'Your unique client identification number' 
                 : 'ID will be automatically generated when you complete your profile'
               }
@@ -1292,10 +1345,10 @@ const ClientDashboard: React.FC = () => {
 
         {/* Projects Table */}
         <div className="overflow-x-auto">
-          <div className="min-w-full">
+          <div className="min-w-[800px] lg:min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-7 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-7 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left">Project Name</div>
                 <div className="text-left">Freelancer ID</div>
@@ -1336,7 +1389,7 @@ const ClientDashboard: React.FC = () => {
             ) : (
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {projects.map((project, index) => (
-                  <div key={project.id} className={`grid grid-cols-7 gap-4 p-4 text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
+                  <div key={project.id} className={`grid grid-cols-7 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
                     <div className="text-left">
                       {project.project_status_workflow === 'Project Created' || project.project_status_workflow === 'Freelancer OK\'d Checklist' ? (
                         <button
@@ -1351,7 +1404,7 @@ const ClientDashboard: React.FC = () => {
                       )}
                     </div>
                     <div className="text-left text-white">{project.project_name}</div>
-                    <div className="text-left text-gray-300">{project.freelancer_id}</div>
+                    <div className="text-left text-gray-300">{project.freelancer_display_id || project.freelancer_id}</div>
                     <div className="text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         project.project_status_workflow === 'Successfully Closed' ? 'bg-green-500/20 text-green-400' :

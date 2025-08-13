@@ -322,12 +322,12 @@ const Messages: React.FC = () => {
         throw new Error('User profile not found');
       }
 
-      // For freelancers, use freelancer_id; for clients, use user_id
+      // For freelancers, use UUID (id); for clients, use UUID (id)
       let userId;
       if (userType === 'freelancer') {
-        userId = profile.freelancer_id; // Use freelancer_id for freelancers
+        userId = profile.id; // Use UUID (id) for freelancers
       } else {
-        userId = profile.user_id; // Use user_id for clients
+        userId = profile.id; // Use UUID (id) for clients
       }
       
       if (!userId) {
@@ -447,6 +447,12 @@ const Messages: React.FC = () => {
         return;
       }
 
+      // Check if project is in "Project Created" status
+      if (project.project_status_workflow === 'Project Created') {
+        setError('Messaging is not available for projects in "Project Created" status. Please wait until the project is assigned to a freelancer.');
+        return;
+      }
+
       setSelectedProject(project);
       await loadMessages(project.id);
       
@@ -472,12 +478,18 @@ const Messages: React.FC = () => {
         return;
       }
 
-      // Validate project access
-      const accessValidation = validateProjectAccess(selectedProject);
-      if (!accessValidation.hasAccess) {
-        setPermissionError(accessValidation.error || 'Access denied');
-        return;
-      }
+             // Validate project access
+       const accessValidation = validateProjectAccess(selectedProject);
+       if (!accessValidation.hasAccess) {
+         setPermissionError(accessValidation.error || 'Access denied');
+         return;
+       }
+
+       // Validate project status - prevent messaging for "Project Created" status
+       if (selectedProject.project_status_workflow === 'Project Created') {
+         setError('Messaging is not available for projects in "Project Created" status. Please wait until the project is assigned to a freelancer.');
+         return;
+       }
 
       // Validate message content
       const messageValidation = validateMessage(newMessage);
