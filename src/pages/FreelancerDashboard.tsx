@@ -1439,6 +1439,16 @@ const FreelancerDashboard: React.FC = () => {
                       console.error('Video loading error:', e);
                       alert('Failed to load video. Please check your internet connection and try again.');
                     }}
+                    onLoadedMetadata={(e) => {
+                      // Enable audio after user interaction
+                      const video = e.target as HTMLVideoElement;
+                      video.muted = false;
+                    }}
+                    onPlay={(e) => {
+                      // Ensure audio is enabled when user plays
+                      const video = e.target as HTMLVideoElement;
+                      video.muted = false;
+                    }}
                   >
                     <source 
                       src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/work-products/${selectedWorkProduct.file_path}`} 

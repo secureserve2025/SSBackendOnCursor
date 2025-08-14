@@ -1739,6 +1739,16 @@ const ClientDashboard: React.FC = () => {
                       preload="metadata"
                       onError={(e) => handleVideoError(e, selectedWorkProduct.fallbackUrl)}
                       poster={selectedWorkProduct.error ? undefined : undefined}
+                      onLoadedMetadata={(e) => {
+                        // Enable audio after user interaction
+                        const video = e.target as HTMLVideoElement;
+                        video.muted = false;
+                      }}
+                      onPlay={(e) => {
+                        // Ensure audio is enabled when user plays
+                        const video = e.target as HTMLVideoElement;
+                        video.muted = false;
+                      }}
                     >
                       <source 
                         src={selectedWorkProduct.error ? (selectedWorkProduct.fallbackUrl || generateVideoUrl(selectedWorkProduct.file_path)) : generateVideoUrl(selectedWorkProduct.file_path)} 
