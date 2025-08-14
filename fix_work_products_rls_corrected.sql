@@ -77,3 +77,4 @@ FROM projects p
 WHERE p.client_id IN (SELECT id FROM client_profiles WHERE user_id = auth.uid())
    OR p.freelancer_id IN (SELECT id FROM freelancer_profiles WHERE user_id = auth.uid());
 
+

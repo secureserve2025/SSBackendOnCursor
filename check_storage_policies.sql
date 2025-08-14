@@ -49,3 +49,4 @@ WHERE bucket_id = 'project-files'
 AND owner = auth.uid()::text
 ORDER BY created_at DESC 
 LIMIT 5;
+

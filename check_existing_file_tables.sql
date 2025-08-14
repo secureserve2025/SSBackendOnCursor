@@ -85,3 +85,4 @@ SELECT
     'project_files' as source,
     COUNT(*) as file_count
 FROM project_files;
+

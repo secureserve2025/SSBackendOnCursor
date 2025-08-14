@@ -49,3 +49,4 @@ After disabling RLS on storage.objects:
 **Status**: 🔧 **MANUAL SETUP REQUIRED**  
 **Priority**: 🔴 **HIGH**  
 **Next Step**: Try to disable RLS on storage.objects in Supabase Dashboard
+

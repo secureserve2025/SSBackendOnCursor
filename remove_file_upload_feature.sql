@@ -38,3 +38,4 @@ WHERE table_name = 'projects' AND column_name = 'project_requirement';
 
 -- 5. Show current project count
 SELECT COUNT(*) as total_projects FROM projects;
+

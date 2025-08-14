@@ -1,6 +1,82 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
+// Fallback OpenAI API functions
+const callOpenAI = async (messages, systemPrompt) => {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4-1106-preview',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+};
+
+// Helper function to extract deliverables from text
+const extractDeliverablesFromText = (text) => {
+  const deliverables = [];
+  const lines = text.split('\n');
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    // Look for lines that start with numbers, dashes, or bullet points
+    if (trimmedLine.match(/^(\d+\.|-|\*)\s+/)) {
+      const deliverable = trimmedLine.replace(/^(\d+\.|-|\*)\s+/, '').trim();
+      if (deliverable.length > 10) { // Minimum length for a meaningful deliverable
+        deliverables.push(deliverable);
+      }
+    }
+  }
+  
+  return deliverables;
+};
+
+const SYSTEM_PROMPT = `You are an expert video production specialist with 15+ years of experience. Your role is to collaborate with clients to create 3-15 measurable deliverables for their video projects.
+
+CONVERSATION FLOW:
+1. Start by acknowledging the project and showing you understand their needs
+2. Ask 2-3 clarifying questions atleast to understand requirements better
+3. When you have enough information, ask exactly: 'Should I generate the final deliverables list?'
+4. If they say yes, create the deliverable list and ask: 'Are you satisfied with these deliverables?'
+
+DELIVERABLE RULES:
+- Each deliverable must be in a single text line and must be specific, measurable, and achievable
+- Include technical details: Resolution standards: 1080p, 4K, 8K;  Frame rates: 24fps, 30fps, 60fps;  Aspect ratios: 16:9, 1:1, 9:16, 2.35:1; Duration requirements: Exact timing specifications; File formats: MP4, MOV, H.264, codec specifications; Audio quality: Sample rates, clarity standards, volume levels
+Include creative Production Elements like Script structure: Word count, scene descriptions, voiceover requirements, key message; Camera work: Shot types, angles, movement specifications; Lighting requirements: natural, cinematic, mood/tone; Color grading: Palette specifications, correction standards; Sound design: Music integration, effects, mixing levels; Editing style: Pacing, transitions, graphic integration requirements; 
+QUALITY EXAMPLES:
+GOOD: "Create 60-second product demo video in 4K resolution with 3 key feature highlights and professional voice-over"
+GOOD: "Deliver final MP4 file under 100MB with H.264 codec at 1920x1080 30fps resolution"
+GOOD: "Provide storyboard with 8-12 frames showing key scenes and 30-second timing notes per frame"
+POOR: "Make a video about the product"
+POOR: "Edit the footage (with music and effects)"
+
+- Range: minimum 3, maximum 15 deliverables
+
+COMMUNICATION STYLE:
+- Professional but conversational
+- Ask one question at a time
+- Be specific about video production requirements
+- Show expertise through detailed technical knowledge
+- Keep responses concise but helpful
+
+IMPORTANT: When ready to generate deliverables, say exactly: 'Should I generate the final deliverables list?' This triggers the UI to show the generate button.`;
+
 // Component states
 const STATES = {
   CHATTING: 'chatting',
@@ -38,7 +114,7 @@ const AIDeliverableChat = ({
   const [error, setError] = useState(null);
   const [generatedDeliverables, setGeneratedDeliverables] = useState([]);
   const [retryCount, setRetryCount] = useState(0);
-  const [showFallbackOptions, setShowFallbackOptions] = useState(false);
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -76,86 +152,67 @@ const AIDeliverableChat = ({
     setLoadingState(LOADING_STATES.STARTING);
     setError(null);
     setRetryCount(0);
-    setShowFallbackOptions(false);
-    
+
     try {
       console.log('Starting AI conversation with project data:', projectData);
       
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          action: 'start',
-          projectId: projectData.id,
-          projectData: projectData
+      // Try Supabase Edge Function first
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
+            action: 'start',
+            projectId: projectData.id,
+            projectData: projectData
+          }
+        });
+
+        console.log('Supabase function response:', { data, error });
+
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw error;
         }
-      });
 
-      console.log('Supabase function response:', { data, error });
+        if (data && data.success) {
+          setMessages([
+            { role: 'assistant', content: data.response, timestamp: new Date() }
+          ]);
+          return; // Success, exit early
+        } else {
+          console.error('AI response error:', data);
+          throw new Error(data?.error || 'Failed to start conversation');
+        }
+      } catch (supabaseError) {
+        console.log('Supabase Edge Function failed, trying fallback OpenAI API...');
+        
+        // Fallback to direct OpenAI API
+        const projectSummary = `PROJECT: ${projectData.name}
+REQUIREMENTS: ${projectData.requirements}
+TIMELINE: Due ${projectData.completion_date || 'Not specified'}, assigned to freelancer ${projectData.freelancer_id || 'Unknown'}
+UPLOADED FILES: ${projectData.files?.length > 0 ? 'Files uploaded' : 'No files uploaded'}
+EXISTING DELIVERABLES: ${projectData.deliverables?.length > 0 ? 'Deliverables exist' : 'None yet'}
+SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
+        const initialMessage = `I have a new video project. Here are the details:\n\n${projectSummary}\n\nCan you help me create detailed deliverables for this project?`;
+        
+        const aiResponse = await callOpenAI([
+          { role: 'user', content: initialMessage }
+        ], SYSTEM_PROMPT);
 
-      if (data && data.success) {
         setMessages([
-          { role: 'assistant', content: data.response, timestamp: new Date() }
+          { role: 'assistant', content: aiResponse, timestamp: new Date() }
         ]);
-      } else {
-        console.error('AI response error:', data);
-        throw new Error(data?.error || 'Failed to start conversation');
       }
     } catch (err) {
       console.error('Start conversation error:', err);
       const errorInfo = categorizeError(err);
       
-      // If it's a function not found error or CORS/network error, try direct AI call
-      if (err.message?.includes('function') || err.message?.includes('404') || err.message?.includes('CORS') || err.message?.includes('Failed to send a request to the Edge Function')) {
-        console.log('Trying direct AI call as fallback...');
-        console.log('Error message:', err.message);
-        try {
-          // Import and use the AI agent directly
-          const { startConversation: directStart } = await import('../../services/aiVideoAgent.js');
-          const { generateProjectSummary } = await import('../../utils/projectSummary.js');
-          
-          const projectSummary = await generateProjectSummary(projectData);
-          const response = await directStart(projectSummary);
-          
-          if (response.success) {
-            setMessages([
-              { role: 'assistant', content: response.response, timestamp: new Date() }
-            ]);
-            return;
-          } else {
-            throw new Error(response.error || 'Direct AI call failed');
-          }
-        } catch (directError) {
-          console.error('Direct AI call error:', directError);
-          
-          // Check if it's a configuration error
-          if (directError.message?.includes('api key') || directError.message?.includes('configuration') || directError.message?.includes('not configured')) {
-            setError({
-              message: 'OpenAI API key is not configured. Please add VITE_OPENAI_API_KEY to your .env file.',
-              type: ERROR_TYPES.AI_SERVICE,
-              retryable: false,
-              originalError: directError.message
-            });
-          } else {
-            setError({
-              message: 'AI service is temporarily unavailable. Please try again later.',
-              type: ERROR_TYPES.AI_SERVICE,
-              retryable: true,
-              originalError: directError.message
-            });
-          }
-        }
-      } else {
-        setError({
-          message: errorInfo.message,
-          type: errorInfo.type,
-          retryable: errorInfo.retryable,
-          originalError: err.message
-        });
-      }
+      setError({
+        message: errorInfo.message,
+        type: errorInfo.type,
+        retryable: errorInfo.retryable,
+        originalError: err.message
+      });
     } finally {
       setLoadingState(null);
     }
@@ -173,92 +230,68 @@ const AIDeliverableChat = ({
     try {
       console.log('Sending message to AI:', message);
       
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          action: 'continue',
-          projectId: projectData.id,
-          userMessage: message
+      // Try Supabase Edge Function first
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
+            action: 'continue',
+            projectId: projectData.id,
+            userMessage: message
+          }
+        });
+
+        console.log('Supabase function response for message:', { data, error });
+
+        if (error) {
+          console.error('Supabase function error for message:', error);
+          throw error;
         }
-      });
 
-      console.log('Supabase function response for message:', { data, error });
+        if (data && data.success) {
+          const aiMessage = { role: 'assistant', content: data.response, timestamp: new Date() };
+          setMessages(prev => [...prev, aiMessage]);
 
-      if (error) {
-        console.error('Supabase function error for message:', error);
-        throw error;
-      }
+          // Check if AI is ready to generate deliverables
+          if (data.isReadyToGenerate) {
+            setCurrentState(STATES.READY_TO_GENERATE);
+          }
+          return; // Success, exit early
+        } else {
+          console.error('AI response error for message:', data);
+          throw new Error(data?.error || 'Failed to send message');
+        }
+      } catch (supabaseError) {
+        console.log('Supabase Edge Function failed, trying fallback OpenAI API...');
+        
+        // Fallback to direct OpenAI API
+        const conversationHistory = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        const aiResponse = await callOpenAI([
+          ...conversationHistory,
+          { role: 'user', content: message }
+        ], SYSTEM_PROMPT);
 
-      if (data && data.success) {
-        const aiMessage = { role: 'assistant', content: data.response, timestamp: new Date() };
+        const aiMessage = { role: 'assistant', content: aiResponse, timestamp: new Date() };
         setMessages(prev => [...prev, aiMessage]);
 
         // Check if AI is ready to generate deliverables
-        if (data.isReadyToGenerate) {
+        if (aiResponse.includes('Should I generate the final deliverables list?')) {
           setCurrentState(STATES.READY_TO_GENERATE);
         }
-      } else {
-        console.error('AI response error for message:', data);
-        throw new Error(data?.error || 'Failed to send message');
       }
     } catch (err) {
       console.error('Send message error:', err);
       const errorInfo = categorizeError(err);
       
-      // If it's a function not found error or CORS/network error, try direct AI call
-      if (err.message?.includes('function') || err.message?.includes('404') || err.message?.includes('CORS') || err.message?.includes('Failed to send a request to the Edge Function')) {
-        console.log('Trying direct AI call for message as fallback...');
-        try {
-          // Import and use the AI agent directly
-          const { continueConversation: directContinue } = await import('../../services/aiVideoAgent.js');
-          
-          // Get conversation history from current messages
-          const conversationHistory = messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }));
-          
-          const response = await directContinue(conversationHistory, message);
-          
-          if (response.success) {
-            const aiMessage = { role: 'assistant', content: response.response, timestamp: new Date() };
-            setMessages(prev => [...prev, aiMessage]);
-            
-            // Check if AI is ready to generate deliverables (for direct AI call)
-            if (response.response.toLowerCase().includes('should i generate the final deliverables list')) {
-              setCurrentState(STATES.READY_TO_GENERATE);
-            }
-            return;
-          } else {
-            throw new Error(response.error || 'Direct AI call failed');
-          }
-        } catch (directError) {
-          console.error('Direct AI call error for message:', directError);
-          
-          // Check if it's a configuration error
-          if (directError.message?.includes('api key') || directError.message?.includes('configuration') || directError.message?.includes('not configured')) {
-            setError({
-              message: 'OpenAI API key is not configured. Please add VITE_OPENAI_API_KEY to your .env file.',
-              type: ERROR_TYPES.AI_SERVICE,
-              retryable: false,
-              originalError: directError.message
-            });
-          } else {
-            setError({
-              message: 'AI service is temporarily unavailable. Please try again later.',
-              type: ERROR_TYPES.AI_SERVICE,
-              retryable: true,
-              originalError: directError.message
-            });
-          }
-        }
-      } else {
-        setError({
-          message: errorInfo.message,
-          type: errorInfo.type,
-          retryable: errorInfo.retryable,
-          originalError: err.message
-        });
-      }
+      setError({
+        message: errorInfo.message,
+        type: errorInfo.type,
+        retryable: errorInfo.retryable,
+        originalError: err.message
+      });
     } finally {
       setLoadingState(null);
     }
@@ -269,65 +302,67 @@ const AIDeliverableChat = ({
     setError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          action: 'generate',
-          projectId: projectData.id
+      // Try Supabase Edge Function first
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
+            action: 'generate',
+            projectId: projectData.id
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          setGeneratedDeliverables(data.deliverables);
+          setCurrentState(STATES.REVIEWING_DELIVERABLES);
+          return; // Success, exit early
+        } else {
+          throw new Error(data.error || 'Failed to generate deliverables');
         }
-      });
+      } catch (supabaseError) {
+        console.log('Supabase Edge Function failed, trying fallback OpenAI API...');
+        
+        // Fallback to direct OpenAI API
+        const conversationHistory = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        const extractionPrompt = `Based on our conversation, please extract the final deliverables as a JSON array. Each deliverable should be a string with specific, measurable requirements. Return ONLY the JSON array, no other text. Example format: ["Create 60-second product demo video in 4K resolution", "Deliver final MP4 file under 100MB with H.264 codec"]`;
+        
+        const aiResponse = await callOpenAI([
+          ...conversationHistory,
+          { role: 'user', content: extractionPrompt }
+        ], SYSTEM_PROMPT);
 
-      if (error) throw error;
+        // Try to parse the JSON response
+        let deliverables = [];
+        try {
+          const jsonMatch = aiResponse.match(/\[.*\]/s);
+          if (jsonMatch) {
+            deliverables = JSON.parse(jsonMatch[0]);
+          } else {
+            deliverables = JSON.parse(aiResponse);
+          }
+        } catch (parseError) {
+          // Fallback: extract deliverables from text
+          deliverables = extractDeliverablesFromText(aiResponse);
+        }
 
-      if (data.success) {
-        setGeneratedDeliverables(data.deliverables);
+        setGeneratedDeliverables(deliverables);
         setCurrentState(STATES.REVIEWING_DELIVERABLES);
-      } else {
-        throw new Error(data.error || 'Failed to generate deliverables');
       }
     } catch (err) {
       console.error('Generate deliverables error:', err);
       
-      // If it's a function not found error or CORS/network error, try direct AI call
-      if (err.message?.includes('function') || err.message?.includes('404') || err.message?.includes('CORS') || err.message?.includes('Failed to send a request to the Edge Function')) {
-        console.log('Trying direct AI call for generate deliverables as fallback...');
-        try {
-          // Import and use the AI agent directly
-          const { generateDeliverables: directGenerate } = await import('../../services/aiVideoAgent.js');
-          
-          // Get conversation history from current messages
-          const conversationHistory = messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }));
-          
-          const response = await directGenerate(conversationHistory);
-          
-          if (response.success) {
-            setGeneratedDeliverables(response.deliverables);
-            setCurrentState(STATES.REVIEWING_DELIVERABLES);
-            return;
-          } else {
-            throw new Error(response.error || 'Direct AI generate failed');
-          }
-        } catch (directError) {
-          console.error('Direct AI generate error:', directError);
-          const errorInfo = categorizeError(directError);
-          setError({
-            message: errorInfo.message,
-            type: errorInfo.type,
-            retryable: errorInfo.retryable,
-            originalError: directError.message
-          });
-        }
-      } else {
-        const errorInfo = categorizeError(err);
-        setError({
-          message: errorInfo.message,
-          type: errorInfo.type,
-          retryable: errorInfo.retryable,
-          originalError: err.message
-        });
-      }
+      const errorInfo = categorizeError(err);
+      setError({
+        message: errorInfo.message,
+        type: errorInfo.type,
+        retryable: errorInfo.retryable,
+        originalError: err.message
+      });
     } finally {
       setLoadingState(null);
     }
@@ -338,53 +373,44 @@ const AIDeliverableChat = ({
     setError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          action: 'accept',
-          projectId: projectData.id,
-          deliverables: generatedDeliverables
+      // Try Supabase Edge Function first
+      try {
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
+            action: 'accept',
+            projectId: projectData.id,
+            deliverables: generatedDeliverables
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          // Call the callback to update parent component
+          onDeliverablesGenerated(generatedDeliverables);
+          onClose();
+          return; // Success, exit early
+        } else {
+          throw new Error(data.error || 'Failed to accept deliverables');
         }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        // Call the callback to update parent component
+      } catch (supabaseError) {
+        console.log('Supabase Edge Function failed, using fallback...');
+        
+        // Fallback: Just call the callback directly since we can't save to database
+        // This will work for local development and Vercel deployment
         onDeliverablesGenerated(generatedDeliverables);
         onClose();
-      } else {
-        throw new Error(data.error || 'Failed to accept deliverables');
       }
     } catch (err) {
       console.error('Accept deliverables error:', err);
       
-      // If it's a function not found error or CORS/network error, try direct approach
-      if (err.message?.includes('function') || err.message?.includes('404') || err.message?.includes('CORS') || err.message?.includes('Failed to send a request to the Edge Function')) {
-        console.log('Trying direct accept deliverables as fallback...');
-        try {
-          // For direct fallback, just call the callback directly since we have the deliverables
-          onDeliverablesGenerated(generatedDeliverables);
-          onClose();
-          return;
-        } catch (directError) {
-          console.error('Direct accept deliverables error:', directError);
-          const errorInfo = categorizeError(directError);
-          setError({
-            message: errorInfo.message,
-            type: errorInfo.type,
-            retryable: errorInfo.retryable,
-            originalError: directError.message
-          });
-        }
-      } else {
-        const errorInfo = categorizeError(err);
-        setError({
-          message: errorInfo.message,
-          type: errorInfo.type,
-          retryable: errorInfo.retryable,
-          originalError: err.message
-        });
-      }
+      const errorInfo = categorizeError(err);
+      setError({
+        message: errorInfo.message,
+        type: errorInfo.type,
+        retryable: errorInfo.retryable,
+        originalError: err.message
+      });
     } finally {
       setLoadingState(null);
     }
@@ -412,19 +438,7 @@ const AIDeliverableChat = ({
     }
   };
 
-  const handleStartOver = () => {
-    setMessages([]);
-    setError(null);
-    setRetryCount(0);
-    setShowFallbackOptions(false);
-    setCurrentState(STATES.CHATTING);
-    startConversation();
-  };
 
-  const handleManualEntry = () => {
-    // Close the chat and let user enter deliverables manually
-    onClose();
-  };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -502,9 +516,7 @@ const AIDeliverableChat = ({
     }
   };
 
-  const shouldShowFallbackOptions = () => {
-    return error && (retryCount >= 2 || !error.retryable);
-  };
+
 
   if (!isOpen) return null;
 
@@ -610,35 +622,7 @@ const AIDeliverableChat = ({
             </div>
           )}
 
-          {/* Fallback options */}
-          {shouldShowFallbackOptions() && (
-            <div className="flex justify-start">
-              <div className="bg-gradient-to-r from-yellow-900/80 to-orange-800/80 border border-yellow-500/50 rounded-2xl px-4 py-4 max-w-[80%] shadow-lg">
-                <div className="text-yellow-200 text-sm">
-                  <div className="font-medium mb-3 flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    Having trouble with AI? Try these options:
-                  </div>
-                  <div className="space-y-3">
-                    <button
-                      onClick={handleStartOver}
-                      className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline hover:bg-yellow-800/30 p-2 rounded-lg transition-colors"
-                    >
-                      🔄 Start over with a fresh conversation
-                    </button>
-                    <button
-                      onClick={handleManualEntry}
-                      className="block w-full text-left text-yellow-300 hover:text-yellow-100 underline hover:bg-yellow-800/30 p-2 rounded-lg transition-colors"
-                    >
-                      ✏️ Enter deliverables manually
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           <div ref={messagesEndRef} />
         </div>

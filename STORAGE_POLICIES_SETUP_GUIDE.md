@@ -141,3 +141,4 @@ After completing these steps:
 **Status**: 🔧 **MANUAL SETUP REQUIRED**  
 **Priority**: 🔴 **HIGH**  
 **Next Step**: Run `fix_project_file_upload_minimal.sql` then set up storage policies manually
+

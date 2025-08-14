@@ -25,3 +25,4 @@ WHERE schemaname = 'storage' AND tablename = 'objects';
 
 -- NOTE: This is a temporary fix for testing only
 -- We'll re-enable RLS and fix the policies properly once we confirm this works
+

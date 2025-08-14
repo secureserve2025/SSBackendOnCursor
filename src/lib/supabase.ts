@@ -960,18 +960,8 @@ export const getMessages = async (projectId: string) => {
     console.log('Fetching messages for project:', projectId);
     
     const { data, error } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        client_profiles!messages_client_id_fkey(
-          full_name,
-          client_id
-        ),
-        freelancer_profiles!messages_freelancer_id_fkey(
-          full_name,
-          freelancer_id
-        )
-      `)
+      .from('project_messages')
+      .select('*')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true });
 
@@ -2826,7 +2816,7 @@ export const getClientNotifications = async (userId: string) => {
         let latestMessage = null;
         try {
           const { data: messageData } = await supabase
-            .from('messages')
+            .from('project_messages')
             .select('created_at')
             .eq('project_id', project.id)
             .order('created_at', { ascending: false })
@@ -2834,7 +2824,7 @@ export const getClientNotifications = async (userId: string) => {
             .single();
           latestMessage = messageData;
         } catch (error) {
-          console.log('No messages found for project or messages table not accessible:', project.id);
+          console.log('No messages found for project or project_messages table not accessible:', project.id);
         }
 
         // Get verification report for AI Verified projects
@@ -3011,7 +3001,7 @@ export const getFreelancerNotifications = async (freelancerId: string) => {
         let latestMessage = null;
         try {
           const { data: messageData } = await supabase
-            .from('messages')
+            .from('project_messages')
             .select('created_at')
             .eq('project_id', project.id)
             .order('created_at', { ascending: false })
@@ -3019,7 +3009,7 @@ export const getFreelancerNotifications = async (freelancerId: string) => {
             .single();
           latestMessage = messageData;
         } catch (error) {
-          console.log('No messages found for project or messages table not accessible:', project.id);
+          console.log('No messages found for project or project_messages table not accessible:', project.id);
         }
 
         // Get verification report for AI Verified projects

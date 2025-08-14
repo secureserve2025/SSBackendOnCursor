@@ -56,3 +56,4 @@ EXCEPTION
     WHEN OTHERS THEN
         RAISE NOTICE 'Constraint test failed: %', SQLERRM;
 END $$;
+

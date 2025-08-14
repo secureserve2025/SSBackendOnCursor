@@ -153,3 +153,4 @@ SELECT
         ELSE 'User type unknown'
     END as user_type;
 
+

@@ -23,3 +23,4 @@ FROM projects p
 WHERE p.created_at >= '2025-07-30'
 ORDER BY p.created_at DESC 
 LIMIT 5;
+

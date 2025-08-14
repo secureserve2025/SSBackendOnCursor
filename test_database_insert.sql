@@ -49,3 +49,4 @@ END $$;
 
 -- 2. Check current file count
 SELECT COUNT(*) as current_file_count FROM project_files;
+

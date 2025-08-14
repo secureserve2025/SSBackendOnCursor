@@ -51,3 +51,4 @@ FROM pg_policies
 WHERE tablename = 'objects' AND schemaname = 'storage'
 AND (qual LIKE '%bucket_id%' OR with_check LIKE '%bucket_id%' OR qual LIKE '%auth%' OR with_check LIKE '%auth%')
 ORDER BY policyname;
+

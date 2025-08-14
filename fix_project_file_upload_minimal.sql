@@ -91,3 +91,4 @@ BEGIN
     RAISE NOTICE 'Project file upload fix applied successfully!';
     RAISE NOTICE 'Note: Storage policies are managed by Supabase automatically.';
 END $$;
+

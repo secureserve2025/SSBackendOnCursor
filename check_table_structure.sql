@@ -69,3 +69,4 @@ SELECT
     created_at
 FROM freelancer_profiles 
 LIMIT 3;
+

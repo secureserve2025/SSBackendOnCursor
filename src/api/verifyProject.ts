@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getISTDateForInput } from '../lib/istUtils';
 
 // Initialize Google AI client
 const geminiApiKey = import.meta.env.VITE_GOOGLE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY;
@@ -30,11 +31,20 @@ VERIFICATION PROCESS:
 5. Determine if the submission is on time or late
 
 RESPONSE FORMAT:
+
+Project Name: [Insert the actual project name from the Project Name field in the input data]
+
 - Overall Completion: [X]%
+
 - Deliverable 1: [X]% - [specific feedback]
 - Deliverable 2: [X]% - [specific feedback]
-- Timeline Status: [On Time/Late]
-- Summary: [brief overall assessment]`;
+
+- Timeline Status: [Before time/On time/Late by X days]
+  * Use 'Before time' if CURRENT DATE is less than COMPLETION DATE
+  * Use 'On time' if CURRENT DATE matches COMPLETION DATE
+  * Use 'Late by X days' if CURRENT DATE is after COMPLETION DATE (where X = CURRENT DATE - COMPLETION DATE)
+
+- SUMMARY: [brief overall assessment]`;
 
 interface ProjectDetails {
   id: string;
@@ -184,12 +194,14 @@ UPLOAD STATUS: ${projectDetails.video_info.upload_status}
 UPLOAD DATE: ${projectDetails.video_info.created_at}` : 
       'No video file submitted';
 
+    const currentDate = getISTDateForInput(); // Get current date in IST (YYYY-MM-DD format)
     const projectData = `
-PROJECT: ${projectDetails.name}
+Project Name: ${projectDetails.name}
 REQUIREMENTS: ${projectDetails.requirements}
 DELIVERABLES: ${projectDetails.deliverables.join('\n')}
 VIDEO SUBMISSION: ${videoDetails}
 COMPLETION DATE: ${projectDetails.completion_date || 'Not specified'}
+CURRENT DATE: ${currentDate}
     `.trim();
 
     const prompt = `${VERIFICATION_PROMPT}

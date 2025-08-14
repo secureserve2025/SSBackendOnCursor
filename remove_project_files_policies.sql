@@ -82,3 +82,4 @@ SELECT
     'project_files' as table_name,
     COUNT(*) as file_count
 FROM project_files;
+

@@ -95,3 +95,4 @@ WHERE p.created_at > NOW() - INTERVAL '7 days'
 GROUP BY p.id, p.project_id, p.project_name, p.created_at
 ORDER BY p.created_at DESC
 LIMIT 10;
+

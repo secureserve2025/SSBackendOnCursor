@@ -41,3 +41,4 @@ FROM storage.objects
 WHERE bucket_id = 'project-files'
 ORDER BY created_at DESC 
 LIMIT 5;
+

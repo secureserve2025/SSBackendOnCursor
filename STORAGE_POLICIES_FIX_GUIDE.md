@@ -93,3 +93,4 @@ After completing these steps:
 **Status**: 🔧 **MANUAL SETUP REQUIRED**  
 **Priority**: 🔴 **HIGH**  
 **Next Step**: Run `fix_project_files_simple.sql` then fix storage policies manually
+

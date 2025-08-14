@@ -122,3 +122,4 @@ BEGIN
     
     RAISE NOTICE 'Project file upload fix applied successfully!';
 END $$;
+

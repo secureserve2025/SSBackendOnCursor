@@ -48,3 +48,4 @@ SELECT
     allowed_mime_types
 FROM storage.buckets 
 WHERE id = 'project-files';
+

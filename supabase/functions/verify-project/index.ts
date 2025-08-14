@@ -27,11 +27,20 @@ VERIFICATION PROCESS:
 5. Determine if the submission is on time or late
 
 RESPONSE FORMAT:
+
+Project Name: [Insert the actual project name from the Project Name field in the input data]
+
 - Overall Completion: [X]%
+
 - Deliverable 1: [X]% - [specific feedback]
 - Deliverable 2: [X]% - [specific feedback]
-- Timeline Status: [On Time/Late]
-- Summary: [brief overall assessment]`
+
+- Timeline Status: [Before time/On time/Late by X days]
+  * Use 'Before time' if CURRENT DATE is less than COMPLETION DATE
+  * Use 'On time' if CURRENT DATE matches COMPLETION DATE
+  * Use 'Late by X days' if CURRENT DATE is after COMPLETION DATE (where X = CURRENT DATE - COMPLETION DATE)
+
+- SUMMARY: [brief overall assessment]`
 
 interface ProjectDetails {
   id: string
@@ -108,12 +117,20 @@ async function callAIModel(projectDetails: ProjectDetails): Promise<Verification
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
 
     // Format project data for AI
+    // Get current date in IST (YYYY-MM-DD format)
+    const getISTDate = () => {
+      const now = new Date();
+      const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      return istTime.toISOString().split('T')[0];
+    };
+    const currentDate = getISTDate();
     const projectData = `
-PROJECT: ${projectDetails.name}
+Project Name: ${projectDetails.name}
 REQUIREMENTS: ${projectDetails.requirements}
 DELIVERABLES: ${projectDetails.deliverables.join('\n')}
 VIDEO SUBMISSION: ${projectDetails.video_info ? 'Video file submitted' : 'No video file submitted'}
 COMPLETION DATE: ${projectDetails.completion_date || 'Not specified'}
+CURRENT DATE: ${currentDate}
     `.trim()
 
     const prompt = `${VERIFICATION_PROMPT}

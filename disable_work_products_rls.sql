@@ -28,3 +28,4 @@ WHERE tablename = 'work_products';
 -- Note: This is a temporary fix. RLS should be re-enabled with proper policies later
 -- when the database relationships are fully consistent.
 
+

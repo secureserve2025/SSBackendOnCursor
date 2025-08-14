@@ -16,3 +16,4 @@ FROM pg_constraint
 WHERE conrelid = 'projects'::regclass 
 AND contype = 'c'
 ORDER BY conname;
+

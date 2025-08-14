@@ -71,3 +71,4 @@ BEGIN
         RAISE NOTICE 'No projects found for current user: %', auth.uid();
     END IF;
 END $$;
+

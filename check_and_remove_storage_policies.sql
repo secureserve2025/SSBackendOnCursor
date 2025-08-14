@@ -56,3 +56,4 @@ SELECT
     public
 FROM storage.buckets 
 WHERE id = 'project-files';
+

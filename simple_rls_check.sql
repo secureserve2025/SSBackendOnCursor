@@ -57,3 +57,4 @@ SELECT
     COUNT(*) as file_count
 FROM project_files
 GROUP BY storage_bucket;
+

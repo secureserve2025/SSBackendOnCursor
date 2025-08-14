@@ -76,3 +76,4 @@ SELECT
     public
 FROM storage.buckets 
 WHERE name IN ('work-products', 'verification-reports', 'project-files');
+

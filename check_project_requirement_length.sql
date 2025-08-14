@@ -5,3 +5,4 @@ SELECT
     character_maximum_length
 FROM information_schema.columns 
 WHERE table_name = 'projects' AND column_name = 'project_requirement';
+
