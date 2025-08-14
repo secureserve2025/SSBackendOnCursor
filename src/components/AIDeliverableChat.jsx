@@ -522,7 +522,7 @@ SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col backdrop-blur-sm">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl w-full max-w-2xl h-[90vh] sm:h-[80vh] flex flex-col backdrop-blur-sm">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-cyan-500/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
           <div className="flex items-center space-x-4">
@@ -631,7 +631,7 @@ SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
         <div className="border-t border-cyan-500/30 p-6 bg-gradient-to-r from-gray-800/50 to-gray-700/50">
           {currentState === STATES.CHATTING && (
             <div className="space-y-4">
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                 <input
                   ref={inputRef}
                   type="text"
@@ -645,7 +645,7 @@ SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
                 <button
                   onClick={() => sendMessage(userInput)}
                   disabled={!userInput.trim() || loadingState}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg font-medium"
                 >
                   Send
                 </button>
@@ -664,7 +664,7 @@ SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
                 <div className="font-bold text-lg mb-2 text-green-300">Ready to generate deliverables!</div>
                 <div className="text-sm">The AI specialist has gathered enough information to create your project deliverables.</div>
               </div>
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={generateDeliverables}
                   disabled={loadingState}
@@ -704,7 +704,7 @@ SCOPE: ${projectData.requirements?.length > 100 ? 'complex' : 'simple'}`;
                 </div>
               </div>
               
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={acceptDeliverables}
                   disabled={loadingState}

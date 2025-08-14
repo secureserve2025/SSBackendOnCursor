@@ -699,7 +699,7 @@ const Messages: React.FC = () => {
              {/* Main Content */}
                <div className="flex h-[calc(100vh-80px)]">
           {/* Left Sidebar - Project Selection */}
-          <div className={`${sidebarCollapsed ? 'w-16 lg:w-16' : 'w-80'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
+          <div className={`${sidebarCollapsed ? 'w-0 lg:w-16' : 'w-full lg:w-80'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
             <div className="p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
                 <h2 className={`text-lg font-semibold text-white ${sidebarCollapsed ? 'hidden' : ''}`}>Projects</h2>
