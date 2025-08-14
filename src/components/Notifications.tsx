@@ -9,6 +9,7 @@ interface NotificationProject {
   created_at: string;
   updated_at: string;
   freelancer_profiles?: {
+    freelancer_id: string;
     full_name: string;
     email: string;
     updated_at: string;
@@ -139,7 +140,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
                 {userType === 'client' ? 'Freelancer ID:' : 'Client ID:'}
               </span>
               <span className="text-sm text-white">
-                {userType === 'client' ? (project.freelancer_display_id || project.freelancer_id) : otherParty?.client_id}
+                {userType === 'client' ? (project.freelancer_profiles?.freelancer_id || project.freelancer_id) : otherParty?.client_id}
               </span>
             </div>
             <div className="flex items-center space-x-2">

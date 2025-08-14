@@ -56,3 +56,4 @@ SELECT
 FROM client_profiles 
 ORDER BY created_at DESC;
 
+

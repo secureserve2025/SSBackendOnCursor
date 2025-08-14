@@ -1050,45 +1050,56 @@ export const sendMessage = async (messageData: any) => {
 
 export const getProjectsForMessaging = async (userId: string, userType: 'client' | 'freelancer') => {
   try {
-    console.log('Fetching projects for messaging:', { userId, userType });
+    console.log('🔍 Fetching projects for messaging:', { userId, userType });
     
-    // First, get the profile ID (UUID) for the user
+    // Check if userId is already a UUID (profile ID) or user_id
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+    
     let profileId: string;
     
-    if (userType === 'client') {
-      const { data: clientProfile, error: clientError } = await supabase
-        .from('client_profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (clientError || !clientProfile) {
-        console.error('Error fetching client profile:', clientError);
-        return { data: [], error: null };
-      }
-      profileId = clientProfile.id;
+    if (isUUID) {
+      // If userId is already a UUID, assume it's the profile ID
+      profileId = userId;
+      console.log('✅ Using provided UUID as profile ID:', profileId);
     } else {
-      const { data: freelancerProfile, error: freelancerError } = await supabase
-        .from('freelancer_profiles')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (freelancerError || !freelancerProfile) {
-        console.error('Error fetching freelancer profile:', freelancerError);
-        return { data: [], error: null };
+      // If userId is not a UUID, assume it's user_id and look up the profile
+      if (userType === 'client') {
+        const { data: clientProfile, error: clientError } = await supabase
+          .from('client_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+        
+        if (clientError || !clientProfile) {
+          console.error('❌ Error fetching client profile:', clientError);
+          return { data: [], error: null };
+        }
+        profileId = clientProfile.id;
+        console.log('✅ Client profile found:', profileId);
+      } else {
+        const { data: freelancerProfile, error: freelancerError } = await supabase
+          .from('freelancer_profiles')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+        
+        if (freelancerError || !freelancerProfile) {
+          console.error('❌ Error fetching freelancer profile:', freelancerError);
+          return { data: [], error: null };
+        }
+        profileId = freelancerProfile.id;
+        console.log('✅ Freelancer profile found:', profileId);
       }
-      profileId = freelancerProfile.id;
     }
     
-    // Get projects using the profile ID (UUID)
+    // Get projects using the profile ID (UUID) with better error handling
     let projectsQuery;
     if (userType === 'client') {
       // Get projects where user is the client (exclude "Project Created" status)
       projectsQuery = supabase
         .from('projects')
         .select('*')
-        .eq('client_id', profileId)  // Use profile ID (UUID)
+        .eq('client_id', profileId)
         .neq('project_status_workflow', 'Project Created')
         .order('updated_at', { ascending: false });
     } else {
@@ -1096,7 +1107,7 @@ export const getProjectsForMessaging = async (userId: string, userType: 'client'
       projectsQuery = supabase
         .from('projects')
         .select('*')
-        .eq('freelancer_id', profileId)  // Use profile ID (UUID)
+        .eq('freelancer_id', profileId)
         .neq('project_status_workflow', 'Project Created')
         .order('updated_at', { ascending: false });
     }
@@ -1104,48 +1115,62 @@ export const getProjectsForMessaging = async (userId: string, userType: 'client'
     const { data: projectsData, error: projectsError } = await projectsQuery;
 
     if (projectsError) {
-      console.error('Error fetching projects for messaging:', projectsError);
+      console.error('❌ Error fetching projects for messaging:', projectsError);
       throw new Error(`Database error: ${projectsError.message || 'Unknown database error'}`);
     }
 
-    console.log('Projects fetched:', projectsData?.length || 0);
+    console.log('📊 Projects fetched:', projectsData?.length || 0);
+    console.log('📋 Project statuses:', (projectsData as any[])?.map((p: any) => p.project_status_workflow) || []);
 
-    // Get profile details separately for each project
+    // Get profile details separately for each project with better error handling
     const projectsWithProfiles = await Promise.all(
       (projectsData || []).map(async (project) => {
-        if (userType === 'client' && project.freelancer_id) {
-          // Get freelancer details for client view
-          const { data: freelancerData } = await supabase
-            .from('freelancer_profiles')
-            .select('full_name, freelancer_id')
-            .eq('id', project.freelancer_id)
-            .single();
-          
-          return {
-            ...project,
-            freelancer_profiles: freelancerData || null
-          };
-        } else if (userType === 'freelancer' && project.client_id) {
-          // Get client details for freelancer view
-          const { data: clientData } = await supabase
-            .from('client_profiles')
-            .select('full_name, client_id')
-            .eq('id', project.client_id)
-            .single();
-          
-          return {
-            ...project,
-            client_profiles: clientData || null
-          };
+        try {
+          if (userType === 'client' && project.freelancer_id) {
+            // Get freelancer details for client view
+            const { data: freelancerData, error: freelancerError } = await supabase
+              .from('freelancer_profiles')
+              .select('full_name, freelancer_id')
+              .eq('id', project.freelancer_id)
+              .single();
+            
+            if (freelancerError) {
+              console.warn('⚠️ Error fetching freelancer details for project:', project.id, freelancerError);
+            }
+            
+            return {
+              ...project,
+              freelancer_profiles: freelancerData || null
+            };
+          } else if (userType === 'freelancer' && project.client_id) {
+            // Get client details for freelancer view
+            const { data: clientData, error: clientError } = await supabase
+              .from('client_profiles')
+              .select('full_name, client_id')
+              .eq('id', project.client_id)
+              .single();
+            
+            if (clientError) {
+              console.warn('⚠️ Error fetching client details for project:', project.id, clientError);
+            }
+            
+            return {
+              ...project,
+              client_profiles: clientData || null
+            };
+          }
+          return project;
+        } catch (error) {
+          console.error('❌ Error processing project:', project.id, error);
+          return project; // Return project without profile details if there's an error
         }
-        return project;
       })
     );
 
-    console.log('Projects for messaging fetched successfully:', projectsWithProfiles?.length || 0);
+    console.log('✅ Projects for messaging fetched successfully:', projectsWithProfiles?.length || 0);
     return { data: projectsWithProfiles, error: null };
   } catch (error) {
-    console.error('Exception in getProjectsForMessaging:', error);
+    console.error('❌ Exception in getProjectsForMessaging:', error);
     return { data: null, error: { message: 'Failed to fetch projects for messaging' } };
   }
 }
@@ -2195,7 +2220,37 @@ export const getClientTransactions = async (clientId: string) => {
       }
 
       console.log('Final client transactions:', detailedTransactions);
-      return { data: detailedTransactions, error: null };
+      
+      // Now fetch human-readable freelancer IDs for each transaction
+      const transactionsWithReadableIds = await Promise.all(
+        (detailedTransactions || []).map(async (transaction) => {
+          if (transaction.projects?.freelancer_id) {
+            try {
+              // Get the human-readable freelancer_id from freelancer_profiles
+              const { data: freelancerProfile, error: freelancerError } = await supabase
+                .from('freelancer_profiles')
+                .select('freelancer_id')
+                .eq('id', transaction.projects.freelancer_id)
+                .single();
+              
+              if (!freelancerError && freelancerProfile) {
+                return {
+                  ...transaction,
+                  projects: {
+                    ...transaction.projects,
+                    freelancer_id: freelancerProfile.freelancer_id // Replace UUID with human-readable ID
+                  }
+                };
+              }
+            } catch (err) {
+              console.error('Error fetching freelancer profile for transaction:', err);
+            }
+          }
+          return transaction;
+        })
+      );
+      
+      return { data: transactionsWithReadableIds, error: null };
     } else {
       console.log('No transactions found after filtering');
       return { data: [], error: null };
@@ -2237,20 +2292,20 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
     }
 
     // First, let's get all transactions for this freelancer to debug
-    const { data: allTransactions, error: allTransactionsError } = await supabase
-      .from('transactions')
-      .select(`
-        *,
-        projects(
-          project_id,
-          project_name,
-          client_id,
-          project_status_workflow,
-          freelancer_id
-        )
-      `)
-      .eq('projects.freelancer_id', actualFreelancerId)
-      .order('created_at', { ascending: false });
+          const { data: allTransactions, error: allTransactionsError } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          projects(
+            project_id,
+            project_name,
+            client_id,
+            project_status_workflow,
+            freelancer_id
+          )
+        `)
+        .eq('projects.freelancer_id', actualFreelancerId)
+        .order('created_at', { ascending: false });
 
     if (allTransactionsError) {
       console.error('Error fetching all freelancer transactions:', allTransactionsError);
@@ -2304,7 +2359,37 @@ export const getFreelancerTransactions = async (freelancerId: string) => {
       }
 
       console.log('Final freelancer transactions:', detailedTransactions);
-      return { data: detailedTransactions, error: null };
+      
+      // Now fetch human-readable client IDs for each transaction
+      const transactionsWithReadableIds = await Promise.all(
+        (detailedTransactions || []).map(async (transaction) => {
+          if (transaction.projects?.client_id) {
+            try {
+              // Get the human-readable client_id from client_profiles
+              const { data: clientProfile, error: clientError } = await supabase
+                .from('client_profiles')
+                .select('client_id')
+                .eq('id', transaction.projects.client_id)
+                .single();
+              
+              if (!clientError && clientProfile) {
+                return {
+                  ...transaction,
+                  projects: {
+                    ...transaction.projects,
+                    client_id: clientProfile.client_id // Replace UUID with human-readable ID
+                  }
+                };
+              }
+            } catch (err) {
+              console.error('Error fetching client profile for transaction:', err);
+            }
+          }
+          return transaction;
+        })
+      );
+      
+      return { data: transactionsWithReadableIds, error: null };
     } else {
       console.log('No freelancer transactions found after filtering');
       return { data: [], error: null };

@@ -63,3 +63,4 @@ FROM freelancer_profiles
 ORDER BY profile_type, created_at DESC
 LIMIT 10;
 
+

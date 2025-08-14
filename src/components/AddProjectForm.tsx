@@ -1,16 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { X, Plus, Minus, Wand2, Calendar, User, FileText, Folder, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { validateFreelancerId, createProject, getAllFreelancerIds, getCurrentUser, getClientProfile, updateProjectDeliverables, createEscrowTransaction } from '../lib/supabase';
 import EmailService, { ProjectNotificationData } from '../emails/emailService';
 import AIDeliverableChat from './AIDeliverableChat';
 import { getTomorrowISTDateForInput, isDateInPastIST, formatToISTDisplay } from '../lib/istUtils';
-
-interface FileUpload {
-  id: string;
-  file: File;
-  progress: number;
-  status: 'uploading' | 'completed' | 'error';
-}
 
 interface FormData {
   projectId: string;
@@ -20,7 +13,6 @@ interface FormData {
   completionDate: string;
   projectRequirement: string;
   projectValue: string;
-  files: FileUpload[];
   deliverables: string[];
 }
 
@@ -42,7 +34,6 @@ const AddProjectForm: React.FC = () => {
     completionDate: '',
     projectRequirement: '',
     projectValue: '',
-    files: [],
     deliverables: ['', '', '', '']
   });
 
@@ -56,7 +47,6 @@ const AddProjectForm: React.FC = () => {
   });
 
   const [showDeliverables, setShowDeliverables] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValidatingFreelancer, setIsValidatingFreelancer] = useState(false);
   const [freelancerValidationStatus, setFreelancerValidationStatus] = useState<'idle' | 'validating' | 'success' | 'error'>('idle');
@@ -76,8 +66,6 @@ const AddProjectForm: React.FC = () => {
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [aiSuccessMessage, setAiSuccessMessage] = useState<string>('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dragCounterRef = useRef(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const categories = [
@@ -87,11 +75,7 @@ const AddProjectForm: React.FC = () => {
     { value: 'Gen AI Services', label: 'Gen AI Services (will be enabled soon)', enabled: false }
   ];
 
-  const allowedFileTypes = [
-    '.pdf', '.doc', '.docx'
-  ];
 
-  const maxFileSize = 5 * 1024 * 1024; // 5MB per file
 
   // Load current user and client profile
   useEffect(() => {
@@ -225,7 +209,9 @@ const AddProjectForm: React.FC = () => {
         if (value.trim().length > 30) return 'Project name cannot exceed 30 characters';
         return '';
       case 'projectRequirement':
-        return value.trim().length < 10 ? 'Project requirement must be at least 10 characters long' : '';
+        if (value.trim().length < 10) return 'Project requirement must be at least 10 characters long';
+        if (value.trim().length > 500) return 'Project requirement cannot exceed 500 characters';
+        return '';
       case 'freelancerId':
         // Freelancer ID validation is handled by database validation, not format validation
         if (!value.trim()) return 'Freelancer ID is required';
@@ -358,99 +344,9 @@ const AddProjectForm: React.FC = () => {
     }
   };
 
-  // File upload handlers
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current++;
-    setIsDragOver(true);
-  }, []);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current--;
-    if (dragCounterRef.current === 0) {
-      setIsDragOver(false);
-    }
-  }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    dragCounterRef.current = 0;
-    
-    const files = Array.from(e.dataTransfer.files);
-    handleFileUpload(files);
-  }, []);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      handleFileUpload(files);
-    }
-  };
-
-  const handleFileUpload = (files: File[]) => {
-    const validFiles = files.filter(file => {
-      const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-      return allowedFileTypes.includes(extension) && file.size <= maxFileSize;
-    });
-
-    // Limit to maximum 1 file
-    const filesToAdd = validFiles.slice(0, 1 - formData.files.length);
-
-    filesToAdd.forEach(file => {
-      const fileUpload: FileUpload = {
-        id: Date.now() + Math.random().toString(),
-        file,
-        progress: 0,
-        status: 'uploading'
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        files: [...prev.files, fileUpload]
-      }));
-
-      // Simulate file upload progress
-      const interval = setInterval(() => {
-        setFormData(prev => ({
-          ...prev,
-          files: prev.files.map(f => 
-            f.id === fileUpload.id 
-              ? { ...f, progress: Math.min(f.progress + 10, 100) }
-              : f
-          )
-        }));
-      }, 200);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        setFormData(prev => ({
-          ...prev,
-          files: prev.files.map(f => 
-            f.id === fileUpload.id 
-              ? { ...f, progress: 100, status: 'completed' }
-              : f
-          )
-        }));
-      }, 2000);
-    });
-  };
-
-  const removeFile = (fileId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      files: prev.files.filter(f => f.id !== fileId)
-    }));
-  };
 
   // Deliverables handlers
   const handleDeliverableChange = (index: number, value: string) => {
@@ -606,13 +502,9 @@ const AddProjectForm: React.FC = () => {
         desired_completion_date: formData.completionDate
       };
 
-      // Extract files (no deliverables yet)
-      const files = formData.files.map(f => f.file);
-
       console.log('Creating project with data:', projectData);
-      console.log('Files:', files);
 
-      const { data, error } = await createProject(projectData, files, []); // Empty deliverables array
+      const { data, error } = await createProject(projectData, [], []); // No files, empty deliverables array
       
       if (error) {
         console.error('Error creating project:', error);
@@ -782,13 +674,7 @@ const AddProjectForm: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+
 
 
 
@@ -919,7 +805,7 @@ const AddProjectForm: React.FC = () => {
             id: createdProjectId,
             name: formData.projectName,
             requirements: formData.projectRequirement,
-            files: formData.files.map(f => f.file),
+            files: [], // No files since we removed file upload
             deliverables: formData.deliverables.filter(d => d.trim() !== ''),
             freelancer_id: formData.freelancerId,
             completion_date: formData.completionDate
@@ -1127,9 +1013,9 @@ const AddProjectForm: React.FC = () => {
                       <div className="p-4 text-center text-gray-400">
                         {searchTerm ? 'No freelancers found matching your search' : 'No active freelancers available'}
                         <div className="text-xs text-gray-500 mt-1">
-                          Available: {availableFreelancers.length} | Filtered: {filteredFreelancers.length}
+                          Available: {availableFreelancers?.length || 0} | Filtered: {filteredFreelancers?.length || 0}
                         </div>
-                        {availableFreelancers.length > 0 && (
+                        {availableFreelancers && availableFreelancers.length > 0 && (
                           <div className="mt-2 p-2 bg-gray-700 rounded">
                             <div className="text-xs text-gray-300 mb-1">Available freelancers:</div>
                             {availableFreelancers.map((freelancer) => (
@@ -1141,7 +1027,7 @@ const AddProjectForm: React.FC = () => {
                         )}
                       </div>
                     ) : (
-                      filteredFreelancers.map((freelancer) => (
+                      filteredFreelancers && filteredFreelancers.map((freelancer) => (
                         <div
                           key={freelancer.freelancer_id}
                           onClick={() => handleFreelancerSelect(freelancer)}
@@ -1170,8 +1056,8 @@ const AddProjectForm: React.FC = () => {
                   <button 
                     type="button"
                     onClick={async () => {
-                      console.log('🔍 Debug: Available freelancers:', availableFreelancers);
-                      console.log('🔍 Debug: Filtered freelancers:', filteredFreelancers);
+                      console.log('🔍 Debug: Available freelancers:', availableFreelancers || []);
+                      console.log('🔍 Debug: Filtered freelancers:', filteredFreelancers || []);
                       console.log('🔍 Debug: Search term:', searchTerm);
                       
                       // Test the function directly
@@ -1249,7 +1135,7 @@ const AddProjectForm: React.FC = () => {
                 onBlur={(e) => handleInputBlur('projectRequirement', e.target.value)}
                 placeholder="Describe your project requirements in detail. Include style preferences, target audience, duration, specific elements needed, etc."
                 required
-                maxLength={200}
+                maxLength={500}
                 aria-invalid={errors.projectRequirement ? 'true' : 'false'}
                 aria-describedby={`project-requirement-help ${errors.projectRequirement ? 'project-requirement-error' : ''}`.trim()}
                 className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 rounded-lg focus:outline-none transition-colors bg-gray-700 text-white placeholder-gray-400 text-sm sm:text-base resize-none ${
@@ -1261,12 +1147,12 @@ const AddProjectForm: React.FC = () => {
             </div>
             <div className="flex items-center justify-between mt-1">
               <p id="project-requirement-help" className="text-gray-400 text-xs sm:text-sm">
-                Minimum 10 characters required (max 200)
+                Minimum 10 characters required (max 500)
               </p>
               <span className={`text-xs sm:text-sm ${
                 formData.projectRequirement.length >= 10 ? 'text-green-400' : 'text-gray-400'
               }`}>
-                {formData.projectRequirement.length}/200
+                {formData.projectRequirement.length}/500
               </span>
             </div>
             {errors.projectRequirement && (
@@ -1355,97 +1241,7 @@ const AddProjectForm: React.FC = () => {
             )}
           </div>
 
-          {/* File Upload Section */}
-          <div>
-            <label className="block text-gray-300 text-sm font-semibold mb-2">
-              Project Files (Optional)
-            </label>
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-4 sm:p-6 lg:p-8 transition-all duration-300 ${
-                isDragOver
-                  ? 'border-purple-400 bg-purple-900/20'
-                  : 'border-gray-600 hover:border-gray-500'
-              }`}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <div className="text-center">
-                <Upload className={`mx-auto h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 mb-3 sm:mb-4 transition-colors ${
-                  isDragOver ? 'text-purple-400' : 'text-gray-400'
-                }`} />
-                <p className={`text-sm sm:text-base lg:text-lg font-medium mb-2 transition-colors ${
-                  isDragOver ? 'text-purple-400' : 'text-gray-300'
-                }`}>
-                  {isDragOver ? 'Drop files here' : 'Drag and drop files here'}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4">
-                  or
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-2 sm:px-4 sm:py-2 lg:px-6 lg:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400 text-xs sm:text-sm lg:text-base"
-                >
-                  Browse Files
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={allowedFileTypes.join(',')}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  aria-label="Select file to upload"
-                />
-              </div>
-              <p className="text-xs sm:text-sm text-gray-400 mt-3 sm:mt-4 text-center">
-                Supported formats: PDF, DOC, DOCX. Max size: 5MB per file (max 1 file)
-              </p>
-            </div>
 
-            {/* Uploaded Files List */}
-            {formData.files.length > 0 && (
-              <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
-                <h4 className="text-xs sm:text-sm font-medium text-gray-300">Uploaded Files:</h4>
-                {formData.files.map((fileUpload) => (
-                  <div key={fileUpload.id} className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-700 rounded-lg">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-white truncate">
-                        {fileUpload.file.name}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {formatFileSize(fileUpload.file.size)}
-                      </p>
-                      {fileUpload.status === 'uploading' && (
-                        <div className="mt-1 sm:mt-2">
-                          <div className="w-full bg-gray-600 rounded-full h-1 sm:h-2">
-                            <div 
-                              className="bg-purple-600 h-1 sm:h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${fileUpload.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      {fileUpload.status === 'completed' && (
-                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeFile(fileUpload.id)}
-                        className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
-                        aria-label={`Remove ${fileUpload.file.name}`}
-                      >
-                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Submit Button */}
           <div className="pt-4 sm:pt-6 border-t border-gray-700">

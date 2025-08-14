@@ -21,14 +21,8 @@ export const analyzeFiles = async (files) => {
         content: ''
       };
 
-      // Process different file types
-      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-        // Handle TXT files
-        fileContent = await readTextFile(file);
-        fileInfo.content = fileContent;
-        fileInfo.summary = `Text file: ${fileContent.substring(0, 200)}${fileContent.length > 200 ? '...' : ''}`;
-      } 
-      else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      // Process different file types (only PDF, DOC, DOCX allowed)
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
         // Handle PDF files
         fileContent = await readPdfFile(file);
         fileInfo.content = fileContent;
@@ -43,14 +37,9 @@ export const analyzeFiles = async (files) => {
         fileInfo.content = fileContent;
         fileInfo.summary = `Document file: ${fileContent.substring(0, 200)}${fileContent.length > 200 ? '...' : ''}`;
       } 
-      else if (file.type === 'video/mp4' || file.name.endsWith('.mp4')) {
-        // Handle MP4 files
-        fileInfo = await readMp4File(file);
-        fileInfo.summary = `Video file: ${fileInfo.filename} (${formatFileSize(fileInfo.size)})`;
-      } 
       else {
-        // Unsupported file type
-        fileInfo.summary = `Unsupported file type: ${file.type}`;
+        // Unsupported file type - only PDF, DOC, DOCX are allowed
+        fileInfo.summary = `Unsupported file type: ${file.type}. Only PDF, DOC, and DOCX files are allowed.`;
         fileInfo.content = '';
       }
 

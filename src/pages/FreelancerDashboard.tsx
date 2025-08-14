@@ -15,7 +15,8 @@ interface ProfileData {
   countryCode: string;
   upiId: string;
   aadharNumber: string;
-  freelancerId: string;
+  freelancerId: string; // UUID for database queries
+  freelancerDisplayId: string; // Human-readable format like 'F123456789'
 }
 
 const FreelancerDashboard: React.FC = () => {
@@ -33,7 +34,8 @@ const FreelancerDashboard: React.FC = () => {
     countryCode: '+91',
     upiId: '',
     aadharNumber: '',
-    freelancerId: ''
+    freelancerId: '',
+    freelancerDisplayId: ''
   });
   const [originalData, setOriginalData] = useState<ProfileData>({
     fullName: '',
@@ -42,7 +44,8 @@ const FreelancerDashboard: React.FC = () => {
     countryCode: '+91',
     upiId: '',
     aadharNumber: '',
-    freelancerId: ''
+    freelancerId: '',
+    freelancerDisplayId: ''
   });
   const [errors, setErrors] = useState<Partial<ProfileData>>({});
 
@@ -76,6 +79,11 @@ const FreelancerDashboard: React.FC = () => {
   // Video modal state
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedWorkProduct, setSelectedWorkProduct] = useState<any>(null);
+
+  // Project requirements popup state
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [selectedProjectRequirements, setSelectedProjectRequirements] = useState<string>('');
+  const [selectedProjectName, setSelectedProjectName] = useState<string>('');
 
   const countryCodes = [
     { code: '+91', country: 'India', flag: '🇮🇳' },
@@ -126,7 +134,8 @@ const FreelancerDashboard: React.FC = () => {
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
               aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
-              freelancerId: profile.id || '' // Use UUID (id) for database queries
+              freelancerId: profile.id || '', // UUID for database queries
+              freelancerDisplayId: profile.freelancer_id || '' // Human-readable format for display
             });
             
             setOriginalData({
@@ -136,7 +145,8 @@ const FreelancerDashboard: React.FC = () => {
               countryCode: profile.country_code || '+91',
               upiId: profile.upi_id || '',
               aadharNumber: formatAadharForDisplay(profile.aadhar_number || ''),
-              freelancerId: profile.id || '' // Use UUID (id) for database queries
+              freelancerId: profile.id || '', // UUID for database queries
+              freelancerDisplayId: profile.freelancer_id || '' // Human-readable format for display
             });
             
             // Check if profile is complete
@@ -268,6 +278,12 @@ const FreelancerDashboard: React.FC = () => {
   const handleVerificationReportClick = (report: any) => {
     setSelectedVerificationReport(report);
     setShowVerificationModal(true);
+  };
+
+  const handleProjectRequirementsClick = (project: any) => {
+    setSelectedProjectRequirements(project.project_requirement || 'No requirements specified');
+    setSelectedProjectName(project.project_name || 'Unknown Project');
+    setShowRequirementsModal(true);
   };
 
 
@@ -863,7 +879,7 @@ const FreelancerDashboard: React.FC = () => {
                 id="freelancer-id"
                 name="freelancerId"
                 type="text"
-                value={profileData.freelancerId || 'Will be assigned after profile completion'}
+                value={profileData.freelancerDisplayId || 'Will be assigned after profile completion'}
                 disabled
                 className="w-full px-4 py-3 pr-12 border-2 border-gray-600 rounded-lg bg-gray-600 text-gray-300 cursor-not-allowed opacity-60 text-sm sm:text-base"
                 aria-describedby="freelancer-id-help"
@@ -874,7 +890,7 @@ const FreelancerDashboard: React.FC = () => {
               </div>
             </div>
             <p id="freelancer-id-help" className="text-gray-400 text-xs sm:text-sm mt-1">
-              {profileData.freelancerId 
+              {profileData.freelancerDisplayId 
                 ? 'Your unique freelancer identification number' 
                 : 'ID will be automatically generated when you complete your profile'
               }
@@ -1170,7 +1186,15 @@ const FreelancerDashboard: React.FC = () => {
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {projects.map((project, index) => (
                   <div key={project.id} className={`grid grid-cols-7 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index !== projects.length - 1 ? 'border-b border-gray-600' : ''}`}>
-                    <div className="text-left text-white font-medium">{project.project_id}</div>
+                    <div className="text-left">
+                      <button
+                        onClick={() => handleProjectRequirementsClick(project)}
+                        className="text-white font-medium hover:text-purple-400 transition-colors cursor-pointer underline"
+                        title="Click to view project requirements"
+                      >
+                        {project.project_id}
+                      </button>
+                    </div>
                     <div className="text-left text-white">{project.project_name}</div>
                     <div className="text-left text-gray-300">{project.client_display_id || project.client_id}</div>
                     <div className="text-center">
@@ -1357,6 +1381,35 @@ const FreelancerDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Project Requirements Modal */}
+      {showRequirementsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-96 overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Project Requirements</h3>
+                <button
+                  onClick={() => setShowRequirementsModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-white font-medium mb-2">{selectedProjectName}</h4>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">
+                      {selectedProjectRequirements}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Video Modal */}
       {showVideoModal && selectedWorkProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1462,7 +1515,7 @@ const FreelancerDashboard: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
                 <div className="text-left hidden sm:block">Project Name</div>
-                <div className="text-left hidden lg:block">Client Name</div>
+                <div className="text-left hidden lg:block">Client ID</div>
                 <div className="text-right">Value (₹)</div>
                 <div className="text-center">Status</div>
                 <div className="text-center">Action</div>
@@ -1483,7 +1536,7 @@ const FreelancerDashboard: React.FC = () => {
                     <div key={transaction.transaction_id} className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
                       <div className="text-left text-white truncate">{transaction.projects?.project_id || 'N/A'}</div>
                       <div className="text-left text-gray-300 truncate hidden sm:block">{transaction.projects?.project_name || 'N/A'}</div>
-                      <div className="text-left text-gray-300 truncate hidden lg:block">{transaction.projects?.client_profiles?.full_name || 'N/A'}</div>
+                      <div className="text-left text-gray-300 truncate hidden lg:block">{transaction.projects?.client_id || 'N/A'}</div>
                       <div className="text-right text-white">₹{transaction.freelancer_amount?.toLocaleString() || '0'}</div>
                       <div className="text-center">
                         <span className={`${

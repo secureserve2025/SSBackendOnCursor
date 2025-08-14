@@ -27,3 +27,4 @@ SELECT
     client_email
 FROM get_client_display_id('5e5d114e-cc06-4850-9b03-64ae9cd0c4d4'::UUID);
 
+
