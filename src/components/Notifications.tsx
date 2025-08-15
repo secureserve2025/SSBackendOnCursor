@@ -49,7 +49,15 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
   });
 
   useEffect(() => {
-    loadNotifications();
+    // Only load notifications if userId is provided and not empty
+    if (userId && userId.trim() !== '') {
+      loadNotifications();
+    } else {
+      // If no userId, just set empty notifications without loading
+      setNotifications([]);
+      setLoading(false);
+      setError(null);
+    }
   }, [userId]);
 
   const loadNotifications = async () => {
@@ -188,7 +196,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
     );
   };
 
-  if (loading) {
+  if (loading && userId && userId.trim() !== '') {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -196,7 +204,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
     );
   }
 
-  if (error) {
+  if (error && userId && userId.trim() !== '') {
     return (
       <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
         <div className="flex items-center space-x-2">
@@ -288,9 +296,17 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
       {notifications.length === 0 && (
         <div className="text-center py-12">
           <Bell className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">No notifications at this time</p>
+          <p className="text-gray-400 text-lg">
+            {userId && userId.trim() !== '' 
+              ? 'No notifications at this time' 
+              : 'Complete your profile to view notifications'
+            }
+          </p>
           <p className="text-gray-500 text-sm mt-2">
-            You'll see notifications here when projects require your attention
+            {userId && userId.trim() !== '' 
+              ? 'You\'ll see notifications here when projects require your attention'
+              : 'You\'ll see notifications here once you complete your profile and have active projects'
+            }
           </p>
         </div>
       )}

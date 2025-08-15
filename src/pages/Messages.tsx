@@ -474,7 +474,7 @@ const Messages: React.FC = () => {
       }
 
       if (!selectedProject) {
-        setError('No project selected. Please select a project to send messages.');
+        setError('No project selected. Please select a project and click "View Messages" to send messages.');
         return;
       }
 
@@ -974,8 +974,15 @@ const Messages: React.FC = () => {
                          handleSendMessage();
                        }
                      }}
-                     placeholder="Type your message..."
-                                           className={`flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none ${userType === 'client' ? 'focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50' : 'focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'}`}
+                     placeholder={selectedProject ? "Type your message..." : "Select a project and click 'View Messages' to start chatting..."}
+                     disabled={!selectedProject}
+                     className={`flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none transition-colors ${
+                       !selectedProject 
+                         ? 'opacity-50 cursor-not-allowed' 
+                         : userType === 'client' 
+                           ? 'focus:border-purple-400 focus:ring-2 focus:ring-purple-400/50' 
+                           : 'focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50'
+                     }`}
                      rows={2}
                      maxLength={200}
                      aria-label="Message input"
@@ -983,9 +990,9 @@ const Messages: React.FC = () => {
                    />
                                        <button
                       onClick={handleSendMessage}
-                      disabled={!newMessage.trim() || isSending}
+                      disabled={!selectedProject || !newMessage.trim() || isSending}
                       className={`px-4 py-2 ${userType === 'client' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-cyan-600 hover:bg-cyan-700'} disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center space-x-2 focus:outline-none ${userType === 'client' ? 'focus:ring-2 focus:ring-purple-400' : 'focus:ring-2 focus:ring-cyan-400'}`}
-                      aria-label="Send message"
+                      aria-label={selectedProject ? "Send message" : "Select a project to enable messaging"}
                     >
                     {isSending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -998,7 +1005,10 @@ const Messages: React.FC = () => {
                  <div className="flex justify-between items-center mt-2">
                    <div className="flex-1">
                      <p id="message-help" className="text-xs text-gray-400">
-                       Press Enter to send, Shift+Enter for new line
+                       {selectedProject 
+                         ? "Press Enter to send, Shift+Enter for new line"
+                         : "Select a project from the sidebar and click 'View Messages' to start chatting"
+                       }
                      </p>
                      {validationErrors.message && (
                        <p className="text-xs text-red-400 mt-1">
@@ -1028,7 +1038,7 @@ const Messages: React.FC = () => {
                       <MessageSquare className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                       <p className="text-gray-400">Select a project to start messaging</p>
                       <p className="text-sm text-gray-500 mt-2">
-                        Choose a project from the sidebar to view and send messages
+                        Choose a project from the sidebar, expand it, and click "View Messages" to start chatting
                       </p>
                     </>
                   )}

@@ -2016,12 +2016,12 @@ const ClientDashboard: React.FC = () => {
           <div className="min-w-full">
             {/* Table Header */}
             <div className="bg-gray-700 rounded-t-lg">
-              <div className="grid grid-cols-5 gap-4 p-4 text-sm font-semibold text-gray-300">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm font-semibold text-gray-300">
                 <div className="text-left">Project ID</div>
-                <div className="text-left">Project Name</div>
-                <div className="text-left">Freelancer ID</div>
+                <div className="text-left hidden sm:block">Project Name</div>
+                <div className="text-left hidden lg:block">Freelancer ID</div>
                 <div className="text-right">Value (₹)</div>
-                <div className="text-center">Transaction Status</div>
+                <div className="text-center">Status</div>
               </div>
             </div>
 
@@ -2036,10 +2036,10 @@ const ClientDashboard: React.FC = () => {
             ) : transactions.length > 0 ? (
               <div className="bg-gray-800 rounded-b-lg border-t border-gray-600">
                 {transactions.map((transaction, index) => (
-                  <div key={transaction.transaction_id} className={`grid grid-cols-5 gap-4 p-4 text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
-                    <div className="text-left text-white">{transaction.projects?.project_id || 'N/A'}</div>
-                    <div className="text-left text-gray-300">{transaction.projects?.project_name || 'N/A'}</div>
-                    <div className="text-left text-gray-300">{transaction.projects?.freelancer_id || 'N/A'}</div>
+                  <div key={transaction.transaction_id} className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 p-3 sm:p-4 text-xs sm:text-sm ${index % 2 === 0 ? 'bg-gray-800' : 'bg-gray-750'}`}>
+                    <div className="text-left text-white truncate">{transaction.projects?.project_id || 'N/A'}</div>
+                    <div className="text-left text-gray-300 truncate hidden sm:block">{transaction.projects?.project_name || 'N/A'}</div>
+                    <div className="text-left text-gray-300 truncate hidden lg:block">{transaction.projects?.freelancer_id || 'N/A'}</div>
                     <div className="text-right text-white">₹{transaction.transaction_value?.toLocaleString() || '0'}</div>
                     <div className="text-center">
                       <span className={`${
