@@ -191,8 +191,10 @@ const AddProjectForm: React.FC = () => {
 
   // Handle freelancer selection
   const handleFreelancerSelect = (freelancer: any) => {
-    setFormData(prev => ({ ...prev, freelancerId: freelancer.id })); // Use UUID id instead of freelancer_id string
-    setSearchTerm(freelancer.freelancer_id); // Keep showing the string ID in the UI
+    // Store the UUID internally for database operations
+    setFormData(prev => ({ ...prev, freelancerId: freelancer.id }));
+    // Keep showing the human-readable ID in the UI
+    setSearchTerm(freelancer.freelancer_id);
     setShowFreelancerDropdown(false);
     setFreelancerValidationStatus('success');
     setValidatedFreelancerData(freelancer);
@@ -534,18 +536,8 @@ const AddProjectForm: React.FC = () => {
           alert('Project created but transaction creation failed. Please contact support.');
         }
         
-        // Send email notification to freelancer when project is created
-        console.log('🔍 AddProjectForm: About to send project creation email notification');
-        try {
-          await sendProjectNotificationEmail({ project_id: data.id }, {
-            project_name: formData.projectName,
-            project_requirement: formData.projectRequirement,
-            desired_completion_date: formData.completionDate
-          });
-        } catch (emailError) {
-          console.error('❌ Project creation email notification failed:', emailError);
-          // Don't fail the project creation if email fails
-        }
+        // Email notification will be sent when project status changes to 'Assigned to Freelancer'
+        console.log('🔍 AddProjectForm: Project created successfully. Email notification will be sent when checklist is sent to freelancer.');
         
         setShowDeliverables(true);
         setIsSubmitting(false);
@@ -648,9 +640,9 @@ const AddProjectForm: React.FC = () => {
       const emailData: ProjectNotificationData = {
         freelancerEmail: freelancerProfile.email,
         freelancerName: freelancerProfile.full_name || 'Freelancer',
-        projectId: projectData.project_id,
+        projectId: projectData.project_id || 'V' + projectData.id.slice(0, 4), // Use human-readable project ID
         projectName: originalProjectData.project_name,
-        clientId: currentUserId,
+        clientId: clientProfile.client_id || 'C' + currentUserId.slice(0, 9), // Use human-readable client ID
         clientName: clientProfile.full_name || 'Client',
         projectRequirement: originalProjectData.project_requirement,
         deliverables: validDeliverables,

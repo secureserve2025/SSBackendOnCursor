@@ -6,6 +6,7 @@ import { accessVideo, generateVideoUrl, formatFileSize, formatDuration, handleVi
 import AddProjectForm from '../components/AddProjectForm';
 import Notifications from '../components/Notifications';
 import { formatToISTDisplay, getRelativeTimeIST } from '../lib/istUtils';
+import EmailService from '../emails/emailService';
 
 interface ProfileData {
   fullName: string;
@@ -752,6 +753,43 @@ const ClientDashboard: React.FC = () => {
       // Handle the JSON response from the updated function
       if (data && data.success) {
         alert('Checklist sent to freelancer successfully! Project status updated to "Assigned to Freelancer". The freelancer will now be able to see this project in their dashboard.');
+        
+        // Send email notification to freelancer
+        try {
+          // Find the current project to get all necessary data (same pattern as working example)
+          const currentProject = projects.find(project => project.id === editingProjectId);
+          if (!currentProject) {
+            console.error('Project not found in projects list');
+          } else {
+            console.log('📧 Sending project assignment email notification to freelancer');
+            
+            const emailData = {
+              freelancerEmail: currentProject.freelancer_profiles?.email || '',
+              freelancerName: currentProject.freelancer_profiles?.full_name || 'Freelancer',
+              projectId: currentProject.project_id || 'V' + currentProject.id.slice(0, 4), // Use human-readable project ID
+              projectName: currentProject.project_name,
+              clientId: currentProject.client_profiles?.client_id || 'C' + currentProject.client_id.slice(0, 9), // Use human-readable client ID
+              clientName: currentProject.client_profiles?.full_name || 'Client',
+              projectRequirement: currentProject.project_requirement,
+              deliverables: [], // Empty array as deliverables are excluded from emails
+              completionDate: currentProject.desired_completion_date
+            };
+
+            console.log('📧 Project assignment email data prepared:', emailData);
+
+            const emailService = EmailService.getInstance();
+            const emailResult = await emailService.sendProjectNotification(emailData);
+            
+            if (emailResult.success) {
+              console.log('✅ Project assignment email sent successfully to freelancer');
+            } else {
+              console.error('❌ Failed to send project assignment email:', emailResult.error);
+            }
+          }
+        } catch (emailError) {
+          console.error('❌ Error sending project assignment email:', emailError);
+          // Don't fail the entire operation if email fails
+        }
         
         // Refresh the projects list to show the updated status
         await loadProjects();

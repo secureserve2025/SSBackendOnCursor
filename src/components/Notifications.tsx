@@ -101,7 +101,12 @@ const Notifications: React.FC<NotificationsProps> = ({ userType, userId, getNoti
     } else if (now < hours72) {
       return `Fund transfer on hold. ${userType === 'client' ? 'Freelancer' : 'Freelancer'} resubmission due on ${hours72.toLocaleString()}`;
     } else {
-      return 'Fund ready to chargeback';
+      // Time expired (>72 hours) - check verification score for appropriate action
+      if (score >= 0.9) {
+        return 'Fund ready to transfer to freelancer';
+      } else {
+        return 'Fund ready to chargeback';
+      }
     }
   };
 

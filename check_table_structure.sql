@@ -1,72 +1,105 @@
--- Check table structure and data types
--- This will help us understand the correct data types for RLS policies
+-- =============================================================================
+-- CHECK TABLE STRUCTURE SCRIPT
+-- =============================================================================
+-- This script checks the actual structure of tables in your database
+-- to understand what columns exist before creating the deletion script
+-- =============================================================================
 
--- 1. Check projects table structure
+-- Check work_products table structure
+SELECT 'WORK_PRODUCTS TABLE STRUCTURE' as table_name;
 SELECT 
     column_name,
     data_type,
     is_nullable,
     column_default
 FROM information_schema.columns 
-WHERE table_name = 'projects' 
+WHERE table_name = 'work_products'
 ORDER BY ordinal_position;
 
--- 2. Check client_profiles table structure
+-- Check verification_reports table structure
+SELECT 'VERIFICATION_REPORTS TABLE STRUCTURE' as table_name;
 SELECT 
     column_name,
     data_type,
     is_nullable,
     column_default
 FROM information_schema.columns 
-WHERE table_name = 'client_profiles' 
+WHERE table_name = 'verification_reports'
 ORDER BY ordinal_position;
 
--- 3. Check freelancer_profiles table structure
+-- Check messages table structure
+SELECT 'MESSAGES TABLE STRUCTURE' as table_name;
 SELECT 
     column_name,
     data_type,
     is_nullable,
     column_default
 FROM information_schema.columns 
-WHERE table_name = 'freelancer_profiles' 
+WHERE table_name = 'messages'
 ORDER BY ordinal_position;
 
--- 4. Check if project_files table exists and its structure
+-- Check transactions table structure
+SELECT 'TRANSACTIONS TABLE STRUCTURE' as table_name;
 SELECT 
     column_name,
     data_type,
     is_nullable,
     column_default
 FROM information_schema.columns 
-WHERE table_name = 'project_files' 
+WHERE table_name = 'transactions'
 ORDER BY ordinal_position;
 
--- 5. Check sample data from projects table
+-- Check projects table structure
+SELECT 'PROJECTS TABLE STRUCTURE' as table_name;
 SELECT 
-    id,
-    client_id,
-    freelancer_id,
-    project_name,
-    created_at
-FROM projects 
-LIMIT 3;
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'projects'
+ORDER BY ordinal_position;
 
--- 6. Check sample data from client_profiles table
+-- Check client_profiles table structure
+SELECT 'CLIENT_PROFILES TABLE STRUCTURE' as table_name;
 SELECT 
-    id,
-    user_id,
-    full_name,
-    created_at
-FROM client_profiles 
-LIMIT 3;
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'client_profiles'
+ORDER BY ordinal_position;
 
--- 7. Check sample data from freelancer_profiles table
+-- Check freelancer_profiles table structure
+SELECT 'FREELANCER_PROFILES TABLE STRUCTURE' as table_name;
 SELECT 
-    id,
-    user_id,
-    freelancer_id,
-    full_name,
-    created_at
-FROM freelancer_profiles 
-LIMIT 3;
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'freelancer_profiles'
+ORDER BY ordinal_position;
+
+-- Check if tables exist
+SELECT 'TABLE EXISTENCE CHECK' as check_type;
+SELECT 
+    table_name,
+    CASE 
+        WHEN table_name IS NOT NULL THEN 'EXISTS'
+        ELSE 'DOES NOT EXIST'
+    END as status
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN (
+    'work_products', 
+    'verification_reports', 
+    'messages', 
+    'transactions', 
+    'projects', 
+    'client_profiles', 
+    'freelancer_profiles'
+)
+ORDER BY table_name;
 

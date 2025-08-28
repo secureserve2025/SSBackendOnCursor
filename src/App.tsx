@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import BenefitsSection from './components/BenefitsSection';
@@ -33,6 +34,10 @@ function App() {
     initializeAuth().catch(err => {
       console.warn('Failed to initialize auth:', err);
     });
+
+    // Initialize EmailJS
+    emailjs.init('FczWejeDBjHh8k_5E'); // Initialize with the main public key
+    console.log('✅ EmailJS initialized successfully');
   }, []);
 
   // Production environment checker
