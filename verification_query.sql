@@ -138,3 +138,6 @@ WHERE email IN ('sd@gmail.com', 'freelancer@gmail.com', 'freelancer1@gmail.com')
 SELECT 'AUTH.USERS' as table_name, COUNT(*) as count_to_delete
 FROM auth.users 
 WHERE email IN ('sd@gmail.com', 'freelancer@gmail.com', 'freelancer1@gmail.com');
+
+
+

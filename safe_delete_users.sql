@@ -138,3 +138,6 @@ ROLLBACK;
 
 SELECT 'SAFE USER RECORD DELETION COMPLETED' as final_status;
 SELECT 'Core records for sd@gmail.com, freelancer@gmail.com, and freelancer1@gmail.com have been deleted.' as message;
+
+
+

@@ -255,3 +255,6 @@ AND rowsecurity = true;
 
 SELECT 'COMPREHENSIVE DATABASE ANALYSIS COMPLETED' as final_status;
 SELECT 'Copy the entire output above to understand your complete database structure.' as instruction;
+
+
+

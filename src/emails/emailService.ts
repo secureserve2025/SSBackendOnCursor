@@ -28,6 +28,13 @@ const MANUAL_REVISION_CONFIG = {
   publicKey: import.meta.env.VITE_EMAILJS_MANUAL_REVISION_PUBLIC_KEY || 'FczWejeDBjHh8k_5E'
 };
 
+// EmailJS configuration for contact form notifications
+const CONTACT_FORM_CONFIG = {
+  serviceId: import.meta.env.VITE_EMAILJS_CONTACT_SERVICE_ID || 'service_ihsga7n',
+  templateId: import.meta.env.VITE_EMAILJS_CONTACT_TEMPLATE_ID || 'template_ce0ff0d',
+  publicKey: import.meta.env.VITE_EMAILJS_CONTACT_PUBLIC_KEY || 'F-pYkodeUCOGDuhr-'
+};
+
 export interface EmailData {
   to: string;
   subject: string;
@@ -166,16 +173,29 @@ export class EmailService {
   }
 
   async sendContactFormEmail(data: ContactFormData): Promise<{ success: boolean; error?: string }> {
-    console.log('🔍 EmailService: Starting sendContactFormEmail (TEMPORARILY DISABLED)');
+    console.log('🔍 EmailService: Starting sendContactFormEmail');
     console.log('🔍 EmailService: Contact form data:', data);
     
-    // TEMPORARILY DISABLED - Email notifications disabled during development
-    console.log('📧 EMAIL NOTIFICATION DISABLED: Contact form email would be sent from:', data.email);
-    console.log('📧 EMAIL NOTIFICATION DISABLED: Contact name:', data.name);
-    console.log('📧 EMAIL NOTIFICATION DISABLED: Message:', data.message);
-    
-    // Return success to prevent errors in the application
-    return { success: true, error: 'Email notifications temporarily disabled during development' };
+    try {
+      const templateParams = {
+        from_name: data.name || 'Anonymous',
+        from_email: data.email,
+        message: data.message || 'No message provided'
+      };
+
+      const response = await emailjs.send(
+        CONTACT_FORM_CONFIG.serviceId,
+        CONTACT_FORM_CONFIG.templateId,
+        templateParams,
+        CONTACT_FORM_CONFIG.publicKey
+      );
+
+      console.log('✅ Contact form email sent successfully:', response);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error sending contact form email:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   async sendAIVerificationNotification(data: AIVerificationData): Promise<{ success: boolean; error?: string }> {

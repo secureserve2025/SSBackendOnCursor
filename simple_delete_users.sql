@@ -90,3 +90,6 @@ COMMIT;
 
 -- Verification query
 SELECT 'DELETION COMPLETED' as status;
+
+
+

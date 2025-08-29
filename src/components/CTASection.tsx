@@ -28,12 +28,14 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
   const validateField = (name: string, value: string) => {
     switch (name) {
       case 'name':
-        return value.trim().length < 2 ? 'Name must be at least 2 characters long' : '';
+        // Name is completely optional - no validation
+        return '';
       case 'email':
         if (!value.trim()) return 'Email is required';
         return !emailRegex.test(value) ? 'Please enter a valid email address' : '';
       case 'message':
-        return value.trim().length < 10 ? 'Message must be at least 10 characters long' : '';
+        // Message is completely optional - no validation
+        return '';
       default:
         return '';
     }
@@ -59,11 +61,11 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
 
   // Check if form is valid
   useEffect(() => {
-    const nameValid = formData.name.trim().length >= 2;
+    // Only email is mandatory
     const emailValid = formData.email.trim() && emailRegex.test(formData.email);
-    const messageValid = formData.message.trim().length >= 10;
     
-    setIsFormValid(Boolean(nameValid && emailValid && messageValid));
+    // Name and message are completely optional - no validation needed
+    setIsFormValid(Boolean(emailValid));
   }, [formData]);
 
   // Send email function using centralized EmailService
@@ -159,29 +161,16 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
               {/* Name Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
-                  Name *
+                  Name
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  placeholder="Your full name"
-                  className={`w-full px-4 py-3 bg-transparent border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
-                    errors.name 
-                      ? 'border-red-500 focus:border-red-400' 
-                      : 'border-purple-500/50 focus:border-purple-400'
-                  }`}
-                />
-                {errors.name && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center">
-                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {errors.name}
-                  </p>
-                )}
+                                 <input
+                   type="text"
+                   name="name"
+                   value={formData.name}
+                   onChange={handleInputChange}
+                   placeholder="Optional: Your full name"
+                   className="w-full px-4 py-3 bg-transparent border border-purple-500/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors"
+                 />
               </div>
               
               {/* Email Field */}
@@ -215,29 +204,16 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
               {/* Message Field */}
               <div>
                 <label className="block text-purple-400 text-sm font-medium mb-2">
-                  Message *
+                  Message
                 </label>
-                <textarea
-                  rows={5}
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  placeholder="Tell us about your project..."
-                  className={`w-full px-4 py-3 bg-transparent border-2 rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors resize-none ${
-                    errors.message 
-                      ? 'border-red-500 focus:border-red-400' 
-                      : 'border-purple-500 focus:border-purple-400'
-                  }`}
-                ></textarea>
-                {errors.message && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center">
-                    <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {errors.message}
-                  </p>
-                )}
+                                 <textarea
+                   rows={5}
+                   name="message"
+                   value={formData.message}
+                   onChange={handleInputChange}
+                   placeholder="Optional: Tell us about your project..."
+                   className="w-full px-4 py-3 bg-transparent border-2 border-purple-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-400 transition-colors resize-none"
+                 ></textarea>
               </div>
               
               {/* Send Button */}
@@ -262,7 +238,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 6-8 4-2 8-8-18z" />
                     </svg>
-                    <span>{isFormValid ? 'Send Message' : 'Please fill all fields'}</span>
+                    <span>{isFormValid ? 'Send Message' : 'Please enter a valid email'}</span>
                   </>
                 )}
               </button>
@@ -270,7 +246,7 @@ const CTASection: React.FC<CTASectionProps> = ({ darkMode }) => {
               {/* Form Requirements */}
               <div className="text-center">
                 <p className="text-gray-400 text-xs">
-                  * All fields are required
+                  * Only email is required
                 </p>
               </div>
             </form>

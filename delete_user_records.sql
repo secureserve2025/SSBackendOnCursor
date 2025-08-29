@@ -254,3 +254,6 @@ ROLLBACK;
 
 SELECT 'USER RECORD DELETION COMPLETED SUCCESSFULLY' as final_status;
 SELECT 'All records for sd@gmail.com, freelancer@gmail.com, and freelancer1@gmail.com have been deleted.' as message;
+
+
+

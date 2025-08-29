@@ -110,3 +110,6 @@ WHERE email IN ('sd@gmail.com', 'freelancer@gmail.com', 'freelancer1@gmail.com')
 
 SELECT 'SIMPLE TABLE ANALYSIS COMPLETED' as final_status;
 SELECT 'This analysis shows the essential table structure for creating the deletion script.' as instruction;
+
+
+

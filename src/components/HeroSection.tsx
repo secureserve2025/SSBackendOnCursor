@@ -57,35 +57,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ darkMode }) => {
               }`}>
                 Protect your work. Pursue your worth.
               </p>
-
-              {/* Performance Analytics */}
-              <div className="grid grid-cols-2 gap-8 pt-8 max-w-md mx-auto">
-                <div className="text-center">
-                  <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-cyan-400' : 'text-purple-600'
-                  }`}>
-                    15,247+
-                  </div>
-                  <div className={`text-sm font-medium ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    Happy Customers
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className={`text-2xl sm:text-3xl font-bold ${
-                    darkMode ? 'text-pink-400' : 'text-pink-600'
-                  }`}>
-                    8,932+
-                  </div>
-                  <div className={`text-sm font-medium ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    Successful Closures
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 

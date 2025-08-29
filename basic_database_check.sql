@@ -80,3 +80,6 @@ SELECT email, COUNT(*) as count
 FROM auth.users 
 WHERE email IN ('sd@gmail.com', 'freelancer@gmail.com', 'freelancer1@gmail.com')
 GROUP BY email;
+
+
+

@@ -190,3 +190,6 @@ SELECT
     amount
 FROM transactions 
 LIMIT 3;
+
+
+

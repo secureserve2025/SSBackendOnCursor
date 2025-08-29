@@ -148,3 +148,6 @@ UNION ALL
 SELECT 'project_messages' as table_name, COUNT(*) as record_count FROM project_messages
 UNION ALL
 SELECT 'transactions' as table_name, COUNT(*) as record_count FROM transactions;
+
+
+
