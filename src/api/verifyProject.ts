@@ -164,7 +164,7 @@ async function fetchProjectDetails(projectId: string): Promise<ProjectDetails | 
 async function callAIModel(projectDetails: ProjectDetails): Promise<VerificationResult> {
   try {
     // Try different models in order of preference
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    const models = ["gemini-2.0-flash-001", "gemini-2.0-flash-lite-001", "gemini-2.5-flash-lite"];
     let model;
     let lastError;
     
@@ -271,7 +271,7 @@ async function saveVerificationReport(projectUuid: string, aiResponse: Verificat
         project_id: projectUuid,
         report_title: "AI Verification Report",
         report_content: aiResponse.report_content,
-        verified_by: "Gemini Pro 2.5",
+        verified_by: "gemini-2.0-flash-001",
         verification_score: aiResponse.verification_score
         // Let other fields use their defaults or be null
       })
