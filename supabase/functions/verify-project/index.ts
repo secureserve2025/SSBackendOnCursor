@@ -114,7 +114,7 @@ async function fetchProjectDetails(projectId: string): Promise<ProjectDetails | 
  */
 async function callAIModel(projectDetails: ProjectDetails): Promise<VerificationResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-001" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
 
     // Format project data for AI
     // Get current date in IST (YYYY-MM-DD format)
@@ -173,7 +173,7 @@ async function saveVerificationReport(projectId: string, aiResponse: Verificatio
         report_content: aiResponse.report_content,
         report_type: "auto-ai",
         verification_status: "completed",
-        verified_by: "Gemini Pro 2.5",
+        verified_by: "gemini-2.5-flash",
         verification_score: aiResponse.verification_score,
         verification_notes: null,
         file_path: null,
