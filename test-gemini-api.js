@@ -30,7 +30,7 @@ try {
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   
   // Use the correct model name for current API version
-  const modelName = 'gemini-2.0-flash-001';
+  const modelName = 'gemini-2.5-flash';
   console.log(`🔄 Trying model: ${modelName}`);
   
   const model = genAI.getGenerativeModel({ model: modelName });
