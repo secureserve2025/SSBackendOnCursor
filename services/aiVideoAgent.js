@@ -236,7 +236,7 @@ class AIVideoAgent {
         ];
 
         return await this.openai.chat.completions.create({
-          model: 'gpt-4-1106-preview',
+          model: 'gpt-4o-mini',
           messages: messages,
           temperature: 0.7,
           max_tokens: 2000
@@ -345,7 +345,7 @@ class AIVideoAgent {
         ];
 
         return await this.openai.chat.completions.create({
-          model: 'gpt-4-1106-preview',
+          model: 'gpt-4o-mini',
           messages: messages,
           temperature: 0.7,
           max_tokens: 1000
@@ -403,7 +403,7 @@ class AIVideoAgent {
         ];
 
         return await this.openai.chat.completions.create({
-          model: 'gpt-4-1106-preview',
+          model: 'gpt-4o-mini',
           messages: messages,
           temperature: 0.7,
           max_tokens: 1000
@@ -458,7 +458,7 @@ class AIVideoAgent {
         ];
 
         return await this.openai.chat.completions.create({
-          model: 'gpt-4-1106-preview',
+          model: 'gpt-4o-mini',
           messages: messages,
           temperature: 0.7,
           max_tokens: 1000
