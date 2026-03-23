@@ -194,7 +194,7 @@ async function startConversation(projectSummary: string) {
     const initialMessage = `I have a new video project. Here are the details:\n\n${projectSummary}\n\nCan you help me create detailed deliverables for this project?`
     
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: initialMessage }
@@ -231,7 +231,7 @@ async function continueConversation(conversationHistory: any[], userMessage: str
     ]
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
+      model: 'gpt-4o-mini',
       messages: messages,
       max_tokens: 1000,
       temperature: 0.7,
@@ -266,7 +266,7 @@ async function generateDeliverables(conversationHistory: any[]) {
     const extractionPrompt = `Based on our conversation, please extract the final deliverables as a JSON array. Each deliverable should be a string with specific, measurable requirements. Return ONLY the JSON array, no other text. Example format: ["Create 60-second product demo video in 4K resolution", "Deliver final MP4 file under 100MB with H.264 codec"]`
     
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         ...conversationHistory,
