@@ -153,7 +153,7 @@ The service requires an OpenAI API key:
 
 ## Model Configuration
 
-- **Model**: `gpt-4-1106-preview`
+- **Model**: `gpt-4o-mini`
 - **Temperature**: 0.7
 - **Max Tokens**: 1000
 - **Stream**: false
