@@ -15,7 +15,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 # OpenAI Configuration
 VITE_OPENAI_API_KEY=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
-VITE_OPENAI_MODEL=gpt-4-1106-preview
+VITE_OPENAI_MODEL=gpt-4o-mini
 ```
 
 ### 2. Verify Configuration
