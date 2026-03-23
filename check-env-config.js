@@ -107,7 +107,7 @@ try {
   
   const openai = new OpenAI({ apiKey: envVars.VITE_OPENAI_API_KEY });
   const response = await openai.chat.completions.create({
-    model: envVars.VITE_OPENAI_MODEL || 'gpt-4-1106-preview',
+    model: envVars.VITE_OPENAI_MODEL || 'gpt-4o-mini',
     messages: [{ role: 'user', content: 'Say "OpenAI is working!"' }],
     max_tokens: 20
   });
