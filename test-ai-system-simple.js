@@ -21,7 +21,7 @@ console.log('1️⃣ Testing Environment Variables...');
 console.log('✅ Supabase URL:', supabaseUrl ? 'Configured' : '❌ Missing');
 console.log('✅ Supabase Anon Key:', supabaseAnonKey ? 'Configured' : '❌ Missing');
 console.log('✅ OpenAI API Key:', openaiApiKey ? 'Configured' : '❌ Missing');
-console.log('✅ OpenAI Model: gpt-4-1106-preview\n');
+console.log('✅ OpenAI Model: gpt-4o-mini\n');
 
 // Test 2: OpenAI Connection
 console.log('2️⃣ Testing OpenAI API Connection...');
@@ -31,7 +31,7 @@ try {
   });
   
   const testResponse = await openai.chat.completions.create({
-    model: 'gpt-4-1106-preview',
+    model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: 'Say "Hello, AI system is working!"' }],
     max_tokens: 50,
     temperature: 0.7,
